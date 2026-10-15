@@ -1,0 +1,6 @@
+tools/
+*.zip
+audio/response-*
+Thumbs.db
+.DS_Store
+node_modules/

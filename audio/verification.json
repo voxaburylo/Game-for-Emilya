@@ -1,0 +1,290 @@
+[
+  {
+    "letter": "Є",
+    "file": "404.mp3",
+    "seconds": 0.653,
+    "bytes": 8821,
+    "originalPeak": 4308,
+    "gain": 4,
+    "decoderWarnings": true
+  },
+  {
+    "letter": "І",
+    "file": "406.mp3",
+    "seconds": 0.472,
+    "bytes": 6626,
+    "originalPeak": 3864,
+    "gain": 4,
+    "decoderWarnings": false
+  },
+  {
+    "letter": "Ї",
+    "file": "407.mp3",
+    "seconds": 0.714,
+    "bytes": 9448,
+    "originalPeak": 2777,
+    "gain": 4,
+    "decoderWarnings": true
+  },
+  {
+    "letter": "А",
+    "file": "410.mp3",
+    "seconds": 0.533,
+    "bytes": 7253,
+    "originalPeak": 15487,
+    "gain": 1.679,
+    "decoderWarnings": true
+  },
+  {
+    "letter": "Б",
+    "file": "411.mp3",
+    "seconds": 1.047,
+    "bytes": 13523,
+    "originalPeak": 3844,
+    "gain": 4,
+    "decoderWarnings": true
+  },
+  {
+    "letter": "В",
+    "file": "412.mp3",
+    "seconds": 1.062,
+    "bytes": 13523,
+    "originalPeak": 3460,
+    "gain": 4,
+    "decoderWarnings": true
+  },
+  {
+    "letter": "Г",
+    "file": "413.mp3",
+    "seconds": 0.549,
+    "bytes": 7567,
+    "originalPeak": 3158,
+    "gain": 4,
+    "decoderWarnings": false
+  },
+  {
+    "letter": "Д",
+    "file": "414.mp3",
+    "seconds": 0.674,
+    "bytes": 8821,
+    "originalPeak": 4041,
+    "gain": 4,
+    "decoderWarnings": true
+  },
+  {
+    "letter": "Е",
+    "file": "415.mp3",
+    "seconds": 0.902,
+    "bytes": 11642,
+    "originalPeak": 6307,
+    "gain": 4,
+    "decoderWarnings": true
+  },
+  {
+    "letter": "Ж",
+    "file": "416.mp3",
+    "seconds": 0.648,
+    "bytes": 8507,
+    "originalPeak": 2523,
+    "gain": 4,
+    "decoderWarnings": true
+  },
+  {
+    "letter": "З",
+    "file": "417.mp3",
+    "seconds": 0.698,
+    "bytes": 9134,
+    "originalPeak": 3780,
+    "gain": 4,
+    "decoderWarnings": true
+  },
+  {
+    "letter": "И",
+    "file": "418.mp3",
+    "seconds": 0.653,
+    "bytes": 8507,
+    "originalPeak": 5370,
+    "gain": 4,
+    "decoderWarnings": true
+  },
+  {
+    "letter": "Й",
+    "file": "419.mp3",
+    "seconds": 1.177,
+    "bytes": 15090,
+    "originalPeak": 5130,
+    "gain": 4,
+    "decoderWarnings": false
+  },
+  {
+    "letter": "К",
+    "file": "41a.mp3",
+    "seconds": 1.068,
+    "bytes": 13523,
+    "originalPeak": 6517,
+    "gain": 3.99,
+    "decoderWarnings": true
+  },
+  {
+    "letter": "Л",
+    "file": "41b.mp3",
+    "seconds": 0.615,
+    "bytes": 8194,
+    "originalPeak": 3265,
+    "gain": 4,
+    "decoderWarnings": false
+  },
+  {
+    "letter": "М",
+    "file": "41c.mp3",
+    "seconds": 0.773,
+    "bytes": 10075,
+    "originalPeak": 3338,
+    "gain": 4,
+    "decoderWarnings": true
+  },
+  {
+    "letter": "Н",
+    "file": "41d.mp3",
+    "seconds": 0.944,
+    "bytes": 12269,
+    "originalPeak": 3358,
+    "gain": 4,
+    "decoderWarnings": false
+  },
+  {
+    "letter": "О",
+    "file": "41e.mp3",
+    "seconds": 0.439,
+    "bytes": 5999,
+    "originalPeak": 4489,
+    "gain": 4,
+    "decoderWarnings": true
+  },
+  {
+    "letter": "П",
+    "file": "41f.mp3",
+    "seconds": 0.572,
+    "bytes": 7567,
+    "originalPeak": 4484,
+    "gain": 4,
+    "decoderWarnings": false
+  },
+  {
+    "letter": "Р",
+    "file": "420.mp3",
+    "seconds": 1.034,
+    "bytes": 13209,
+    "originalPeak": 4005,
+    "gain": 4,
+    "decoderWarnings": true
+  },
+  {
+    "letter": "С",
+    "file": "421.mp3",
+    "seconds": 0.715,
+    "bytes": 9448,
+    "originalPeak": 3307,
+    "gain": 4,
+    "decoderWarnings": true
+  },
+  {
+    "letter": "Т",
+    "file": "422.mp3",
+    "seconds": 0.594,
+    "bytes": 7880,
+    "originalPeak": 3368,
+    "gain": 4,
+    "decoderWarnings": true
+  },
+  {
+    "letter": "У",
+    "file": "423.mp3",
+    "seconds": 0.702,
+    "bytes": 9134,
+    "originalPeak": 10207,
+    "gain": 2.547,
+    "decoderWarnings": true
+  },
+  {
+    "letter": "Ф",
+    "file": "424.mp3",
+    "seconds": 0.605,
+    "bytes": 8194,
+    "originalPeak": 3739,
+    "gain": 4,
+    "decoderWarnings": true
+  },
+  {
+    "letter": "Х",
+    "file": "425.mp3",
+    "seconds": 1.047,
+    "bytes": 13523,
+    "originalPeak": 3381,
+    "gain": 4,
+    "decoderWarnings": true
+  },
+  {
+    "letter": "Ц",
+    "file": "426.mp3",
+    "seconds": 0.655,
+    "bytes": 8821,
+    "originalPeak": 2324,
+    "gain": 4,
+    "decoderWarnings": true
+  },
+  {
+    "letter": "Ч",
+    "file": "427.mp3",
+    "seconds": 0.863,
+    "bytes": 11328,
+    "originalPeak": 3566,
+    "gain": 4,
+    "decoderWarnings": false
+  },
+  {
+    "letter": "Ш",
+    "file": "428.mp3",
+    "seconds": 0.989,
+    "bytes": 12582,
+    "originalPeak": 4314,
+    "gain": 4,
+    "decoderWarnings": true
+  },
+  {
+    "letter": "Щ",
+    "file": "429.mp3",
+    "seconds": 1.11,
+    "bytes": 14150,
+    "originalPeak": 3799,
+    "gain": 4,
+    "decoderWarnings": false
+  },
+  {
+    "letter": "Ю",
+    "file": "42e.mp3",
+    "seconds": 0.771,
+    "bytes": 10075,
+    "originalPeak": 3603,
+    "gain": 4,
+    "decoderWarnings": false
+  },
+  {
+    "letter": "Я",
+    "file": "42f.mp3",
+    "seconds": 0.657,
+    "bytes": 8821,
+    "originalPeak": 3017,
+    "gain": 4,
+    "decoderWarnings": true
+  },
+  {
+    "letter": "Ґ",
+    "file": "490.mp3",
+    "seconds": 0.951,
+    "bytes": 12269,
+    "originalPeak": 4842,
+    "gain": 4,
+    "decoderWarnings": true
+  }
+]

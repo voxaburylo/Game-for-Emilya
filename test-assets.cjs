@@ -1,0 +1,7 @@
+const fs=require('fs'),path=require('path'),assert=require('assert/strict'),{FILES}=require('./sw');
+for(const file of FILES){const p=path.join(__dirname,file==='./'?'index.html':file);assert(fs.statSync(p).size>0,file)}
+const manifest=require('./audio/manifest.json'),verification=require('./audio/verification.json');assert.equal(Object.keys(manifest).length,32);assert.equal(verification.length,32);
+for(const [letter,m]of Object.entries(manifest)){assert.equal(m.author,'Tabrus');assert.equal(m.license,'CC BY-SA 4.0');const bytes=fs.readFileSync(path.join(__dirname,m.file));assert(bytes.length>2000);assert(bytes.subarray(0,3).toString()==='ID3'||bytes[0]===255);const check=verification.find(v=>v.letter===letter);assert(check&&check.seconds>.15&&check.seconds<6);assert.equal(bytes.length,check.bytes)}
+for(const f of ['core.js','world.js','app.js','navigation.js','recordings.js','sw.js'])new Function(fs.readFileSync(path.join(__dirname,f),'utf8'));
+const html=fs.readFileSync(path.join(__dirname,'index.html'),'utf8');const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);assert.equal(new Set(ids).size,ids.length,'duplicate DOM id');for(const ref of [...html.matchAll(/(?:src|href)="([^"#]+)"/g)].map(m=>m[1]))if(!ref.includes('://'))assert(fs.existsSync(path.join(__dirname,ref)),ref);
+console.log('PASS: all offline assets, 32 local human recordings, attribution, audio verification, script syntax and HTML references.');
