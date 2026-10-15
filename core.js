@@ -18,5 +18,5 @@ function record(s,mode,target,hinted){if(hinted)return;if(mode==='letters'||mode
 function finish(s,run){if(run.rewarded)return false;run.rewarded=true;s.gems+=3;s.runs++;s.modeRuns[run.mode]=(s.modeRuns[run.mode]||0)+1;return true}
 function build(s,slot,id){if(!Number.isInteger(slot)||slot<0||slot>=6||s.buildings[slot]!==null)return false;const item=ITEMS.find(i=>i.id===id);if(!item||s.gems<item.cost)return false;s.gems-=item.cost;s.buildings[slot]=id;return true}
 function remove(s,slot){const id=s.buildings[slot];const item=ITEMS.find(i=>i.id===id);if(!item)return false;s.gems+=item.cost;s.buildings[slot]=null;return true}
-const Core={LETTERS,SYLLABLES,WORDS,ITEMS,MODES,colors,fresh,valid,shuffle,active,unlocked,task,record,finish,build,remove};if(typeof module!=='undefined')module.exports=Core;root.Core=Core;
+const Core={LETTERS,SYLLABLES,WORDS,ITEMS,MODES,colors,fresh,valid,shuffle,choose,active,unlocked,task,record,finish,build,remove};if(typeof module!=='undefined')module.exports=Core;root.Core=Core;
 })(typeof window!=='undefined'?window:globalThis);

@@ -1,0 +1,56 @@
+ГОТОВІ ЗАПИСИ ЛЮДСЬКОГО ГОЛОСУ / HUMAN SPEECH RECORDINGS
+
+1. Склади: МА МО МУ МІ МИ; СА СО СУ СІ СИ; НА НО НУ НІ НИ;
+   ЛА ЛО ЛУ ЛІ ЛИ; РА РО РУ РІ РИ; ТА ТО ТУ ТІ ТИ.
+
+Source: The Open University, OpenLearn,
+Introduction to Ukrainian language and culture.
+Course authors: Olga (Olha) Volosova and Caroline Rowan-Olive.
+Critical reader: Marta Jenkala.
+Speaker is credited here as the course narrator; no unverified personal
+identity or gender is assigned to the voice.
+
+Week 4, 7.1 New consonants and old friends, Audio 58:
+https://www.open.edu/openlearn/mod/oucontent/view.php?id=137234&section=8.1
+Week 5, 3 Ukrainian consonants and apostrophe, Audio 29:
+https://www.open.edu/openlearn/mod/oucontent/view.php?id=137456&section=4
+
+Copyright: The Open University. Licensed CC BY-NC-SA 4.0:
+https://creativecommons.org/licenses/by-nc-sa/4.0/
+The course acknowledgements license its content under this license except
+listed third-party content. The syllable audio is not listed as an exception:
+https://www.open.edu/openlearn/mod/oucontent/view.php?id=137234&section=__acknowledgements
+https://www.open.edu/openlearn/mod/oucontent/view.php?id=137456&section=__acknowledgements
+
+Changes: selected contiguous, complete spoken syllables were excerpted from
+the two recordings using the published CV/VC tables and silence boundaries,
+with 110 ms silence padding, converted to mono 44.1 kHz MP3 at 96 kbit/s.
+No AI speech, letter-name concatenation, pitch change, or voice cloning.
+The adapted syllable recordings remain licensed CC BY-NC-SA 4.0.
+These audio assets may be redistributed with credit and this license for
+noncommercial use only. They are not covered by any software-code license.
+This educational game is not affiliated with or endorsed by The Open University.
+Source recordings are retained in sources/ for checking the excerpts.
+Exact source times and source SHA256 values are in extraction.json.
+
+2. Слова: МАМА ТАТО РАМА НОРА РАНА ЛІТО САЛО МИЛО СИЛА.
+
+Female speaker: Galja Raptova / Галя Раптова.
+Copyright (c) 2008 Galja Raptova, Nicolas Vion.
+Shtooka Project, collection ukr-balm-galja.
+Source mirror:
+https://www.yojik.eu/audiocollections/detailled/ukr-balm-galja/
+Collection index explicitly records swac_speak_gender="F".
+License: Creative Commons Attribution 2.0 France / Paternité 2.0 France:
+https://creativecommons.org/licenses/by/2.0/fr/
+Original license statement preserved in SHTOOKA-README.txt.
+Files are downloaded MP3 recordings without modification; original filenames
+are preserved. Exact word/file mapping is in ../../speech-manifest.js.
+Original recording, credited authors, and license retained; no endorsement implied.
+
+3. The earlier 32 Tabrus letter-name recordings are unchanged.
+Their attribution and CC BY-SA 4.0 terms remain in ../CREDITS.txt.
+
+Verification: files decoded successfully and excerpts aligned against the
+published transcript and silence pattern. This is not a claim that a native
+speaker has listened to and pedagogically approved every excerpt.

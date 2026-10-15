@@ -1,6 +1,176 @@
-const CACHE='bukvomisto-v3-human-audio-3';
-const LETTERS=[...'АБВГҐДЕЄЖЗИІЇЙКЛМНОПРСТУФХЦЧШЩЮЯ'];
-const FILES=['./','index.html','style.css','enhancements.css','core.js','navigation.js','recordings.js','world.js','app.js','three.min.js','icon.svg','manifest.webmanifest','audio/CREDITS.txt',...LETTERS.map(l=>'audio/'+l.codePointAt(0).toString(16)+'.mp3')];
-async function rangeResponse(request,response){const range=request.headers.get('range');if(!range||!response)return response;const buffer=await response.arrayBuffer(),length=buffer.byteLength,m=/^bytes=(\d*)-(\d*)$/.exec(range);if(!m||(!m[1]&&!m[2]))return new Response(null,{status:416,headers:{'Content-Range':'bytes */'+length}});const start=m[1]?Number(m[1]):Math.max(0,length-Number(m[2])),end=m[1]&&m[2]?Math.min(Number(m[2]),length-1):length-1;if(start>end||start>=length)return new Response(null,{status:416,headers:{'Content-Range':'bytes */'+length}});const headers=new Headers(response.headers);headers.set('Content-Range','bytes '+start+'-'+end+'/'+length);headers.set('Content-Length',String(end-start+1));headers.set('Accept-Ranges','bytes');return new Response(buffer.slice(start,end+1),{status:206,headers})}
-if(typeof self!=='undefined'&&self.addEventListener){self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()))});self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('bukvomisto-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||new URL(e.request.url).origin!==self.location.origin)return;e.respondWith((async()=>{const cache=await caches.open(CACHE),stored=await cache.match(e.request.url);if(stored&&e.request.mode!=='navigate')return rangeResponse(e.request,stored);const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),1500);try{const r=await fetch(e.request,{signal:controller.signal});clearTimeout(timeout);if(r.ok&&r.status===200){const copy=r.clone();e.waitUntil(caches.open(CACHE).then(c=>c.put(e.request.url,copy)))}return r}catch(err){clearTimeout(timeout);const cached=stored||await cache.match(e.request.url);if(!cached)return new Response('Not cached',{status:503});return rangeResponse(e.request,cached)}})())})}
-if(typeof module!=='undefined')module.exports={rangeResponse,FILES};
+"use strict";
+const CACHE = "emilia-living-v4-3";
+const ASSETS = [
+  "./",
+  "index.html",
+  "town.css",
+  "core.js",
+  "navigation.js",
+  "town-state.js",
+  "art.js",
+  "speech-manifest.js",
+  "human-audio.js",
+  "town-world.js",
+  "town-app.js",
+  "three.min.js",
+  "icon.svg",
+  "manifest.webmanifest",
+  "audio/CREDITS.txt",
+  "audio/speech/CREDITS.txt",
+  "audio/410.mp3",
+  "audio/41e.mp3",
+  "audio/423.mp3",
+  "audio/41c.mp3",
+  "audio/421.mp3",
+  "audio/406.mp3",
+  "audio/41d.mp3",
+  "audio/41b.mp3",
+  "audio/418.mp3",
+  "audio/420.mp3",
+  "audio/422.mp3",
+  "audio/415.mp3",
+  "audio/41a.mp3",
+  "audio/411.mp3",
+  "audio/412.mp3",
+  "audio/414.mp3",
+  "audio/41f.mp3",
+  "audio/417.mp3",
+  "audio/42f.mp3",
+  "audio/42e.mp3",
+  "audio/404.mp3",
+  "audio/407.mp3",
+  "audio/413.mp3",
+  "audio/490.mp3",
+  "audio/416.mp3",
+  "audio/419.mp3",
+  "audio/424.mp3",
+  "audio/425.mp3",
+  "audio/426.mp3",
+  "audio/427.mp3",
+  "audio/428.mp3",
+  "audio/429.mp3",
+  "audio/speech/syllable-41b-410.mp3",
+  "audio/speech/syllable-41b-41e.mp3",
+  "audio/speech/syllable-41b-423.mp3",
+  "audio/speech/syllable-41b-418.mp3",
+  "audio/speech/syllable-41b-406.mp3",
+  "audio/speech/syllable-41c-410.mp3",
+  "audio/speech/syllable-41c-41e.mp3",
+  "audio/speech/syllable-41c-423.mp3",
+  "audio/speech/syllable-41c-418.mp3",
+  "audio/speech/syllable-41c-406.mp3",
+  "audio/speech/syllable-41d-410.mp3",
+  "audio/speech/syllable-41d-41e.mp3",
+  "audio/speech/syllable-41d-423.mp3",
+  "audio/speech/syllable-41d-418.mp3",
+  "audio/speech/syllable-41d-406.mp3",
+  "audio/speech/syllable-420-410.mp3",
+  "audio/speech/syllable-420-41e.mp3",
+  "audio/speech/syllable-420-423.mp3",
+  "audio/speech/syllable-420-418.mp3",
+  "audio/speech/syllable-420-406.mp3",
+  "audio/speech/syllable-421-410.mp3",
+  "audio/speech/syllable-421-41e.mp3",
+  "audio/speech/syllable-421-423.mp3",
+  "audio/speech/syllable-421-418.mp3",
+  "audio/speech/syllable-421-406.mp3",
+  "audio/speech/syllable-422-410.mp3",
+  "audio/speech/syllable-422-41e.mp3",
+  "audio/speech/syllable-422-423.mp3",
+  "audio/speech/syllable-422-418.mp3",
+  "audio/speech/syllable-422-406.mp3",
+  "audio/speech/ukr-265a50e4.mp3",
+  "audio/speech/ukr-635d0c8d.mp3",
+  "audio/speech/ukr-85339f5c.mp3",
+  "audio/speech/ukr-aad09ea0.mp3",
+  "audio/speech/ukr-84f1f56b.mp3",
+  "audio/speech/ukr-17d1e593.mp3",
+  "audio/speech/ukr-c1b3af6a.mp3",
+  "audio/speech/ukr-f4dd20a7.mp3",
+  "audio/speech/ukr-167bc9ac.mp3",
+];
+async function rangeResponse(request, cached) {
+  const range = request.headers.get("range");
+  if (!range) return cached;
+  const bytes = await cached.arrayBuffer(),
+    size = bytes.byteLength,
+    m = /^bytes=(\d*)-(\d*)$/.exec(range);
+  if (!m || (!m[1] && !m[2]))
+    return new Response("", {
+      status: 416,
+      headers: { "Content-Range": "bytes */" + size },
+    });
+  let start = m[1] ? Number(m[1]) : Math.max(0, size - Number(m[2])),
+    end = m[1] && m[2] ? Math.min(Number(m[2]), size - 1) : size - 1;
+  if (
+    !Number.isSafeInteger(start) ||
+    !Number.isSafeInteger(end) ||
+    start > end ||
+    start >= size
+  )
+    return new Response("", {
+      status: 416,
+      headers: { "Content-Range": "bytes */" + size },
+    });
+  return new Response(bytes.slice(start, end + 1), {
+    status: 206,
+    headers: {
+      "Content-Type":
+        cached.headers.get("Content-Type") || "application/octet-stream",
+      "Content-Range": "bytes " + start + "-" + end + "/" + size,
+      "Content-Length": String(end - start + 1),
+      "Accept-Ranges": "bytes",
+    },
+  });
+}
+if (typeof self !== "undefined" && self.addEventListener) {
+  self.addEventListener("install", (e) =>
+    e.waitUntil(
+      caches
+        .open(CACHE)
+        .then((c) => c.addAll(ASSETS))
+        .then(() => self.skipWaiting()),
+    ),
+  );
+  self.addEventListener("activate", (e) =>
+    e.waitUntil(
+      caches
+        .keys()
+        .then((keys) =>
+          Promise.all(
+            keys
+              .filter((k) => /^(bukvomisto|emilia-)/.test(k) && k !== CACHE)
+              .map((k) => caches.delete(k)),
+          ),
+        )
+        .then(() => self.clients.claim()),
+    ),
+  );
+  self.addEventListener("fetch", (e) => {
+    if (
+      e.request.method !== "GET" ||
+      new URL(e.request.url).origin !== self.location.origin
+    )
+      return;
+    e.respondWith(
+      (async () => {
+        const cache = await caches.open(CACHE),
+          cached = await cache.match(e.request.url);
+        if (cached && /\.(mp3|ogg)(\?|$)/.test(e.request.url))
+          return rangeResponse(e.request, cached);
+        try {
+          const response = await fetch(e.request);
+          if (response.ok) return response;
+          if (cached) return rangeResponse(e.request, cached);
+          return response;
+        } catch (error) {
+          return cached
+            ? rangeResponse(e.request, cached)
+            : new Response("Offline", { status: 503 });
+        }
+      })(),
+    );
+  });
+}
+if (typeof module !== "undefined")
+  module.exports = { rangeResponse, FILES: ASSETS, CACHE };

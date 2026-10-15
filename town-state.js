@@ -1,0 +1,500 @@
+(function (root) {
+  "use strict";
+  const ITEMS = [
+    { id: "flowers", name: "Квітник", cost: 2, w: 1, h: 1 },
+    { id: "bench", name: "Лавочка", cost: 3, w: 1, h: 1 },
+    { id: "tree", name: "Яблунька", cost: 4, w: 1, h: 1 },
+    { id: "swing", name: "Гойдалка", cost: 6, w: 2, h: 1 },
+    { id: "fountain", name: "Фонтан", cost: 8, w: 2, h: 2 },
+    { id: "house", name: "Будиночок", cost: 10, w: 2, h: 2 },
+  ];
+  const LANDS = [
+    { id: "east", name: "Сонячний берег", x: 23, z: 0, w: 10, h: 32, cost: 6 },
+    {
+      id: "south",
+      name: "Квіткова долина",
+      x: 0,
+      z: 21,
+      w: 36,
+      h: 10,
+      cost: 9,
+    },
+    { id: "west", name: "Яблуневий сад", x: -23, z: 0, w: 10, h: 32, cost: 12 },
+    {
+      id: "north",
+      name: "Тиха галявина",
+      x: 0,
+      z: -21,
+      w: 36,
+      h: 10,
+      cost: 15,
+    },
+  ];
+  const NATURAL = [
+    [-16, -13],
+    [-17, -4],
+    [-17, 8],
+    [-16, 14],
+    [16, 14],
+    [17, -3],
+    [16, -14],
+    [-6, -14],
+    [6, -14],
+    [-8, 14],
+    [4, 14],
+  ].map(([x, z]) => ({ x, z, w: 0.5, h: 0.5 }));
+  const FIXED = [
+    { id: "home", kind: "home", x: -12, z: -9, w: 2.8, h: 2.5 },
+    { id: "letters", kind: "letters", x: 0, z: -11, w: 2.8, h: 2.5 },
+    { id: "studio", kind: "studio", x: 12, z: -9, w: 2.8, h: 2.5 },
+  ];
+  const FAMILIES = ["М", "С", "Н", "Л", "Р", "Т"].map((c) =>
+    [..."АОУІИ"].map((v) => c + v),
+  );
+  const WORDS = [
+    { text: "МАМА", parts: ["МА", "МА"], picture: "mother" },
+    { text: "ТАТО", parts: ["ТА", "ТО"], picture: "father" },
+    { text: "РАМА", parts: ["РА", "МА"], picture: "frame" },
+    { text: "НОРА", parts: ["НО", "РА"], picture: "burrow" },
+    { text: "ЛІТО", parts: ["ЛІ", "ТО"], picture: "sun" },
+    { text: "РАНА", parts: ["РА", "НА"], picture: "wound" },
+    { text: "САЛО", parts: ["СА", "ЛО"], picture: "food" },
+    { text: "МИЛО", parts: ["МИ", "ЛО"], picture: "soap" },
+    { text: "СИЛА", parts: ["СИ", "ЛА"], picture: "strong" },
+  ];
+  const PETS = ["cat", "dog", "rabbit", "fox"],
+    COLORS = ["#be7186", "#7b9ca3", "#d5aa62", "#88a38a", "#8977a6"];
+  function baseRoads() {
+    const r = {};
+    for (let z = -4; z <= 5; z++) r["0," + z] = "sand";
+    for (let x = -6; x <= 6; x++) r[x + ",-3"] = "sand";
+    return r;
+  }
+  function fresh() {
+    return {
+      version: 4,
+      gems: 12,
+      runs: 0,
+      independent: 0,
+      letterScores: {},
+      syllableScores: {},
+      modeRuns: {},
+      skills: {},
+      look: { dress: 0, shoes: 0, hair: 0, color: 0 },
+      pet: "cat",
+      lands: [],
+      objects: [],
+      roads: baseRoads(),
+      rooms: {},
+      sound: true,
+      voice: true,
+      allLevels: false,
+      seen: {},
+      nextId: 1,
+    };
+  }
+  function migrate(old) {
+    if (valid(old)) return JSON.parse(JSON.stringify(old));
+    if (!root.Core?.valid(old)) return null;
+    const s = fresh();
+    for (const k of [
+      "gems",
+      "runs",
+      "independent",
+      "letterScores",
+      "syllableScores",
+      "modeRuns",
+      "sound",
+      "voice",
+      "allLevels",
+    ])
+      s[k] = JSON.parse(JSON.stringify(old[k]));
+    s.look.color = Math.max(0, root.Core.colors.indexOf(old.color)) % 5;
+    const plots = [
+      [-13, 2],
+      [-6, 2],
+      [1, 2],
+      [-13, 10],
+      [-6, 10],
+      [1, 10],
+    ];
+    old.buildings.forEach((kind, i) => {
+      if (kind) {
+        const [x, z] = plots[i];
+        s.objects.push({
+          id: "b" + s.nextId++,
+          kind,
+          x,
+          z,
+          rotation: 0,
+          paid: root.Core.ITEMS.find((v) => v.id === kind).cost,
+        });
+      }
+    });
+    return s;
+  }
+  const integer = (n) => Number.isInteger(n) && n >= 0 && n <= 1e7;
+  function valid(s) {
+    if (
+      !s ||
+      s.version !== 4 ||
+      !integer(s.gems) ||
+      !integer(s.runs) ||
+      !integer(s.independent) ||
+      !integer(s.nextId)
+    )
+      return false;
+    if (
+      !s.look ||
+      !Number.isInteger(s.look.dress) ||
+      s.look.dress < 0 ||
+      s.look.dress > 5 ||
+      !Number.isInteger(s.look.shoes) ||
+      s.look.shoes < 0 ||
+      s.look.shoes > 3 ||
+      !Number.isInteger(s.look.hair) ||
+      s.look.hair < 0 ||
+      s.look.hair > 4 ||
+      !Number.isInteger(s.look.color) ||
+      s.look.color < 0 ||
+      s.look.color > 4 ||
+      !PETS.includes(s.pet)
+    )
+      return false;
+    if (
+      !Array.isArray(s.lands) ||
+      new Set(s.lands).size !== s.lands.length ||
+      s.lands.some((l) => !LANDS.some((v) => v.id === l)) ||
+      !Array.isArray(s.objects) ||
+      s.objects.length > 150
+    )
+      return false;
+    if (
+      s.objects.some(
+        (o) =>
+          !o ||
+          typeof o.id !== "string" ||
+          !/^b\d+$/.test(o.id) ||
+          !ITEMS.some((v) => v.id === o.kind) ||
+          !Number.isFinite(o.x) ||
+          !Number.isFinite(o.z) ||
+          Math.abs(o.x) > 28 ||
+          Math.abs(o.z) > 26 ||
+          ![0, 1, 2, 3].includes(o.rotation) ||
+          !integer(o.paid),
+      )
+    )
+      return false;
+    if (
+      new Set(s.objects.map((o) => o.id)).size !== s.objects.length ||
+      s.objects.some((o) => Number(o.id.slice(1)) >= s.nextId)
+    )
+      return false;
+    if (
+      !s.roads ||
+      Object.keys(s.roads).length > 900 ||
+      Object.entries(s.roads).some(
+        ([k, v]) =>
+          !/^-?\d+,-?\d+$/.test(k) ||
+          k.split(",").some((n) => Math.abs(Number(n)) > 14) ||
+          !["sand", "stone", "wood"].includes(v),
+      )
+    )
+      return false;
+    for (const key of [
+      "letterScores",
+      "syllableScores",
+      "modeRuns",
+      "skills",
+      "rooms",
+      "seen",
+    ])
+      if (!s[key] || typeof s[key] !== "object" || Array.isArray(s[key]))
+        return false;
+    for (const key of ["letterScores", "syllableScores", "modeRuns"])
+      if (Object.values(s[key]).some((v) => !integer(v))) return false;
+    if (
+      Object.values(s.skills).some(
+        (v) =>
+          !v || !integer(v.solo) || !integer(v.hinted) || !integer(v.tries),
+      )
+    )
+      return false;
+    for (const room of Object.values(s.rooms)) {
+      if (
+        !room ||
+        typeof room.lamp !== "boolean" ||
+        !room.furniture ||
+        Object.keys(room.furniture).some(
+          (k) => !["sofa", "table", "rug"].includes(k),
+        ) ||
+        ["sofa", "table", "rug"].some((k) => !room.furniture[k]) ||
+        Object.values(room.furniture).some(
+          (p) =>
+            !p ||
+            !Number.isFinite(p.x) ||
+            !Number.isFinite(p.z) ||
+            Math.abs(p.x) > 5 ||
+            Math.abs(p.z) > 4,
+        )
+      )
+        return false;
+    }
+    return ["sound", "voice", "allLevels"].every(
+      (k) => typeof s[k] === "boolean",
+    );
+  }
+  function inside(s, x, z, margin = 0) {
+    const point = (a, b) =>
+      (Math.abs(a) <= 18 && Math.abs(b) <= 16) ||
+      LANDS.some(
+        (l) =>
+          s.lands.includes(l.id) &&
+          Math.abs(a - l.x) <= l.w / 2 &&
+          Math.abs(b - l.z) <= l.h / 2,
+      );
+    return [-margin, 0, margin].every((dx) =>
+      [-margin, 0, margin].every((dz) => point(x + dx, z + dz)),
+    );
+  }
+  function water(x, z) {
+    return (
+      ((x - 12) / 3.5) ** 2 + ((z - 8) / 2.8) ** 2 < 1 && Math.abs(z - 8) > 0.9
+    );
+  }
+  function footprint(o) {
+    const i = ITEMS.find((v) => v.id === o.kind),
+      w = o.kind === "house" ? 2.8 : i.w * 0.94,
+      h = o.kind === "house" ? 2.5 : i.h * 0.94;
+    return {
+      x: o.x,
+      z: o.z,
+      w: o.rotation % 2 ? h : w,
+      h: o.rotation % 2 ? w : h,
+    };
+  }
+  function entrance(o) {
+    const f = footprint(o),
+      r = o.rotation || 0,
+      d = (r % 2 ? f.w : f.h) + 1.4;
+    return {
+      x: o.x + [0, 1, 0, -1][r] * d,
+      z: o.z + [1, 0, -1, 0][r] * d,
+      w: 0.7,
+      h: 0.7,
+    };
+  }
+  function overlaps(a, b, pad = 0) {
+    return (
+      Math.abs(a.x - b.x) < a.w + b.w + pad &&
+      Math.abs(a.z - b.z) < a.h + b.h + pad
+    );
+  }
+  function placement(s, o, ignore) {
+    const f = footprint(o);
+    for (const dx of [-f.w, 0, f.w])
+      for (const dz of [-f.h, 0, f.h])
+        if (!inside(s, o.x + dx, o.z + dz, 0.2) || water(o.x + dx, o.z + dz))
+          return "Тут немає вільної землі";
+    if (
+      [
+        ...FIXED,
+        ...NATURAL,
+        ...s.objects.filter((v) => v.id !== ignore).map(footprint),
+      ].some((b) => overlaps(f, b, 0.2))
+    )
+      return "Потрібно трохи більше місця";
+    if (
+      [
+        ...FIXED,
+        ...s.objects.filter((v) => v.kind === "house" && v.id !== ignore),
+      ].some((b) => overlaps(f, entrance({ ...b, kind: "house" })))
+    )
+      return "Залишимо вхід вільним";
+    const entry = entrance(o);
+    if (
+      o.kind === "house" &&
+      (!inside(s, entry.x, entry.z, 0.7) ||
+        water(entry.x, entry.z) ||
+        [
+          ...FIXED,
+          ...s.objects.filter((v) => v.id !== ignore).map(footprint),
+        ].some((b) => overlaps(entry, b)))
+    )
+      return "Потрібен вільний підхід до дверей";
+    return "";
+  }
+  function place(s, kind, x, z, rotation = 0, id) {
+    if (
+      !Number.isFinite(x) ||
+      !Number.isFinite(z) ||
+      ![0, 1, 2, 3].includes(rotation) ||
+      (id && !s.objects.some((o) => o.id === id))
+    )
+      return false;
+    const item = ITEMS.find((i) => i.id === kind);
+    if (!item || (s.objects.length >= 150 && !id)) return false;
+    const old = s.objects.find((o) => o.id === id),
+      o = {
+        id: id || "b" + s.nextId,
+        kind,
+        x,
+        z,
+        rotation,
+        paid: old?.paid ?? item.cost,
+      };
+    if (placement(s, o, id) || (!old && s.gems < item.cost)) return false;
+    if (old) Object.assign(old, o);
+    else {
+      s.gems -= item.cost;
+      s.nextId++;
+      s.objects.push(o);
+    }
+    const f = footprint(o);
+    for (const k of Object.keys(s.roads)) {
+      const [a, b] = k.split(",").map(Number);
+      if (overlaps(f, { x: a * 2, z: b * 2, w: 0.8, h: 0.8 }))
+        delete s.roads[k];
+    }
+    return o;
+  }
+  function remove(s, id) {
+    const i = s.objects.findIndex((o) => o.id === id);
+    if (i < 0) return false;
+    s.gems += s.objects[i].paid;
+    s.objects.splice(i, 1);
+    delete s.rooms[id];
+    return true;
+  }
+  function expand(s, id) {
+    const l = LANDS.find((v) => v.id === id);
+    if (!l || s.lands.includes(id) || s.gems < l.cost) return false;
+    s.gems -= l.cost;
+    s.lands.push(id);
+    return true;
+  }
+  function roadOK(s, x, z) {
+    return (
+      inside(s, x * 2, z * 2, 0.8) &&
+      [-0.8, 0, 0.8].every((dx) =>
+        [-0.8, 0, 0.8].every((dz) => !water(x * 2 + dx, z * 2 + dz)),
+      ) &&
+      ![...FIXED, ...NATURAL, ...s.objects.map(footprint)].some((b) =>
+        overlaps({ x: x * 2, z: z * 2, w: 0.7, h: 0.7 }, b),
+      )
+    );
+  }
+  function road(s, cells, material) {
+    if (
+      !["sand", "stone", "wood", "erase"].includes(material) ||
+      cells.length > 900 ||
+      cells.some(
+        (p) =>
+          !Number.isInteger(p.x) ||
+          !Number.isInteger(p.z) ||
+          !roadOK(s, p.x, p.z),
+      )
+    )
+      return false;
+    for (const p of cells) {
+      const key = p.x + "," + p.z;
+      if (material === "erase") delete s.roads[key];
+      else s.roads[key] = material;
+    }
+    return true;
+  }
+  function roadLine(a, b) {
+    if (
+      ![a.x, a.z, b.x, b.z].every(
+        (n) => Number.isInteger(n) && Math.abs(n) <= 30,
+      )
+    )
+      return [];
+    const out = [];
+    let x = a.x,
+      z = a.z;
+    out.push({ x, z });
+    while (x !== b.x) {
+      x += Math.sign(b.x - x);
+      out.push({ x, z });
+    }
+    while (z !== b.z) {
+      z += Math.sign(b.z - z);
+      out.push({ x, z });
+    }
+    return out;
+  }
+  function skill(s, mode, target, hinted) {
+    const k = mode + ":" + target,
+      v = s.skills[k] || (s.skills[k] = { tries: 0, solo: 0, hinted: 0 });
+    v.tries++;
+    v[hinted ? "hinted" : "solo"]++;
+    if (!hinted) {
+      if (mode === "letters" || mode === "hear") {
+        s.letterScores[target] = (s.letterScores[target] || 0) + 1;
+        s.independent++;
+      }
+      if (["blend", "hear-syllable", "syllables"].includes(mode))
+        s.syllableScores[target] = (s.syllableScores[target] || 0) + 1;
+    }
+  }
+  function reward(s, run) {
+    if (run.rewarded) return false;
+    run.rewarded = true;
+    s.gems += 3;
+    s.runs++;
+    s.modeRuns[run.mode] = (s.modeRuns[run.mode] || 0) + 1;
+    return true;
+  }
+  function familyOpen(s, index) {
+    return (
+      index === 0 ||
+      s.allLevels ||
+      FAMILIES[index - 1].filter((v) => (s.syllableScores[v] || 0) >= 1)
+        .length >= 3
+    );
+  }
+  function room(s, id) {
+    return (
+      s.rooms[id] ||
+      (s.rooms[id] = {
+        lamp: true,
+        furniture: {
+          sofa: { x: -3, z: -1 },
+          table: { x: 1, z: 0 },
+          rug: { x: 0, z: 2 },
+        },
+      })
+    );
+  }
+  const api = {
+    ITEMS,
+    LANDS,
+    FIXED,
+    NATURAL,
+    FAMILIES,
+    WORDS,
+    PETS,
+    COLORS,
+    fresh,
+    migrate,
+    valid,
+    inside,
+    water,
+    footprint,
+    entrance,
+    placement,
+    place,
+    remove,
+    expand,
+    roadOK,
+    road,
+    roadLine,
+    skill,
+    reward,
+    familyOpen,
+    room,
+  };
+  if (typeof module !== "undefined") module.exports = api;
+  root.TownState = api;
+})(typeof window !== "undefined" ? window : globalThis);

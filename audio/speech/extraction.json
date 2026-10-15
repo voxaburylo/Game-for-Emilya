@@ -1,0 +1,340 @@
+{
+  "method": "Silence boundaries -35dB,150ms. 110th zero-based segment begins ЛА in Week4; 13th begins РА in Week5. CV/VC pairs from published transcripts. Each selected whole CV gets110ms padding both ends. No phoneme joining or synthesis.",
+  "clips": [
+    {
+      "text": "ЛА",
+      "file": "audio/speech/syllable-41b-410.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137234&section=8.1",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 189.391542,
+      "end": 190.161655,
+      "sourceFile": "audio/speech/sources/audio-week4.mp3"
+    },
+    {
+      "text": "ЛО",
+      "file": "audio/speech/syllable-41b-41e.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137234&section=8.1",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 192.459478,
+      "end": 193.253265,
+      "sourceFile": "audio/speech/sources/audio-week4.mp3"
+    },
+    {
+      "text": "ЛУ",
+      "file": "audio/speech/syllable-41b-423.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137234&section=8.1",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 195.734195,
+      "end": 196.489093,
+      "sourceFile": "audio/speech/sources/audio-week4.mp3"
+    },
+    {
+      "text": "ЛИ",
+      "file": "audio/speech/syllable-41b-418.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137234&section=8.1",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 202.258186,
+      "end": 202.976327,
+      "sourceFile": "audio/speech/sources/audio-week4.mp3"
+    },
+    {
+      "text": "ЛІ",
+      "file": "audio/speech/syllable-41b-406.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137234&section=8.1",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 205.470998,
+      "end": 206.235488,
+      "sourceFile": "audio/speech/sources/audio-week4.mp3"
+    },
+    {
+      "text": "МА",
+      "file": "audio/speech/syllable-41c-410.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137234&section=8.1",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 209.469342,
+      "end": 210.165283,
+      "sourceFile": "audio/speech/sources/audio-week4.mp3"
+    },
+    {
+      "text": "МО",
+      "file": "audio/speech/syllable-41c-41e.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137234&section=8.1",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 212.794989,
+      "end": 213.509229,
+      "sourceFile": "audio/speech/sources/audio-week4.mp3"
+    },
+    {
+      "text": "МУ",
+      "file": "audio/speech/syllable-41c-423.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137234&section=8.1",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 216.530726,
+      "end": 217.211066,
+      "sourceFile": "audio/speech/sources/audio-week4.mp3"
+    },
+    {
+      "text": "МИ",
+      "file": "audio/speech/syllable-41c-418.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137234&section=8.1",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 223.470726,
+      "end": 224.192132,
+      "sourceFile": "audio/speech/sources/audio-week4.mp3"
+    },
+    {
+      "text": "МІ",
+      "file": "audio/speech/syllable-41c-406.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137234&section=8.1",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 226.530726,
+      "end": 227.247574,
+      "sourceFile": "audio/speech/sources/audio-week4.mp3"
+    },
+    {
+      "text": "НА",
+      "file": "audio/speech/syllable-41d-410.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137234&section=8.1",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 230.030748,
+      "end": 230.761723,
+      "sourceFile": "audio/speech/sources/audio-week4.mp3"
+    },
+    {
+      "text": "НО",
+      "file": "audio/speech/syllable-41d-41e.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137234&section=8.1",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 233.195102,
+      "end": 233.947732,
+      "sourceFile": "audio/speech/sources/audio-week4.mp3"
+    },
+    {
+      "text": "НУ",
+      "file": "audio/speech/syllable-41d-423.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137234&section=8.1",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 236.513175,
+      "end": 237.308639,
+      "sourceFile": "audio/speech/sources/audio-week4.mp3"
+    },
+    {
+      "text": "НИ",
+      "file": "audio/speech/syllable-41d-418.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137234&section=8.1",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 242.974036,
+      "end": 243.739229,
+      "sourceFile": "audio/speech/sources/audio-week4.mp3"
+    },
+    {
+      "text": "НІ",
+      "file": "audio/speech/syllable-41d-406.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137234&section=8.1",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 245.830748,
+      "end": 246.576372,
+      "sourceFile": "audio/speech/sources/audio-week4.mp3"
+    },
+    {
+      "text": "РА",
+      "file": "audio/speech/syllable-420-410.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137456&section=4",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 24.233447,
+      "end": 24.819184,
+      "sourceFile": "audio/speech/sources/audio-week5.mp3"
+    },
+    {
+      "text": "РО",
+      "file": "audio/speech/syllable-420-41e.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137456&section=4",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 26.993265,
+      "end": 27.694807,
+      "sourceFile": "audio/speech/sources/audio-week5.mp3"
+    },
+    {
+      "text": "РУ",
+      "file": "audio/speech/syllable-420-423.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137456&section=4",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 29.739161,
+      "end": 30.419819,
+      "sourceFile": "audio/speech/sources/audio-week5.mp3"
+    },
+    {
+      "text": "РИ",
+      "file": "audio/speech/syllable-420-418.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137456&section=4",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 35.308662,
+      "end": 35.953492,
+      "sourceFile": "audio/speech/sources/audio-week5.mp3"
+    },
+    {
+      "text": "РІ",
+      "file": "audio/speech/syllable-420-406.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137456&section=4",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 38.173243,
+      "end": 38.805782,
+      "sourceFile": "audio/speech/sources/audio-week5.mp3"
+    },
+    {
+      "text": "СА",
+      "file": "audio/speech/syllable-421-410.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137456&section=4",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 41.428322,
+      "end": 42.087143,
+      "sourceFile": "audio/speech/sources/audio-week5.mp3"
+    },
+    {
+      "text": "СО",
+      "file": "audio/speech/syllable-421-41e.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137456&section=4",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 44.653311,
+      "end": 45.20585,
+      "sourceFile": "audio/speech/sources/audio-week5.mp3"
+    },
+    {
+      "text": "СУ",
+      "file": "audio/speech/syllable-421-423.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137456&section=4",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 47.622766,
+      "end": 48.259456,
+      "sourceFile": "audio/speech/sources/audio-week5.mp3"
+    },
+    {
+      "text": "СИ",
+      "file": "audio/speech/syllable-421-418.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137456&section=4",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 53.613265,
+      "end": 54.407982,
+      "sourceFile": "audio/speech/sources/audio-week5.mp3"
+    },
+    {
+      "text": "СІ",
+      "file": "audio/speech/syllable-421-406.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137456&section=4",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 56.627438,
+      "end": 57.404603,
+      "sourceFile": "audio/speech/sources/audio-week5.mp3"
+    },
+    {
+      "text": "ТА",
+      "file": "audio/speech/syllable-422-410.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137456&section=4",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 60.74263,
+      "end": 61.280567,
+      "sourceFile": "audio/speech/sources/audio-week5.mp3"
+    },
+    {
+      "text": "ТО",
+      "file": "audio/speech/syllable-422-41e.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137456&section=4",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 63.833492,
+      "end": 64.378367,
+      "sourceFile": "audio/speech/sources/audio-week5.mp3"
+    },
+    {
+      "text": "ТУ",
+      "file": "audio/speech/syllable-422-423.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137456&section=4",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 67.393583,
+      "end": 67.974921,
+      "sourceFile": "audio/speech/sources/audio-week5.mp3"
+    },
+    {
+      "text": "ТИ",
+      "file": "audio/speech/syllable-422-418.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137456&section=4",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 73.968685,
+      "end": 74.513469,
+      "sourceFile": "audio/speech/sources/audio-week5.mp3"
+    },
+    {
+      "text": "ТІ",
+      "file": "audio/speech/syllable-422-406.mp3",
+      "speaker": "OpenLearn course narrator",
+      "source": "https://www.open.edu/openlearn/mod/oucontent/view.php?id=137456&section=4",
+      "license": "CC BY-NC-SA 4.0",
+      "ready": true,
+      "start": 77.085351,
+      "end": 77.714671,
+      "sourceFile": "audio/speech/sources/audio-week5.mp3"
+    }
+  ],
+  "sourceHashes": {
+    "week4": "587b9b8af638da2402d4985187ee2a14b51fedf29f6e03e7324b61839148f219",
+    "week5": "f8d71e6896af18e3c56ab903dc903548fbba57f2abf1fa6379776225c6adb5c5"
+  },
+  "validation": "All files decoded; source sequence aligned to transcript by row/pair counts. Native-speaker listening review remains recommended."
+}

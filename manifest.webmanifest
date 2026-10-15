@@ -1,1 +1,18 @@
-{"name":"Буквомісто — Острів друзів","short_name":"Буквомісто","lang":"uk","start_url":"./","scope":"./","display":"standalone","background_color":"#eff5e6","theme_color":"#eff5e6","icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}]}
+{
+  "name": "Острів Емілії — граємо й читаємо",
+  "short_name": "Острів Емілії",
+  "lang": "uk",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fff9ee",
+  "theme_color": "#426f64",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
