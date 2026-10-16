@@ -32,6 +32,7 @@ for (const k of ["letters", "syllables", "phrases"])
   }
 assert(fs.statSync(path.join(__dirname, "audio/voice/CREDITS.txt")).size > 0);
 for (const f of [
+  "compatibility.js",
   "character-assets.js",
   "core.js",
   "town-world.js",

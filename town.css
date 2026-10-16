@@ -19,6 +19,7 @@ body {
   width: 100%;
   height: 100%;
   overflow: hidden;
+  overscroll-behavior: none;
   font-family: var(--font);
   color: var(--ink);
   background: #c7e0df;
@@ -121,9 +122,9 @@ button svg {
 }
 #hud {
   position: fixed;
-  top: 22px;
-  left: 26px;
-  right: 26px;
+  top: calc(22px + env(safe-area-inset-top, 0px));
+  left: calc(26px + env(safe-area-inset-left, 0px));
+  right: calc(26px + env(safe-area-inset-right, 0px));
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -184,7 +185,7 @@ button svg {
 }
 #dock {
   position: fixed;
-  bottom: 22px;
+  bottom: calc(22px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -614,6 +615,102 @@ p {
   font-size: 13px;
   color: #75816f;
 }
+.learn-sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px;
+}
+.learn-home .journey-letters {
+  display: none;
+}
+.learn-home .learning-journey {
+  padding: 13px 16px;
+  margin-bottom: 13px;
+}
+.learn-home .journey-stats {
+  margin-top: 9px;
+}
+.learn-section {
+  min-height: 142px;
+  padding: 17px 18px;
+  border-radius: 25px;
+  display: grid;
+  grid-template-columns: 124px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  box-shadow: inset 0 -4px #344c4612, 0 5px 14px #53645212;
+}
+.learn-section b,
+.section-banner b {
+  display: block;
+  font-size: 22px;
+  line-height: 1.05;
+}
+.learn-section small,
+.section-banner small {
+  display: block;
+  margin-top: 7px;
+  color: #5f6f67;
+  line-height: 1.25;
+}
+.section-letters {
+  background: linear-gradient(140deg, #f5d99e, #f1bb9d);
+}
+.section-syllables {
+  background: linear-gradient(140deg, #bfdcb9, #9fc8b3);
+}
+.section-listen {
+  background: linear-gradient(140deg, #c8d8ee, #b7c3e6);
+}
+.section-words {
+  background: linear-gradient(140deg, #e7bfd3, #d8acd0);
+}
+.section-visual {
+  min-height: 92px;
+  padding: 10px;
+  border-radius: 21px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: #fffaf0b8;
+  color: #3f6758;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+.section-visual b {
+  font-size: 48px;
+}
+.section-visual .ico {
+  width: 45px;
+  height: 45px;
+}
+.section-banner {
+  margin-bottom: 15px;
+  padding: 17px 20px;
+  border-radius: 23px;
+  display: grid;
+  grid-template-columns: 105px minmax(0, 1fr);
+  align-items: center;
+  gap: 17px;
+}
+.section-banner .section-visual {
+  min-height: 76px;
+}
+.section-games {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.section-games .menu-card {
+  min-height: 130px;
+}
+.family-caption {
+  display: block;
+  margin-top: 17px;
+  color: #6a7d70;
+  font-size: 13px;
+}
 .families {
   display: flex;
   flex-wrap: wrap;
@@ -925,8 +1022,8 @@ p {
 }
 .play-big {
   width: 100%;
-  min-height: 120px;
-  margin-bottom: 22px;
+  min-height: 88px;
+  margin-bottom: 15px;
   border-radius: 28px;
   background: var(--green);
   color: #fff9ee;
@@ -940,9 +1037,20 @@ p {
   animation: playInvite 2.4s ease-in-out infinite;
 }
 .play-big .ico {
-  width: 58px;
-  height: 58px;
+  width: 44px;
+  height: 44px;
   stroke-width: 2.2;
+}
+.play-big > span {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.play-big small {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.82;
 }
 .learning-journey {
   padding: 16px 18px;
@@ -1097,7 +1205,7 @@ p {
 .new-discovery span {
   width: 56px;
   height: 56px;
-  font-size: 34px;
+  font-size: 27px;
   animation: newLetterPop 0.6s ease both;
 }
 @keyframes newLetterPop {
@@ -1306,9 +1414,9 @@ a {
 }
 @media (max-width: 700px), (orientation: portrait) and (max-width: 1000px) {
   #hud {
-    top: 12px;
-    left: 12px;
-    right: 12px;
+    top: calc(12px + env(safe-area-inset-top, 0px));
+    left: calc(12px + env(safe-area-inset-left, 0px));
+    right: calc(12px + env(safe-area-inset-right, 0px));
   }
   .brand b {
     font-size: 16px;
@@ -1362,7 +1470,7 @@ a {
     border-radius: 23px;
     width: calc(100% - 24px);
     justify-content: space-around;
-    bottom: 14px;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   }
   #dock button {
     width: 18%;
@@ -1533,6 +1641,50 @@ a {
   .menu-card {
     min-height: 116px;
   }
+  .learn-sections {
+    gap: 10px;
+  }
+  .learn-section {
+    min-height: 122px;
+    grid-template-columns: 92px minmax(0, 1fr);
+    padding: 12px;
+    gap: 10px;
+  }
+  .learn-section b,
+  .section-banner b {
+    font-size: 19px;
+  }
+  .learn-section small,
+  .section-banner small {
+    font-size: 11px;
+  }
+  .section-visual {
+    min-height: 78px;
+    font-size: 23px;
+  }
+  .section-visual b {
+    font-size: 38px;
+  }
+  .section-banner {
+    grid-template-columns: 88px minmax(0, 1fr);
+    padding: 12px 14px;
+    gap: 12px;
+  }
+  .section-games {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .section-games .menu-card {
+    min-height: 108px;
+  }
+  .play-big {
+    min-height: 76px;
+    border-radius: 23px;
+    font-size: 23px;
+  }
+  .play-big .ico {
+    width: 37px;
+    height: 37px;
+  }
   .learning-journey {
     padding: 12px;
   }
@@ -1627,6 +1779,55 @@ a {
   }
   .pet-actions small {
     display: none;
+  }
+}
+@media (max-width: 430px) {
+  .modal {
+    padding: 15px;
+  }
+  .modal-head {
+    margin-bottom: 14px;
+  }
+  .learning-journey {
+    margin-bottom: 11px;
+  }
+  .journey-stats {
+    display: none;
+  }
+  .learn-section {
+    min-height: 112px;
+    grid-template-columns: 72px minmax(0, 1fr);
+    border-radius: 20px;
+    padding: 10px;
+  }
+  .learn-section b {
+    font-size: 17px;
+  }
+  .learn-section small {
+    margin-top: 4px;
+    font-size: 10px;
+  }
+  .section-visual {
+    min-height: 68px;
+    padding: 6px;
+    border-radius: 16px;
+    font-size: 19px;
+  }
+  .section-visual b {
+    font-size: 31px;
+  }
+  .section-visual .ico {
+    width: 34px;
+    height: 34px;
+  }
+  .section-banner {
+    grid-template-columns: 70px minmax(0, 1fr);
+  }
+  .lesson-total {
+    display: none;
+  }
+  .slots {
+    gap: 10px;
   }
 }
 @media (max-height: 650px) and (min-width: 701px) {

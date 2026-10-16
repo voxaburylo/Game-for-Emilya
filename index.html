@@ -7,8 +7,13 @@
       content="width=device-width,initial-scale=1,viewport-fit=cover"
     />
     <meta name="theme-color" content="#426f64" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="format-detection" content="telephone=no" />
     <title>Острів Емілії — граємо й читаємо</title>
     <link rel="icon" href="icon.svg" />
+    <link rel="apple-touch-icon" href="icon-192.png" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="stylesheet" href="town.css" />
     <link rel="stylesheet" href="learning-party.css" />
@@ -102,6 +107,7 @@
     <div id="hint"></div>
     <div id="toast" role="status" aria-live="polite"></div>
     <audio id="voice" preload="none"></audio>
+    <script src="compatibility.js"></script>
     <script src="three.min.js"></script>
     <script src="core.js"></script>
     <script src="navigation.js"></script>

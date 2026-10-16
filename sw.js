@@ -1,5 +1,5 @@
 "use strict";
-const CACHE = "emilia-living-v5-21-syllable-library";
+const CACHE = "emilia-living-v5-22-android-learning-menu";
 const ASSETS = [
   "park.css",
   "park-catalog.js",
@@ -7,6 +7,7 @@ const ASSETS = [
   "garden-paths.js",
   "./",
   "index.html",
+  "compatibility.js",
   "town.css",
   "core.js",
   "navigation.js",
@@ -35,6 +36,8 @@ const ASSETS = [
   "town-app.js",
   "three.min.js",
   "icon.svg",
+  "icon-192.png",
+  "icon-512.png",
   "manifest.webmanifest",
   "audio/CREDITS.txt",
   "audio/speech/CREDITS.txt",

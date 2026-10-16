@@ -15,6 +15,7 @@ const tests = [
   "test-reflections.cjs",
   "test-navigation.cjs",
   "test-offline.cjs",
+  "test-mobile.cjs",
   "test-assets.cjs",
   "test-server.cjs",
 ];

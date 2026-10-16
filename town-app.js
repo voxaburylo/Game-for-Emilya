@@ -14,6 +14,7 @@
     draft = null,
     category = "dress",
     family = 0,
+    learnSection = null,
     run = null,
     task = null,
     roadStart = null,
@@ -121,7 +122,51 @@
       "sound-part": ["Літера у складі", "ear"],
       train: ["Складовий потяг", "play"],
       words: ["Маленькі слова", "home"],
-    };
+    },
+    modeMarks = {
+      letters: "А → А",
+      hear: icon("ear") + "А",
+      pairs: "А · А",
+      discover: "МА",
+      blend: "М + А",
+      "hear-syllable": icon("ear") + "МА",
+      "sound-part": "МА → М",
+      train: "МА · ЛИ · НА",
+      words: "МАМА",
+    },
+    learnSections = [
+      {
+        id: "letters",
+        title: "Літери",
+        note: "Дивись, знаходь пари та запам’ятовуй",
+        visual: "<b>А</b><span>Б</span><span>В</span>",
+        modes: ["letters", "pairs"],
+        album: true,
+      },
+      {
+        id: "syllables",
+        title: "Склади",
+        note: "З’єднуй літери й будуй складові потяги",
+        visual: "<b>М</b><i>+</i><b>А</b>",
+        modes: ["discover", "blend", "train"],
+        families: true,
+      },
+      {
+        id: "listen",
+        title: "Слухай",
+        note: "Упізнавай літери та склади на слух",
+        visual: icon("ear") + "<b>А</b><span>МА</span>",
+        modes: ["hear", "hear-syllable", "sound-part"],
+        families: true,
+      },
+      {
+        id: "words",
+        title: "Слова",
+        note: "Складай перші слова з відомих складів",
+        visual: "<span>МА</span><span>МА</span>",
+        modes: ["words"],
+      },
+    ];
   function btn(action, ico, label, cls = "round", extra = "") {
     return `<button class="${cls}" data-action="${action}" aria-label="${label}" title="${label}" ${extra}>${ico === "gem" ? gemImage() : icon(ico)}${cls.includes("primary") || cls.includes("secondary") ? label : ""}</button>`;
   }
@@ -196,6 +241,7 @@
   }
   function open(view) {
     resetAudio();
+    if (view === "learn") learnSection = null;
     if (
       [
         "wardrobe",
@@ -267,6 +313,11 @@
       task = null;
       route = "learn";
       world.paused = true;
+      render();
+      return;
+    }
+    if (route === "learn" && learnSection) {
+      learnSection = null;
       render();
       return;
     }
@@ -434,20 +485,29 @@
           .join(
             "",
           )}</div><div class="actions">${btn("back", "close", "Скасувати", "secondary")}${btn("furniture-apply", "check", "Готово", "primary")}</div></section>`;
-    if (route === "learn")
-      html = modal(
-        "Маленькі відкриття",
-        `${journey}<button class="play-big" data-action="lesson" data-value="auto" aria-label="Грати">${icon("play")}<span>Грати</span></button><div class="eyebrow all-games">Усі ігри</div><div class="menu-grid">${Object.entries(
-          modes,
-        )
-          .map(
-            ([k, [name, i]]) =>
-              `<button class="menu-card" data-action="lesson" data-value="${k}"><div class="lesson-mark">${{ letters: "А → А", hear: icon("ear") + "А", pairs: "А · А", discover: "МА", blend: "М + А", "hear-syllable": icon("ear") + "МА", "sound-part": "МА → М", train: "МА · ЛИ · НА", words: "МАМА" }[k]}</div><b>${name}</b><small>${["letters", "hear", "pairs", "sound-part"].includes(k) ? "Літери" : k === "words" ? "Слова" : "Склади"}</small></button>`,
-          )
-          .join(
-            "",
-          )}<button class="menu-card" data-action="album">${icon("book")}<b>Моя абетка</b><small>Усі 33 літери</small></button></div><div class="families">${S.FAMILIES.map((f, i) => `<button data-action="family" data-value="${i}" class="${family === i ? "active" : ""}" ${L.familyOpen(state, i) ? "" : "disabled"}>${f[0]}</button>`).join("")}</div>`,
-      );
+    if (route === "learn") {
+      const section = learnSections.find((entry) => entry.id === learnSection);
+      if (!section)
+        html = modal(
+          "Маленькі відкриття",
+          `<div class="learn-home">${journey}<button class="play-big" data-action="lesson" data-value="auto" aria-label="Продовжити навчальну пригоду">${icon("play")}<span><b>Грати</b><small>Гра сама обере наступне завдання</small></span></button><div class="learn-sections">${learnSections
+            .map(
+              (entry) =>
+                `<button class="learn-section section-${entry.id}" data-action="learn-section" data-value="${entry.id}" aria-label="${entry.title}. ${entry.note}"><div class="section-visual">${entry.visual}</div><span><b>${entry.title}</b><small>${entry.note}</small></span></button>`,
+            )
+            .join("")}</div></div>`,
+        );
+      else
+        html = modal(
+          section.title,
+          `<div class="section-banner section-${section.id}"><div class="section-visual">${section.visual}</div><p>${section.note}</p></div><div class="menu-grid section-games">${section.modes
+            .map(
+              (key) =>
+                `<button class="menu-card" data-action="lesson" data-value="${key}"><div class="lesson-mark">${modeMarks[key]}</div><b>${modes[key][0]}</b></button>`,
+            )
+            .join("")}${section.album ? `<button class="menu-card" data-action="album">${icon("book")}<b>Моя абетка</b><small>Усі 33 літери</small></button>` : ""}</div>${section.families ? `<div class="family-caption">Обери друга для складів</div><div class="families">${S.FAMILIES.map((f, i) => `<button data-action="family" data-value="${i}" class="${family === i ? "active" : ""}" ${L.familyOpen(state, i) ? "" : "disabled"}>${f[0]}</button>`).join("")}</div>` : ""}`,
+        );
+    }
     if (route === "lesson") html = lessonHTML();
     if (route === "reward") {
       if (!run.party.closed)
@@ -1071,6 +1131,8 @@
       world.moveFurniture(edit.kind, e.x, e.z);
     }
     if (e.type === "built") $("build-progress")?.remove();
+    if (e.type === "graphics-lost")
+      toast("Відновлюємо графіку. Зачекай кілька секунд…");
   }
   function furnitureStart(kind = "sofa") {
     route = "furniture";
@@ -1379,6 +1441,10 @@
       family = Number(v);
       render();
     }
+    if (act === "learn-section") {
+      learnSection = v;
+      render();
+    }
     if (act === "lesson") begin(v);
     if (act === "again") begin(run.mode);
     if (act === "answer") answer(Number(v));
@@ -1501,7 +1567,7 @@
         const check = async () => {
           if (reg.active?.state === "activated") {
             const cache = await caches.open(
-              "emilia-living-v5-21-syllable-library",
+              "emilia-living-v5-22-android-learning-menu",
             );
             offlineReady = (
               await Promise.all(

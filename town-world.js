@@ -28,21 +28,34 @@
       this.petShowcaseStart = 0;
       this.jumpY = 0;
       this.jumpV = 0;
+      this.lowPower = !!window.EmiliaCompatibility?.lowPower;
       this.reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
       this.scene = new T.Scene();
       this.scene.background = new T.Color("#8ccde7");
       this.scene.fog = new T.Fog("#8ccde7", 180, 330);
       this.renderer = new T.WebGLRenderer({
-        antialias: true,
+        antialias: !this.lowPower,
         powerPreference: "high-performance",
       });
-      this.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
-      this.renderer.shadowMap.enabled = true;
-      this.renderer.shadowMap.type = T.PCFSoftShadowMap;
+      this.renderer.setPixelRatio(
+        Math.min(devicePixelRatio || 1, this.lowPower ? 1 : 1.5),
+      );
+      this.renderer.shadowMap.enabled = !this.lowPower;
+      this.renderer.shadowMap.type = this.lowPower
+        ? T.BasicShadowMap
+        : T.PCFSoftShadowMap;
       this.renderer.outputColorSpace = T.SRGBColorSpace;
       this.renderer.toneMapping = T.ACESFilmicToneMapping;
       this.renderer.toneMappingExposure = 1.05;
       container.append(this.renderer.domElement);
+      this.renderer.domElement.addEventListener("webglcontextlost", (event) => {
+        event.preventDefault();
+        this.paused = true;
+        this.emit({ type: "graphics-lost" });
+      });
+      this.renderer.domElement.addEventListener("webglcontextrestored", () =>
+        location.reload(),
+      );
       this.camera = new T.OrthographicCamera(-20, 20, 13, -13, 0.1, 900);
       this.focus = new T.Vector3();
       this.skyLight = new T.HemisphereLight("#fff6e7", "#aaa28f", 2);
@@ -53,8 +66,11 @@
       this.scene.add(this.portraitLight);
       this.sun = new T.DirectionalLight("#fff0d7", 2.6);
       this.sun.position.set(-15, 28, 18);
-      this.sun.castShadow = true;
-      this.sun.shadow.mapSize.set(1536, 1536);
+      this.sun.castShadow = !this.lowPower;
+      this.sun.shadow.mapSize.set(
+        this.lowPower ? 768 : 1536,
+        this.lowPower ? 768 : 1536,
+      );
       Object.assign(this.sun.shadow.camera, {
         left: -35,
         right: 35,
@@ -189,7 +205,9 @@
       this.lake.onBeforeRender = (...args) => {
         if (this.time < this.waterNextUpdate) return;
         reflectWater.apply(this.lake, args);
-        this.waterNextUpdate = this.time + (this.zoom > 32 ? 1 / 6 : 1 / 15);
+        this.waterNextUpdate =
+          this.time +
+          (this.lowPower ? 1 / 4 : this.zoom > 32 ? 1 / 6 : 1 / 15);
       };
       this.outside.add(this.lake);
       this.outside.add(SurfaceArt.lakePlants());
@@ -218,7 +236,7 @@
         tr.scale.setScalar(0.8 + (i % 3) * 0.12);
         this.treeObstacles.push({ x, z, r: 0.38 });
       });
-      for (let i = 0; i < 65; i++) {
+      for (let i = 0; i < (this.lowPower ? 38 : 65); i++) {
         const x = Math.sin(i * 12.17) * 16,
           z = Math.cos(i * 7.83) * 14;
         if (
@@ -249,7 +267,7 @@
         ["#ffe071", "#ef8f43"],
         ["#ddd6ff", "#7469b6"],
       ];
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < (this.lowPower ? 6 : 10); i++) {
         const angle = i * 2.399,
           radius = 5 + (i % 4) * 3.1,
           x = Math.cos(angle) * radius,
@@ -1444,9 +1462,13 @@
     }
     loop(now) {
       requestAnimationFrame(this.loop);
+      if (document.hidden) {
+        this.last = now;
+        return;
+      }
+      if (this.lowPower && now - this.last < 30) return;
       const elapsed = (now - this.last) / 1000;
       this.last = now;
-      if (document.hidden) return;
       const dt = Math.min(0.08, elapsed);
       this.time += dt;
       let moving = false;
