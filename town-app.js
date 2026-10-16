@@ -63,6 +63,31 @@
   function btn(action, ico, label, cls = "round", extra = "") {
     return `<button class="${cls}" data-action="${action}" aria-label="${label}" title="${label}" ${extra}>${icon(ico)}${cls.includes("primary") || cls.includes("secondary") ? label : ""}</button>`;
   }
+  let sfxCtx;
+  function sfx(freqs, dur, type) {
+    if (!state.sound) return;
+    try {
+      sfxCtx = sfxCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (sfxCtx.state === "suspended") sfxCtx.resume();
+      const t0 = sfxCtx.currentTime;
+      freqs.forEach((f, i) => {
+        const start = t0 + i * 0.09,
+          end = start + dur,
+          osc = sfxCtx.createOscillator(),
+          gain = sfxCtx.createGain();
+        osc.type = type;
+        osc.frequency.value = f;
+        gain.gain.setValueAtTime(0, start);
+        gain.gain.linearRampToValueAtTime(0.16, start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, end);
+        osc.connect(gain).connect(sfxCtx.destination);
+        osc.start(start);
+        osc.stop(end + 0.02);
+      });
+    } catch (e) {}
+  }
+  const chimeCorrect = () => sfx([523.25, 659.25, 783.99], 0.22, "sine");
+  const chimeWrong = () => sfx([196, 164.81], 0.26, "sine");
   function toast(t) {
     $("toast").textContent = t;
     clearTimeout(toastTimer);
@@ -311,7 +336,7 @@
           )
           .join(
             "",
-          )}<button class="menu-card" data-action="album">${icon("book")}<b>Моя абетка</b><small>Усі 33 літери</small></button></div><div class="families">${S.FAMILIES.map((f, i) => `<button data-action="family" data-value="${i}" class="${family === i ? "active" : ""}" ${S.familyOpen(state, i) ? "" : "disabled"}>${f[0]}</button>`).join("")}</div><p class="note">Новий ряд складів відкривається після трьох самостійно зібраних або впізнаних складів попереднього ряду. У меню батьків можна відкрити всі.</p>`,
+          )}<button class="menu-card" data-action="album">${icon("book")}<b>Моя абетка</b><small>Усі 33 літери</small></button></div><div class="families">${S.FAMILIES.map((f, i) => `<button data-action="family" data-value="${i}" class="${family === i ? "active" : ""}" ${S.familyOpen(state, i) ? "" : "disabled"}>${f[0]}</button>`).join("")}</div><p class="note parent-note">Новий ряд складів відкривається після трьох самостійно зібраних або впізнаних складів попереднього ряду. У меню батьків можна відкрити всі.</p>`,
       );
     if (route === "lesson") html = lessonHTML();
     if (route === "reward")
@@ -407,6 +432,10 @@
     }
     run.previous = task.target;
     render();
+    // The spoken instruction opens each run; later tasks only say the target.
+    const intro = run.index === 0 ? "task-" + mode : null;
+    if (mode !== "pairs") playTask(intro);
+    else if (intro) audio.play("phrase", intro);
   }
   function picture(kind) {
     const paths = {
@@ -451,9 +480,15 @@
         .join("");
     return `<div class="cover"><section class="lesson-shell"><div class="lesson-head">${btn("back", "back", "Назад")}<div><b>${modes[m][0]}</b><div class="dots">${[0, 1, 2].map((i) => `<i class="${i < run.index ? "done" : i === run.index ? "current" : ""}"></i>`).join("")}</div></div><div class="spacer"></div>${btn("play-task", "sound", "Послухати ще раз")}${btn("help", "hand", "Підказка")}</div><h3 class="lesson-title">${task.done ? "Чудово!" : hearing ? "Послухай і знайди" : m === "pairs" ? "Знайди дві однакові" : m === "blend" ? "З’єднай літери" : m === "words" ? "Збери слово зі складів" : m === "discover" ? "Торкнись і послухай" : "Знайди таку саму"}</h3><div class="lesson-board">${board}</div><div class="answers">${answers}</div><div class="audio-status" id="audio-status"></div><div class="lesson-feedback">${task.feedback || ""}</div>${task.done || m === "discover" ? btn("next", "check", "Далі", "primary lesson-next", m === "discover" && !task.heard ? "disabled" : "") : ""}</section></div>`;
   }
-  async function playTask() {
+  // intro: optional spoken prompt (voice-pack phrase key) said before the target.
+  async function playTask(intro) {
     if (!task || route !== "lesson") return;
-    const t = task,
+    const t = task;
+    if (typeof intro === "string") {
+      await audio.play("phrase", intro);
+      if (task !== t || route !== "lesson") return;
+    }
+    const
       kind = ["letters", "hear", "pairs"].includes(run.mode)
         ? "letter"
         : run.mode === "words"
@@ -474,17 +509,54 @@
       task.heard = true;
       task.feedback = "М’який знак не має власного звука.";
       render();
+      audio.play("phrase", "soft-sign");
     }
   }
   function complete() {
     task.done = true;
     task.feedback = task.hinted
-      ? "Разом вийшло! Наступного разу спробуй сама."
+      ? "Разом вийшло! Наступного разу — самостійно."
       : "У тебе вийшло!";
+    chimeCorrect();
     S.skill(state, run.mode, task.target, task.hinted);
     save();
     render();
-    if (run.mode === "blend" || run.mode === "words") playTask();
+    const t = task,
+      praise = "praise-" + (1 + Math.floor(Math.random() * 4));
+    setTimeout(async () => {
+      if (task !== t || route !== "lesson") return;
+      await audio.play("phrase", praise);
+      if (task === t && route === "lesson" && run.mode !== "pairs") playTask();
+    }, 450);
+  }
+  // Wrong pick: let the child hear what they chose, then the target again.
+  async function sayWrong(value, hint) {
+    const t = task,
+      kind = ["hear-syllable", "words"].includes(run.mode)
+        ? "syllable"
+        : "letter";
+    await new Promise((r) => setTimeout(r, 380));
+    if (task !== t || route !== "lesson") return;
+    const ok = await audio.play(kind, value);
+    if (!ok || task !== t) return;
+    if (run.mode === "pairs") {
+      if (hint) audio.play("phrase", "hint");
+    } else playTask(hint ? "hint" : null);
+  }
+  function shake(i) {
+    document
+      .querySelector(`.answer[data-value="${i}"]`)
+      ?.classList.add("wrong");
+  }
+  function miss(i, value) {
+    task.hinted = true;
+    task.failures++;
+    task.feedback = "Спробуй ще. Ми нікуди не поспішаємо.";
+    chimeWrong();
+    if (task.failures >= 2) help(true);
+    else render();
+    shake(i);
+    sayWrong(value, task.failures >= 2);
   }
   function answer(i) {
     if (!task || task.done) return;
@@ -498,15 +570,18 @@
         if (task.options[a] === task.options[b]) {
           task.matched.push(a, b);
           task.selected = [];
+          task.hintIndex = undefined;
           if (task.matched.length === task.options.length) {
             complete();
             return;
           }
+          chimeCorrect();
         } else {
-          task.hinted = true;
           task.selected = [i];
+          miss(i, task.options[i]);
+          return;
         }
-      }
+      } else audio.play("letter", task.options[i]);
       render();
       return;
     }
@@ -522,19 +597,19 @@
           return;
         }
         task.feedback = "А тепер друга частинка";
+        task.hintIndex = undefined;
         render();
+        audio.play("phrase", "second-part");
         return;
       }
     } else if (task.options[i] === task.target) {
       complete();
       return;
     }
-    task.hinted = true;
-    task.failures++;
-    task.feedback = "Спробуй ще. Ми нікуди не поспішаємо.";
-    render();
+    const v = task.options[i];
+    miss(i, typeof v === "string" ? v : v.text);
   }
-  function help() {
+  function help(quiet) {
     if (!task || task.done) return;
     task.hinted = true;
     const m = run.mode;
@@ -556,7 +631,9 @@
     } else task.hintIndex = task.options.indexOf(task.target);
     task.feedback = "Подивись на картку, що рухається.";
     render();
-    if (["hear", "hear-syllable"].includes(m)) playTask();
+    if (quiet) return;
+    if (m === "pairs") audio.play("phrase", "hint");
+    else playTask("hint");
   }
   function parentsHTML() {
     const entries = Object.entries(state.skills),
@@ -714,6 +791,7 @@
       save();
       render();
       $("hint").innerHTML = icon("hand") + "Торкнись землі, щоб піти";
+      audio.play("phrase", "welcome");
       return;
     }
     if (act === "back") {
@@ -946,13 +1024,16 @@
         audio.stop();
         route = "reward";
         render();
+        chimeCorrect();
+        audio.play("phrase", "reward");
       } else nextTask();
     }
     if (act === "letter-audio") {
-      if (v === "Ь")
+      if (v === "Ь") {
         $("letter-detail").textContent =
           "М’який знак не має власного звука. Він позначає м’якість приголосного.";
-      else {
+        audio.play("phrase", "soft-sign");
+      } else {
         $("letter-detail").textContent = v;
         audio.play("letter", v);
       }
@@ -1044,7 +1125,7 @@
       .then((reg) => {
         const check = async () => {
           if (!reg.installing && reg.active?.state === "activated") {
-            const cache = await caches.open("emilia-living-v4-3");
+            const cache = await caches.open("emilia-living-v4-4");
             offlineReady = !!(await cache.match("town-app.js"));
             if (route === "parents") render();
           }

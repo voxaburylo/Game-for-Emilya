@@ -156,7 +156,7 @@ button svg {
 }
 .brand small {
   display: block;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 3px;
   margin-top: 3px;
@@ -210,7 +210,7 @@ button svg {
   height: 30px;
 }
 #dock small {
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 700;
 }
 #joystick {
@@ -276,7 +276,7 @@ button svg {
   background: #fff9eef0;
   padding: 11px 19px;
   border-radius: 16px;
-  font-size: 13px;
+  font-size: 15px;
   box-shadow: var(--shadow);
   z-index: 5;
   display: flex;
@@ -300,7 +300,7 @@ button svg {
   z-index: 30;
   max-width: 80%;
   text-align: center;
-  font-size: 14px;
+  font-size: 16px;
   pointer-events: none;
   box-shadow: var(--shadow);
 }
@@ -322,7 +322,7 @@ button svg {
   border-radius: 20px;
 }
 .eyebrow {
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 2.4px;
   text-transform: uppercase;
   font-weight: 700;
@@ -431,7 +431,7 @@ p {
   background: #e1e9d7;
 }
 .choice span {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
 }
 .swatches {
@@ -449,9 +449,13 @@ p {
   outline: 2px solid var(--ink);
 }
 .note {
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.55;
   color: #76816e;
+}
+.note.parent-note {
+  font-size: 9px;
+  opacity: 0.55;
 }
 .scene-actions {
   position: absolute;
@@ -478,7 +482,7 @@ p {
   gap: 5px;
 }
 .scene-actions small {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
 }
 .cover {
@@ -531,7 +535,7 @@ p {
 .quiet {
   background: none;
   color: #76816e;
-  font-size: 12px;
+  font-size: 13px;
   padding: 10px;
 }
 .welcome .how {
@@ -601,7 +605,7 @@ p {
   font-size: 16px;
 }
 .menu-card small {
-  font-size: 11px;
+  font-size: 13px;
   color: #75816f;
 }
 .families {
@@ -645,7 +649,7 @@ p {
   height: 28px;
 }
 .lesson-head small {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--muted);
 }
 .dots {
@@ -766,6 +770,20 @@ p {
 .answer.hint {
   animation: hintPulse 1s infinite;
 }
+.answer.wrong {
+  animation: wrongShake 0.42s ease;
+  border-color: #d9a08f;
+}
+@keyframes wrongShake {
+  20%,
+  60% {
+    transform: translateX(-7px);
+  }
+  40%,
+  80% {
+    transform: translateX(7px);
+  }
+}
 .answer:disabled {
   opacity: 0.35;
   box-shadow: none;
@@ -783,7 +801,7 @@ p {
 }
 .audio-status {
   min-height: 18px;
-  font-size: 11px;
+  font-size: 12px;
   color: #819078;
 }
 .lesson-next {
@@ -838,7 +856,7 @@ p {
   display: block;
 }
 .stats small {
-  font-size: 11px;
+  font-size: 13px;
 }
 .setting {
   display: flex;
@@ -898,7 +916,7 @@ p {
 }
 .letter-detail {
   text-align: center;
-  font-size: 12px;
+  font-size: 14px;
   min-height: 24px;
   color: #718364;
   margin: 12px;
@@ -1009,7 +1027,7 @@ a {
     font-size: 20px;
   }
   .brand small {
-    font-size: 8px;
+    font-size: 10px;
   }
   #hud {
     top: 18px;
@@ -1126,7 +1144,7 @@ a {
     min-height: 64px;
   }
   #dock small {
-    font-size: 9px;
+    font-size: 12px;
   }
   #dock button .ico {
     width: 27px;
@@ -1153,7 +1171,7 @@ a {
   #hint {
     bottom: 105px;
     max-width: 70%;
-    font-size: 11px;
+    font-size: 14px;
     padding: 8px 12px;
   }
   .scene-bar {
@@ -1168,7 +1186,7 @@ a {
     font-size: 21px;
   }
   .scene-bar .eyebrow {
-    font-size: 8px;
+    font-size: 10px;
   }
   .side-panel {
     top: auto;
@@ -1200,7 +1218,7 @@ a {
     height: 29px;
   }
   .side-panel .choice span {
-    font-size: 9px;
+    font-size: 11px;
   }
   .side-panel h3 {
     font-size: 15px;
@@ -1227,7 +1245,10 @@ a {
     padding: 9px 14px;
   }
   .side-panel .note {
-    font-size: 10px;
+    font-size: 13px;
+  }
+  .side-panel .note.parent-note {
+    font-size: 9px;
   }
   .side-panel.pet-panel .choice-grid {
     grid-template-columns: repeat(4, 1fr);
@@ -1246,7 +1267,7 @@ a {
   .land-card {
     min-height: 64px;
     padding: 10px;
-    font-size: 12px;
+    font-size: 13px;
   }
   .scene-actions {
     bottom: 18px;
@@ -1258,7 +1279,7 @@ a {
     flex: 1;
   }
   .scene-actions small {
-    font-size: 9px;
+    font-size: 11px;
   }
   .cover {
     padding: 12px;
@@ -1434,7 +1455,7 @@ a {
 }
 .side-panel .actions button {
   min-width: 0;
-  font-size: 12px;
+  font-size: 13px;
   padding: 10px;
   gap: 5px;
 }

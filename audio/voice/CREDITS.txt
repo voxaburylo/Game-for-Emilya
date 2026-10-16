@@ -1,0 +1,33 @@
+ГОЛОС УЧИТЕЛЬКИ / TEACHER VOICE PACK (audio/voice, voice-pack.js)
+
+Літери (назви), 30 складів і короткі інструкції/похвала.
+Синтезований жіночий голос — це не запис живої людини.
+Synthetic female voice, not a recording of a person.
+
+Модель / Model: uk_UA-tetiana-high, trained by Roman Stasyshyn
+https://huggingface.co/RomanStasyshyn/uk_UA-tetiana-high
+License: Apache License 2.0 — https://www.apache.org/licenses/LICENSE-2.0
+
+Навчальні дані / Training data: Ukrainian TTS Datasets (egorsmkv)
+https://github.com/egorsmkv/ukrainian-tts-datasets
+License: Apache License 2.0
+
+Рушій / Engine: Piper 2023.11.14-2 (rhasspy), MIT License
+https://github.com/rhasspy/piper
+Phonemes: eSpeak NG bundled with Piper (used only at build time).
+
+Як створено / How it was made: build-voice.cjs, offline, once.
+eSpeak phonemes with hand-corrected stress for words it misreads
+(знайди́, молоде́ць, пра́вильно, лі́тера …), the model run directly
+with length scale 1.12, silence trimmed, mono 22.05 kHz MP3 64 kbit/s.
+Exact text, phonemes, duration, size and SHA-256 per file: voice-pack.js.
+The generated audio is bundled; the game makes no network or speech
+synthesis calls at runtime and works offline.
+
+Комерційне використання дозволене умовами цих ліцензій.
+No endorsement by the authors is implied.
+
+Заміна голосу / Replacing the voice: put new recordings in audio/voice
+and update voice-pack.js (same keys). Anything missing from the pack
+falls back to the older recordings (audio/*.mp3 letter names, Tabrus,
+CC BY-SA 4.0; audio/speech words, Галя Раптова, CC BY 2.0 FR).

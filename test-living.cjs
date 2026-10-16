@@ -3,7 +3,8 @@ const assert = require("node:assert/strict"),
   path = require("node:path");
 global.Core = require("./core.js");
 const S = require("./town-state.js"),
-  speech = require("./speech-manifest.js");
+  speech = require("./speech-manifest.js"),
+  voice = require("./voice-pack.js");
 let checks = 0;
 function test(name, fn) {
   fn();
@@ -144,24 +145,29 @@ test("per-house furniture and lamp survive serialization", () => {
   assert.equal(S.room(restored, "studio").lamp, true);
   assert.deepEqual(S.room(restored, "home").furniture.table, { x: 2, z: 1 });
 });
-test("every letter, 30 syllables and nine words has bundled human audio", () => {
+test("every letter, 30 syllables, nine words and every lesson prompt has bundled audio", () => {
   assert.equal(S.FAMILIES.flat().length, 30);
   assert.equal(S.WORDS.length, 9);
-  for (const l of Core.LETTERS.filter((l) => l !== "Ь"))
-    assert(
-      fs.statSync(
-        path.join(__dirname, "audio", l.codePointAt(0).toString(16) + ".mp3"),
-      ).size > 100,
-    );
-  for (const [kind, targets] of [
-    ["syllables", S.FAMILIES.flat()],
-    ["words", S.WORDS.map((w) => w.text)],
-  ])
-    for (const target of targets) {
-      const entry = speech[kind][target];
-      assert(entry?.ready, target);
-      assert(fs.statSync(path.join(__dirname, entry.file)).size > 100, target);
-    }
+  const size = (f) => fs.statSync(path.join(__dirname, f)).size;
+  for (const l of Core.LETTERS.filter((l) => l !== "Ь")) {
+    assert(size("audio/" + l.codePointAt(0).toString(16) + ".mp3") > 100);
+    assert(size(voice.letters[l].file) > 100, l);
+  }
+  for (const s of S.FAMILIES.flat()) assert(size(voice.syllables[s].file) > 100, s);
+  for (const w of S.WORDS) {
+    assert(speech.words[w.text]?.ready, w.text);
+    assert(size(speech.words[w.text].file) > 100, w.text);
+  }
+  const prompts = [
+    ...["letters", "hear", "pairs", "discover", "blend", "hear-syllable", "words"].map(
+      (m) => "task-" + m,
+    ),
+    "praise-1", "praise-2", "praise-3", "praise-4", "hint", "second-part",
+    "soft-sign", "reward", "welcome",
+  ];
+  for (const p of prompts) assert(size(voice.phrases[p].file) > 100, p);
+  // Only commercially usable audio licenses are bundled.
+  assert(!/NC/.test(JSON.stringify(speech)) && !/NC/.test(voice.license));
 });
 test("offline shell contains every runtime and speech asset, no minimap or speech synthesis", () => {
   const assets = require("./sw.js").FILES;

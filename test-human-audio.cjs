@@ -2,7 +2,10 @@ const assert = require("node:assert/strict"),
   vm = require("node:vm"),
   fs = require("node:fs");
 const context = {
-  window: { SpeechLibrary: require("./speech-manifest.js") },
+  window: {
+    SpeechLibrary: require("./speech-manifest.js"),
+    VoicePack: require("./voice-pack.js"),
+  },
   setTimeout,
   clearTimeout,
 };
@@ -29,11 +32,11 @@ const Audio = context.window.HumanAudio;
     assert(a.entry("letter", l));
   assert(!a.entry("letter", "Ь"));
   let p = a.play("letter", "А");
-  assert.equal(el.src, "audio/410.mp3");
+  assert.equal(el.src, context.window.VoicePack.letters.А.file);
   el.onended();
   assert.equal(await p, true);
   p = a.play("syllable", "МА");
-  assert.equal(el.src, context.window.SpeechLibrary.syllables.МА.file);
+  assert.equal(el.src, context.window.VoicePack.syllables.МА.file);
   a.stop();
   assert.equal(await p, false);
   assert.equal(el.src, "");
@@ -56,8 +59,15 @@ const Audio = context.window.HumanAudio;
   el.play = () => Promise.reject(Error("autoplay"));
   assert.equal(await a.play("letter", "У"), false);
   assert(status.includes("Не вдалося"));
+  const pack = context.window.VoicePack;
+  assert.equal(a.entry("phrase", "praise-1").file, pack.phrases["praise-1"].file);
+  assert.equal(a.entry("phrase", "no-such-phrase"), null);
+  assert.equal(a.entry("word", "МАМА").file, context.window.SpeechLibrary.words.МАМА.file);
+  context.window.VoicePack = null;
+  assert.equal(a.entry("letter", "А").file, "audio/410.mp3");
+  context.window.VoicePack = pack;
   console.log(
-    "PASS human audio: all letter mappings, whole syllable/word playback, ended/error, cancellation, stale callbacks, mute, soft sign and autoplay rejection",
+    "PASS human audio: voice pack with fallback, phrases, all letter mappings, whole syllable/word playback, ended/error, cancellation, stale callbacks, mute, soft sign and autoplay rejection",
   );
 })().catch((e) => {
   console.error(e);
