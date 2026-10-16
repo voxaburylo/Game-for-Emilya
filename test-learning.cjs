@@ -138,6 +138,47 @@ test("syllable families open with known letters; words with heard syllables", ()
   assert.equal(L.plan(s, { index: 0, used: [] }, D).mode, "hear-syllable");
 });
 
+test("large syllable library is voiced, varied and has no duplicate trains", () => {
+  assert.equal(S.FAMILIES.flat().length, 30);
+  assert.equal(S.SYLLABLE_TRAINS.length, 180);
+  assert.equal(
+    new Set(S.SYLLABLE_TRAINS.map((parts) => parts.join("-"))).size,
+    180,
+  );
+  const voiced = new Set(S.FAMILIES.flat());
+  assert(
+    S.SYLLABLE_TRAINS.every(
+      (parts) =>
+        [2, 3].includes(parts.length) && parts.every((part) => voiced.has(part)),
+    ),
+  );
+});
+
+test("sound-in-syllable and train tasks measure recall instead of copying", () => {
+  const s = S.fresh();
+  for (const part of ["МА", "МО", "МУ"]) L.record(s, "blend", part, true, D);
+  const sound = L.soundPartTask(s, () => 0);
+  assert.equal(sound.audioTarget, "МА");
+  assert.equal(sound.role, "first");
+  assert.equal(sound.target, "М");
+  assert(sound.options.includes("М"));
+  L.record(s, sound.mode, sound.target, true, D);
+  assert.equal(L.box(s, "L:М"), 1);
+
+  const train = L.trainTask(s, [], () => 0);
+  assert.equal(train.mode, "train");
+  assert.equal(train.parts.length, 2);
+  assert(train.parts.every((part) => ["МА", "МО", "МУ"].includes(part)));
+  assert(train.options.every((card) => voicedSyllable(card.text)));
+  L.record(s, "train", train.target, true, D);
+  assert(train.parts.every((part) => L.box(s, "S:" + part) >= 2));
+  assert.equal(L.progress(s).syllables.opened.length, 3);
+});
+
+function voicedSyllable(part) {
+  return S.FAMILIES.flat().includes(part);
+}
+
 test("placement stops early and marks known letters for confirmation", () => {
   const s = S.fresh(),
     run = { place: { k: 0, misses: 0, streak: 0 } },

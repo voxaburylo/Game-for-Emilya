@@ -1001,6 +1001,68 @@ p {
   background: #bf8b9f;
   box-shadow: 0 3px 0 #906477;
 }
+.journey-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 13px;
+}
+.journey-stats > span {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 13px;
+  background: #fffaf0b8;
+  color: #557364;
+}
+.journey-stats b {
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+.journey-stats small {
+  font-size: 11px;
+}
+.train-board {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.train-engine {
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  border-radius: 24px 12px 12px 24px;
+  color: #fffaf0;
+  background: #668e79;
+  box-shadow: 0 6px 0 #416657;
+}
+.train-engine .ico {
+  width: 38px;
+  height: 38px;
+}
+.train-board .slots {
+  gap: 10px;
+}
+.train-board .slot {
+  min-width: 86px;
+  min-height: 92px;
+  font-size: 42px;
+}
+.sound-part-result {
+  display: flex;
+  grid-auto-flow: column;
+  gap: 2px;
+}
+.sound-part-result .focus {
+  color: #a85f7b;
+  transform: translateY(-5px);
+  text-decoration: underline;
+  text-decoration-thickness: 5px;
+  text-underline-offset: 8px;
+}
 .lesson-total {
   min-width: 48px;
   text-align: center;
@@ -1460,6 +1522,8 @@ a {
     margin-bottom: 18px;
   }
   .modal {
+    width: calc(100vw - 24px);
+    max-width: none;
     padding: 20px;
     max-height: 94vh;
   }
@@ -1482,6 +1546,8 @@ a {
     border-radius: 11px;
   }
   .lesson-shell {
+    width: calc(100vw - 24px);
+    max-width: none;
     padding: 18px 15px;
     border-radius: 25px;
   }
@@ -1522,6 +1588,20 @@ a {
     min-width: 81px;
     min-height: 95px;
     font-size: 46px;
+  }
+  .train-board {
+    max-width: 100%;
+  }
+  .train-engine {
+    width: 58px;
+    height: 64px;
+    border-radius: 19px 10px 10px 19px;
+    flex-shrink: 0;
+  }
+  .train-board .slot {
+    min-width: 69px;
+    min-height: 82px;
+    font-size: 36px;
   }
   .syllable-display {
     font-size: 58px;

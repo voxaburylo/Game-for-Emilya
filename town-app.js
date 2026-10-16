@@ -118,6 +118,8 @@
       discover: ["Знайомство зі складами", "book"],
       blend: ["Склади разом", "plus"],
       "hear-syllable": ["Послухай склад", "ear"],
+      "sound-part": ["Літера у складі", "ear"],
+      train: ["Складовий потяг", "play"],
       words: ["Маленькі слова", "home"],
     };
   function btn(action, ico, label, cls = "round", extra = "") {
@@ -307,7 +309,7 @@
     let html = "";
     const learningProgress = L.progress(state),
       recentLetters = learningProgress.opened.slice(-7),
-      journey = `<div class="learning-journey" aria-label="Відкрито ${learningProgress.opened.length} з ${learningProgress.total} літер"><div class="journey-top"><b>Твоя абетка</b><span>${learningProgress.opened.length} / ${learningProgress.total}</span></div><div class="journey-track"><i style="width:${(learningProgress.opened.length / learningProgress.total) * 100}%"></i></div><div class="journey-letters">${recentLetters.map((l) => `<span>${l}</span>`).join("")}${learningProgress.next ? `<span class="next-letter">?</span>` : ""}</div></div>`;
+      journey = `<div class="learning-journey" aria-label="Відкрито ${learningProgress.opened.length} з ${learningProgress.total} літер і ${learningProgress.syllables.opened.length} з ${learningProgress.syllables.total} складів"><div class="journey-top"><b>Твоя абетка</b><span>${learningProgress.opened.length} / ${learningProgress.total}</span></div><div class="journey-track"><i style="width:${(learningProgress.opened.length / learningProgress.total) * 100}%"></i></div><div class="journey-letters">${recentLetters.map((l) => `<span>${l}</span>`).join("")}${learningProgress.next ? `<span class="next-letter">?</span>` : ""}</div><div class="journey-stats"><span><b>${learningProgress.syllables.opened.length} / ${learningProgress.syllables.total}</b><small>складів</small></span><span><b>${learningProgress.trains}</b><small>різних потягів</small></span></div></div>`;
     if (route === "welcome")
       html = `<div class="cover"><section class="welcome"><div class="emblem">${icon("home")}</div><div class="eyebrow">МАЛЕНЬКІ ВІДКРИТТЯ ЩОДНЯ</div><h1>Острів Емілії</h1><p>Твій дім. Твої друзі. Твої перші слова.</p><div class="how"><span>${icon("hand")}Торкнись</span><span>${icon("ear")}Послухай</span><span>${icon("build")}Створи</span></div>${btn("start", "play", "Грати", "primary")}<button class="quiet" data-action="parents">Для батьків</button>${saveBlocked ? '<p class="note">Збереження потребує перевірки. Оригінал не змінено — відкрийте меню батьків.</p>' : ""}</section></div>`;
     document.body.classList.toggle("in-room", route === "room");
@@ -440,7 +442,7 @@
         )
           .map(
             ([k, [name, i]]) =>
-              `<button class="menu-card" data-action="lesson" data-value="${k}"><div class="lesson-mark">${{ letters: "А → А", hear: icon("ear") + "А", pairs: "А · А", discover: "МА", blend: "М + А", "hear-syllable": icon("ear") + "МА", words: "МАМА" }[k]}</div><b>${name}</b><small>${["letters", "hear", "pairs"].includes(k) ? "Літери" : k === "words" ? "Слова" : "Склади"}</small></button>`,
+              `<button class="menu-card" data-action="lesson" data-value="${k}"><div class="lesson-mark">${{ letters: "А → А", hear: icon("ear") + "А", pairs: "А · А", discover: "МА", blend: "М + А", "hear-syllable": icon("ear") + "МА", "sound-part": "МА → М", train: "МА · ЛИ · НА", words: "МАМА" }[k]}</div><b>${name}</b><small>${["letters", "hear", "pairs", "sound-part"].includes(k) ? "Літери" : k === "words" ? "Слова" : "Склади"}</small></button>`,
           )
           .join(
             "",
@@ -564,6 +566,8 @@
   function freeTask(mode) {
     const pool = S.FAMILIES[family],
       letters = L.activeLetters(state);
+    if (mode === "sound-part") return L.soundPartTask(state);
+    if (mode === "train") return L.trainTask(state, run.used);
     if (["letters", "hear"].includes(mode)) {
       const unused = letters.filter((l) => !run.used.includes("L:" + l)),
         target = Core.choose(
@@ -633,6 +637,10 @@
     task = {
       mode,
       target: t.target,
+      answer: t.answer,
+      audioTarget: t.audioTarget,
+      role: t.role,
+      parts: t.parts,
       options: t.options,
       placement: !!t.placement,
       isNew: !!t.isNew,
@@ -648,11 +656,17 @@
     if (t.key) run.used.push(t.key);
     if (t.isNew) run.newDone = true;
     if (mode === "pairs") run.pairsDone = true;
+    if (mode === "sound-part") run.soundDone = true;
+    if (mode === "train") run.trainDone = true;
     if (mode === "words") run.wordsDone = true;
     run.previous = task.target;
     render();
     // The spoken instruction comes whenever the kind of task changes; repeats only say the target.
-    const intro = run.index === 0 || mode !== before ? "task-" + mode : null;
+    const promptMode = mode === "sound-part" ? "hear" : mode === "train" ? null : mode,
+      intro =
+        (run.index === 0 || mode !== before) && promptMode
+          ? "task-" + promptMode
+          : null;
     if (mode !== "pairs") playTask(intro);
     else if (intro) audio.play("phrase", intro);
   }
@@ -693,11 +707,15 @@
   }
   function lessonHTML() {
     const m = task.mode,
-      hearing = ["hear", "hear-syllable"].includes(m),
+      hearing = ["hear", "hear-syllable", "sound-part", "train"].includes(m),
       finalAnswer = !task.placement && run.index + 1 >= run.total;
     let board = "",
       answers = "";
-    if (hearing) board = btn("play-task", "sound", "Послухати", "primary");
+    if (m === "train")
+      board = `<div class="train-board"><div class="train-engine">${icon("play")}</div><div class="slots ${task.done ? "joined" : ""}">${task.parts.map((part, i) => `<div class="slot ${task.picked.length > i ? "filled" : ""}">${task.picked.length > i ? part : "·"}</div>`).join("")}</div></div>`;
+    else if (m === "sound-part" && task.done)
+      board = `<button class="letter-block sound-part-result" data-action="play-task">${[...task.audioTarget].map((letter, i) => `<span class="${(task.role === "first" ? i === 0 : i === 1) ? "focus" : ""}">${letter}</span>`).join("")}</button>`;
+    else if (hearing) board = btn("play-task", "sound", "Послухати", "primary");
     else if (m === "pairs") board = icon("flowers");
     else if (m === "discover")
       board = `<button class="letter-block syllable-card" data-action="play-task">${[...task.target].map((l) => "<span>" + l + "</span>").join("")}</button>`;
@@ -711,11 +729,13 @@
           const text = typeof v === "string" ? v : v.text,
             used = task.picked.includes(i) || task.matched.includes(i);
           const correct =
-            task.done && !task.placement && (text === task.target || used);
+            task.done &&
+            !task.placement &&
+            (text === (task.answer || task.target) || used);
           return `<button class="answer ${correct ? "correct" : ""} ${text.length > 1 ? "long" : ""} ${task.selected.includes(i) ? "selected" : ""} ${task.matched.includes(i) ? "matched" : ""} ${task.hintIndex === i ? "hint" : ""}" data-action="answer" data-value="${i}" ${task.done || used || (hearing && !task.heard) ? "disabled" : ""}>${text}</button>`;
         })
         .join("");
-    return `<div class="cover"><section class="lesson-shell"><div class="lesson-head">${btn("back", "back", "Назад")}<div><b>${modes[m][0]}</b><div class="dots">${run.place ? "" : Array.from({ length: run.total }, (_, i) => `<i class="${i < run.index ? "done" : i === run.index ? "current" : ""}"></i>`).join("")}</div></div><div class="spacer"></div><div class="lesson-total"><b>${L.progress(state).opened.length}</b><small>літер</small></div>${btn("play-task", "sound", "Послухати ще раз")}${task.placement ? "" : btn("help", "hand", "Підказка")}</div><h3 class="lesson-title">${task.isNew && !task.done ? "Нова літера!" : task.done && !task.placement ? "Чудово!" : hearing ? "Послухай і знайди" : m === "pairs" ? "Знайди дві однакові" : m === "blend" ? "З’єднай літери" : m === "words" ? "Збери слово зі складів" : m === "discover" ? "Торкнись і послухай" : "Знайди таку саму"}</h3><div class="lesson-board">${board}</div><div class="answers">${answers}</div><div class="audio-status" id="audio-status"></div><div class="lesson-feedback">${task.feedback || ""}</div>${((task.done && !task.placement && !finalAnswer) || m === "discover") ? btn("next", "check", "Далі", "primary lesson-next", m === "discover" && !task.heard ? "disabled" : "") : ""}</section></div>`;
+    return `<div class="cover"><section class="lesson-shell"><div class="lesson-head">${btn("back", "back", "Назад")}<div><b>${modes[m][0]}</b><div class="dots">${run.place ? "" : Array.from({ length: run.total }, (_, i) => `<i class="${i < run.index ? "done" : i === run.index ? "current" : ""}"></i>`).join("")}</div></div><div class="spacer"></div><div class="lesson-total"><b>${L.progress(state).opened.length}</b><small>літер</small></div>${btn("play-task", "sound", "Послухати ще раз")}${task.placement ? "" : btn("help", "hand", "Підказка")}</div><h3 class="lesson-title">${task.isNew && !task.done ? (task.target.length > 1 ? "Новий склад!" : "Нова літера!") : task.done && !task.placement ? "Чудово!" : m === "train" ? "Послухай і склади потяг" : m === "sound-part" ? (task.role === "first" ? "Яка літера на початку?" : "Яка літера в кінці?") : hearing ? "Послухай і знайди" : m === "pairs" ? "Знайди дві однакові" : m === "blend" ? "З’єднай літери" : m === "words" ? "Збери слово зі складів" : m === "discover" ? "Торкнись і послухай" : "Знайди таку саму"}</h3><div class="lesson-board">${board}</div><div class="answers">${answers}</div><div class="audio-status" id="audio-status"></div><div class="lesson-feedback">${task.feedback || ""}</div>${((task.done && !task.placement && !finalAnswer) || m === "discover") ? btn("next", "check", "Далі", "primary lesson-next", m === "discover" && !task.heard ? "disabled" : "") : ""}</section></div>`;
   }
   // intro: optional spoken prompt (voice-pack phrase key) said before the target.
   async function playTask(intro) {
@@ -725,6 +745,20 @@
       await audio.play("phrase", intro);
       if (task !== t || route !== "lesson") return;
     }
+    if (task.mode === "train") {
+      let ok = true;
+      document.querySelector(".slots")?.classList.add("reading");
+      for (const part of task.parts) {
+        if (task !== t || route !== "lesson") return;
+        ok = (await audio.play("syllable", part)) && ok;
+        await new Promise((resolve) => setTimeout(resolve, 150));
+      }
+      if (task === t && route === "lesson" && ok) {
+        task.heard = true;
+        render();
+      }
+      return;
+    }
     const kind = ["letters", "hear", "pairs"].includes(task.mode)
         ? "letter"
         : task.mode === "words"
@@ -733,7 +767,7 @@
       target =
         task.mode === "pairs"
           ? task.options[task.selected[0] ?? 0]
-          : task.target;
+          : task.audioTarget || task.target;
     document.querySelector(".syllable-card")?.classList.add("reading");
     document.querySelector(".slots")?.classList.add("reading");
     const ok = await audio.play(kind, target);
@@ -753,7 +787,11 @@
     if (task.isNew && !run.newItems.includes(task.target))
       run.newItems.push(task.target);
     run.discoveries.push(
-      ...(task.mode === "pairs" ? [...task.target] : [task.target]),
+      ...(task.mode === "pairs"
+        ? [...task.target]
+        : task.mode === "train"
+          ? task.parts
+          : [task.target]),
     );
     task.feedback = task.hinted ? "Разом вийшло!" : "У тебе вийшло!";
     chimeCorrect();
@@ -777,7 +815,7 @@
   // Wrong pick: let the child hear what they chose, then the target again.
   async function sayWrong(value, hint) {
     const t = task,
-      kind = ["hear-syllable", "words"].includes(task.mode)
+      kind = ["hear-syllable", "words", "train"].includes(task.mode)
         ? "syllable"
         : "letter";
     await new Promise((r) => setTimeout(r, 380));
@@ -796,7 +834,7 @@
   function miss(i, value) {
     task.hinted = true;
     task.failures++;
-    if (!["pairs", "blend", "words"].includes(task.mode))
+    if (!["pairs", "blend", "words", "train"].includes(task.mode))
       L.confuse(state, task.target, value);
     task.feedback = "Спробуй ще. Ми нікуди не поспішаємо.";
     chimeWrong();
@@ -808,7 +846,8 @@
   function answer(i) {
     if (!task || task.done) return;
     const m = task.mode;
-    if (["hear", "hear-syllable"].includes(m) && !task.heard) return;
+    if (["hear", "hear-syllable", "sound-part", "train"].includes(m) && !task.heard)
+      return;
     if (task.placement) {
       // The check only listens: no hints, no corrections, straight on.
       const ok = task.options[i] === task.target,
@@ -846,16 +885,16 @@
       render();
       return;
     }
-    if (m === "blend" || m === "words") {
+    if (["blend", "words", "train"].includes(m)) {
       if (task.picked.includes(i)) return;
-      const expected = (m === "words" ? task.parts : [...task.target])[
+      const expected = (["words", "train"].includes(m) ? task.parts : [...task.target])[
         task.picked.length
       ];
       if (task.options[i].text === expected) {
         task.picked.push(i);
         if (
           task.picked.length ===
-          (m === "words" ? task.parts.length : [...task.target].length)
+          (["words", "train"].includes(m) ? task.parts.length : [...task.target].length)
         ) {
           complete();
           return;
@@ -866,7 +905,7 @@
         audio.play("phrase", "second-part");
         return;
       }
-    } else if (task.options[i] === task.target) {
+    } else if (task.options[i] === (task.answer || task.target)) {
       complete();
       return;
     }
@@ -885,14 +924,14 @@
       task.hintIndex = left.find(
         (i) => i !== left[0] && task.options[i] === task.options[left[0]],
       );
-    } else if (m === "blend" || m === "words") {
-      const expected = (m === "words" ? task.parts : [...task.target])[
+    } else if (["blend", "words", "train"].includes(m)) {
+      const expected = (["words", "train"].includes(m) ? task.parts : [...task.target])[
         task.picked.length
       ];
       task.hintIndex = task.options.findIndex(
         (v, i) => v.text === expected && !task.picked.includes(i),
       );
-    } else task.hintIndex = task.options.indexOf(task.target);
+    } else task.hintIndex = task.options.indexOf(task.answer || task.target);
     task.feedback = "Подивись на картку, що рухається.";
     render();
     if (quiet) return;
@@ -1462,7 +1501,7 @@
         const check = async () => {
           if (reg.active?.state === "activated") {
             const cache = await caches.open(
-              "emilia-living-v5-20-learning-journey",
+              "emilia-living-v5-21-syllable-library",
             );
             offlineReady = (
               await Promise.all(

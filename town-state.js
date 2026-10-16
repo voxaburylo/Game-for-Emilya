@@ -137,6 +137,32 @@
   const FAMILIES = ["М", "С", "Н", "Л", "Р", "Т"].map((c) =>
     [..."АОУІИ"].map((v) => c + v),
   );
+  // Listening patterns made only from syllables with a complete voice file.
+  // They are shown as a little train, not presented as made-up words.
+  const SYLLABLE_TRAINS = [
+    ...FAMILIES.flatMap((family) =>
+      family.flatMap((first, i) =>
+        family
+          .filter((_, j) => i !== j)
+          .map((second) => [first, second]),
+      ),
+    ),
+    ...FAMILIES.flatMap((family, familyIndex) =>
+      family.map((first, vowelIndex) => [
+        first,
+        FAMILIES[(familyIndex + 1) % FAMILIES.length][
+          (vowelIndex + 2) % family.length
+        ],
+      ]),
+    ),
+    ...FAMILIES.flatMap((family) =>
+      family.map((first, vowelIndex) => [
+        first,
+        family[(vowelIndex + 2) % family.length],
+        family[(vowelIndex + 4) % family.length],
+      ]),
+    ),
+  ];
   const WORDS = [
     { text: "МАМА", parts: ["МА", "МА"], picture: "mother" },
     { text: "ТАТО", parts: ["ТА", "ТО"], picture: "father" },
@@ -697,12 +723,15 @@
     v.tries++;
     v[hinted ? "hinted" : "solo"]++;
     if (!hinted) {
-      if (mode === "letters" || mode === "hear") {
+      if (["letters", "hear", "sound-part"].includes(mode)) {
         s.letterScores[target] = (s.letterScores[target] || 0) + 1;
         s.independent++;
       }
       if (["blend", "hear-syllable", "syllables"].includes(mode))
         s.syllableScores[target] = (s.syllableScores[target] || 0) + 1;
+      if (mode === "train")
+        for (const part of target.split("-"))
+          s.syllableScores[part] = (s.syllableScores[part] || 0) + 1;
     }
   }
   function reward(s, run) {
@@ -736,6 +765,7 @@
     FIXED,
     NATURAL,
     FAMILIES,
+    SYLLABLE_TRAINS,
     WORDS,
     PETS,
     PET_PRICES,
