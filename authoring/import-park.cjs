@@ -13,51 +13,19 @@ const sources = [
     "pretty-park",
     "tiny_treats_pretty_park_set",
     "",
-    [
-      "bench",
-      "bush",
-      "bush_large",
-      "flower_A",
-      "flower_B",
-      "hedge_straight",
-      "hedge_straight_long",
-      "hedge_corner",
-      "tree",
-      "tree_large",
-      "street_lantern",
-      "fountain",
-    ],
+    null,
   ],
   [
     "homely-house",
     "tiny_treats_homely_house_set",
     "home_",
-    [
-      "bench_A",
-      "bench_B",
-      "foliage_A",
-      "foliage_B",
-      "fence_straight",
-      "fence_rails",
-      "fence_corner",
-      "gate_single",
-      "mailbox",
-    ],
+    null,
   ],
   [
     "pleasant-picnic",
     "tiny_treats_pleasant_picnic_set",
     "picnic_",
-    [
-      "picnic_blanket_red",
-      "picnic_blanket_blue",
-      "picnic_blanket_green",
-      "picnic_basket_round",
-      "teapot",
-      "mug",
-      "apple",
-      "sandwich",
-    ],
+    null,
   ],
 ];
 const output = { version: 1, models: {}, materials: [], sources: [] },
@@ -74,6 +42,13 @@ const mats = new Map();
 for (const [pack, folder, prefix, names] of sources) {
   const repo = path.join(root, "tools/assets-" + pack),
     dir = path.join(repo, "addons", folder, "Assets/gltf");
+  const modelNames =
+    names ||
+    fs
+      .readdirSync(dir)
+      .filter((name) => name.endsWith(".gltf"))
+      .map((name) => path.basename(name, ".gltf"))
+      .sort();
   const license = fs.readFileSync(path.join(repo, "LICENSE.txt"), "utf8");
   if (!/CC0/.test(license) || !/commercial/.test(license))
     throw Error("Unverified license: " + pack);
@@ -84,7 +59,7 @@ for (const [pack, folder, prefix, names] of sources) {
     license: "CC0-1.0",
     url: "https://tinytreats.itch.io/" + pack,
   });
-  for (const name of names) {
+  for (const name of modelNames) {
     const g = JSON.parse(
       fs.readFileSync(path.join(dir, name + ".gltf"), "utf8"),
     );

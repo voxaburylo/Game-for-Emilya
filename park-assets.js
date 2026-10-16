@@ -151,7 +151,9 @@
           0.6,
         );
       }
-    } else if (def.category === "picnic") {
+    } else if (
+      ["picnic-red", "picnic-blue", "picnic-green", "tea-picnic"].includes(kind)
+    ) {
       const color =
         kind === "picnic-blue"
           ? "blue"
@@ -168,6 +170,12 @@
         add("picnic_mug", -0.5, -0.1, 0.3, 0.4, 0.4, 0.08);
         add("flower_B", 0.65, 0.8, 0.5, 0.45, 0.45, 0.08);
         add("picnic_sandwich", -0.15, 0.8, 0.25, 0.4, 0.4, 0.08);
+      }
+    } else if (Array.isArray(def.model)) {
+      for (const part of def.model) {
+        const [name, x = 0, z = 0, height = def.height, width = def.w * 1.75, depth = def.h * 1.75, y = 0] =
+          typeof part === "string" ? [part] : part;
+        add(name, x, z, height, width, depth, y);
       }
     } else g.add(fit(model(def.model), def.w * 1.75, def.h * 1.75, def.height));
     if (def.action === "splash") {

@@ -123,11 +123,13 @@
         x = Math.cos(a) * r,
         z = Math.sin(a) * r;
       const c = new T.Mesh(geometry, material);
-      c.position.set(x, -5 - (i % 5) * 3, z);
-      c.scale.setScalar(1.2 + (i % 4) * 0.6);
+      const scale = 1.2 + (i % 4) * 0.6,
+        baseY = -7 - (i % 5) * 3;
+      c.position.set(x, baseY, z);
+      c.scale.setScalar(scale);
       c.rotation.y = a * 0.3;
       group.add(c);
-      clouds.push({ c, x, z, i });
+      clouds.push({ c, x, z, i, baseY, scale });
     }
     for (const [i, [x, z]] of [
       [-22, 9],
@@ -138,10 +140,12 @@
       [-23, -11],
     ].entries()) {
       const c = new T.Mesh(geometry, material);
-      c.position.set(x, -4 - (i % 3) * 1.8, z);
-      c.scale.setScalar(1.1 + (i % 2) * 0.3);
+      const scale = 1.1 + (i % 2) * 0.3,
+        baseY = -7 - (i % 3) * 2.2;
+      c.position.set(x, baseY, z);
+      c.scale.setScalar(scale);
       group.add(c);
-      clouds.push({ c, x, z, i: i + 24 });
+      clouds.push({ c, x, z, i: i + 24, baseY, scale });
     }
     const birds = [];
     const birdMat = new T.MeshBasicMaterial({
@@ -304,8 +308,14 @@
       rotors,
       birds,
       flightWidth: 160,
+      clearanceX: 24,
+      clearanceZ: 22,
+      islandDepth: 24,
       setBounds(x, z) {
         this.flightWidth = Math.max(160, x * 3.7 + 70);
+        this.clearanceX = x + 8;
+        this.clearanceZ = z + 8;
+        this.islandDepth = Math.min(80, 14 + Math.hypot(x, z) * 0.65);
         for (const c of clouds) {
           c.baseX ??= c.x;
           c.baseZ ??= c.z;
@@ -315,13 +325,20 @@
       },
       update(time, reduced) {
         const t = reduced ? 0 : time;
-        for (const { c, x, z, i } of clouds) {
+        for (const { c, x, z, i, baseY, scale } of clouds) {
           const span = this.flightWidth;
           c.position.x =
             ((((x - t * (1.4 + (i % 4) * 0.25) + span / 2) % span) + span) %
               span) -
             span / 2;
           c.position.z = z + Math.sin(t * 0.06 + i) * 0.6;
+          const crossingIsland =
+              Math.abs(c.position.x) < this.clearanceX + scale * 3.2 &&
+              Math.abs(c.position.z) < this.clearanceZ + scale * 2.4,
+            safeY = -this.islandDepth - 7 - scale * 1.4 - (i % 3) * 1.3;
+          if (crossingIsland) c.position.y = safeY;
+          else if (reduced) c.position.y = baseY;
+          else c.position.y += (baseY - c.position.y) * 0.025;
         }
         for (const [i, f] of flags.entries())
           f.rotation.x = Math.sin(t * 2.1 + i * 0.6) * 0.16;

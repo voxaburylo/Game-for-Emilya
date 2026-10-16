@@ -7,8 +7,22 @@
     root.GardenPaths ||
     (typeof require !== "undefined" ? require("./garden-paths.js") : null);
   const ITEMS = [
-    { id: "flowers", name: "Квітник", cost: 2, w: 1, h: 1 },
-    { id: "bench", name: "Лавочка", cost: 3, w: 1, h: 1 },
+    {
+      id: "flowers",
+      name: "Квітник",
+      cost: 2,
+      w: 1,
+      h: 1,
+      thumb: "models/park/thumbs/rose-bed.png",
+    },
+    {
+      id: "bench",
+      name: "Лавочка",
+      cost: 3,
+      w: 1,
+      h: 1,
+      thumb: "models/park/thumbs/park-bench.png",
+    },
     {
       id: "tree",
       name: "Яблунька",
@@ -28,7 +42,14 @@
     // Kept for old v5 saves, but hidden from the shop because the Park tab
     // already offers three better fountains with real model previews.
     { id: "fountain", name: "Фонтан", cost: 8, w: 2, h: 2, hidden: true },
-    { id: "house", name: "Будиночок", cost: 10, w: 2, h: 2 },
+    {
+      id: "house",
+      name: "Будиночок",
+      cost: 10,
+      w: 2,
+      h: 2,
+      thumb: "models/park/thumbs/home-house.png",
+    },
     ...Park.items,
   ];
   const LANDS = [

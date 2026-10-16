@@ -95,8 +95,13 @@
       words: ["Маленькі слова", "home"],
     };
   function btn(action, ico, label, cls = "round", extra = "") {
-    return `<button class="${cls}" data-action="${action}" aria-label="${label}" title="${label}" ${extra}>${icon(ico)}${cls.includes("primary") || cls.includes("secondary") ? label : ""}</button>`;
+    return `<button class="${cls}" data-action="${action}" aria-label="${label}" title="${label}" ${extra}>${ico === "gem" ? gemImage() : icon(ico)}${cls.includes("primary") || cls.includes("secondary") ? label : ""}</button>`;
   }
+  const objectImage = (src, cls = "object-image") =>
+      `<img class="${cls}" src="${src}" alt="" aria-hidden="true">`,
+    gemImage = () => objectImage("models/ui/gem.png", "gem-object"),
+    objectButton = (action, src, label) =>
+      `<button class="round object-button" data-action="${action}" aria-label="${label}" title="${label}">${objectImage(src)}<span>${label}</span></button>`;
   let sfxCtx;
   function sfx(freqs, dur, type) {
     if (!state.sound) return;
@@ -316,7 +321,7 @@
     if (route === "pets")
       html =
         bar("Маленький друг") +
-        `<section class="side-panel pet-panel"><div class="row"><h3>${names[draft]}</h3><span class="wallet">${icon("gem")}${state.gems}</span></div><div class="choice-grid">${S.PETS.map((p, i) => `<button class="choice ${draft === p ? "active" : ""}" data-action="pet-choice" data-value="${p}" aria-label="${names[p]}">${A.thumb("pet", i)}<span>${names[p]}</span>${S.ownsPet(state, p) ? "" : `<small class="pet-price">${icon("gem")}${S.PET_PRICES[p]}</small>`}</button>`).join("")}</div><div class="row">${btn("rotate-left", "rotate", "Повернути ліворуч")}${btn("rotate-right", "rotate", "Повернути праворуч")}</div><div class="actions">${btn("back", "close", "Скасувати", "secondary")}${S.ownsPet(state, draft) ? btn("apply-pet", "check", "Готово", "primary") : btn("buy-pet", "gem", `${S.PET_PRICES[draft]} · Відкрити`, "primary")}</div></section><div class="scene-actions pet-actions">${[
+        `<section class="side-panel pet-panel"><div class="row"><h3>${names[draft]}</h3><span class="wallet">${gemImage()}${state.gems}</span></div><div class="choice-grid">${S.PETS.map((p, i) => `<button class="choice ${draft === p ? "active" : ""}" data-action="pet-choice" data-value="${p}" aria-label="${names[p]}">${A.thumb("pet", i)}<span>${names[p]}</span>${S.ownsPet(state, p) ? "" : `<small class="pet-price">${gemImage()}${S.PET_PRICES[p]}</small>`}</button>`).join("")}</div><div class="row">${btn("rotate-left", "rotate", "Повернути ліворуч")}${btn("rotate-right", "rotate", "Повернути праворуч")}</div><div class="actions">${btn("back", "close", "Скасувати", "secondary")}${S.ownsPet(state, draft) ? btn("apply-pet", "check", "Готово", "primary") : btn("buy-pet", "gem", `${S.PET_PRICES[draft]} · Відкрити`, "primary")}</div></section><div class="scene-actions pet-actions">${[
           ["stroke", "hand", "Погладити"],
           ["feed", "food", "Погодувати"],
           ["ball", "ball", "М’ячик"],
@@ -329,14 +334,14 @@
     if (route === "build")
       html =
         bar(edit.id ? "Переставити" : "Майстерня") +
-        `<section class="side-panel build-panel"><div class="row">${btn("roads", "road", "Доріжки")}${btn("land", "land", "Нова земля")}${btn("select", "move", "Переставити споруду")}<span class="wallet">${icon("gem")}${state.gems}</span></div><div class="park-tabs" role="group" aria-label="Види прикрас">${ParkCatalog.groups.map((c) => `<button class="${buildCategory === c.id ? "active" : ""}" data-action="build-category" data-value="${c.id}" aria-label="${c.name}">${icon(c.icon)}<span>${c.name}</span></button>`).join("")}</div><div class="choice-grid park-catalog">${S.ITEMS.filter(
+        `<section class="side-panel build-panel"><div class="row build-tools">${objectButton("roads", "models/ui/path-stone.png", "Доріжки")}${objectButton("land", "models/ui/land.png", "Нова земля")}${objectButton("select", "models/park/thumbs/home-house.png", "Переставити")}<span class="wallet">${gemImage()}${state.gems}</span></div><div class="park-tabs" role="group" aria-label="Види прикрас">${ParkCatalog.groups.map((c) => `<button class="${buildCategory === c.id ? "active" : ""}" data-action="build-category" data-value="${c.id}" aria-label="${c.name}">${objectImage(c.thumb, "category-thumb")}<span>${c.name}</span></button>`).join("")}</div><div class="choice-grid park-catalog">${S.ITEMS.filter(
           (i) =>
             (!i.hidden && (i.category || "classic") === buildCategory) ||
             (i.id === edit.kind && edit.id),
         )
           .map(
             (i) =>
-              `<button class="choice ${edit.kind === i.id ? "active" : ""}" data-action="build-kind" data-value="${i.id}" aria-label="${i.name}, ${crystals(i.cost)}" ${edit.id ? "disabled" : ""}>${i.thumb ? `<img src="${i.thumb}" alt="" width="112" height="96" />` : icon(i.id === "house" ? "home" : i.id)}<span>${i.name}</span><b class="park-price">${icon("gem")}${i.cost}</b></button>`,
+              `<button class="choice ${edit.kind === i.id ? "active" : ""}" data-action="build-kind" data-value="${i.id}" aria-label="${i.name}, ${crystals(i.cost)}" ${edit.id ? "disabled" : ""}>${i.thumb ? `<img src="${i.thumb}" alt="" width="112" height="96" />` : icon(i.id === "house" ? "home" : i.id)}<span>${i.name}</span><b class="park-price">${gemImage()}${i.cost}</b></button>`,
           )
           .join(
             "",
@@ -348,11 +353,11 @@
     if (route === "land")
       html =
         bar("Більше місця") +
-        `<section class="side-panel land-panel"><div class="row"><h3>Розширюй своє місто</h3><span class="wallet">${icon("gem")}${state.gems}</span></div><p class="note">Відкрито ${state.lands.length} із ${S.LANDS.length} ділянок.</p><div class="land-list" style="display:grid;gap:10px">${
+        `<section class="side-panel land-panel"><div class="row"><h3>Розширюй своє місто</h3><span class="wallet">${gemImage()}${state.gems}</span></div><p class="note">Відкрито ${state.lands.length} із ${S.LANDS.length} ділянок.</p><div class="land-list" style="display:grid;gap:10px">${
           S.availableLands(state)
             .map(
               (l) =>
-                `<button class="land-card ${draft === l.id ? "active" : ""}" data-action="land-choice" data-value="${l.id}">${icon("land")}<span>${l.name}<small>${crystals(l.cost)}</small></span></button>`,
+                `<button class="land-card ${draft === l.id ? "active" : ""}" data-action="land-choice" data-value="${l.id}">${objectImage("models/ui/land.png", "land-object")}<span>${l.name}<small>${gemImage()}${l.cost}</small></span></button>`,
             )
             .join("") || "Усі ділянки вже твої!"
         }</div><div class="actions">${btn("expand", "plus", "Відкрити", "primary", !draft ? "disabled" : "")}</div></section>`;
@@ -369,7 +374,7 @@
         ]
           .map(
             ([v, t]) =>
-              `<button class="choice ${material === v ? "active" : ""}" data-action="road-material" data-value="${v}" aria-label="${t}"><span class="path-swatch swatch-${v}">${v === "erase" ? icon("undo") : ""}</span><span>${t}</span></button>`,
+              `<button class="choice ${material === v ? "active" : ""}" data-action="road-material" data-value="${v}" aria-label="${t}">${v === "erase" ? `<span class="path-swatch swatch-erase">${icon("undo")}</span>` : objectImage(`models/ui/path-${v}.png`, "path-object")}<span>${t}</span></button>`,
           )
           .join("")}</div><h3>Краї доріжки</h3><div class="path-borders">${[
           ["none", "Без країв"],
@@ -383,7 +388,7 @@
           )
           .join(
             "",
-          )}</div><p class="path-quote" id="path-quote"></p><div class="actions">${btn("road-clear", "undo", "Очистити ескіз", "secondary")}${btn("road-apply", "check", "Побудувати", "primary")}</div>${btn("path-undo", "undo", "Скасувати останню доріжку", "secondary", lastGardenPath === null ? "disabled" : "")}<div class="path-wallet">${icon("gem")} ${state.gems}</div></section>`;
+          )}</div><p class="path-quote" id="path-quote"></p><div class="actions">${btn("road-clear", "undo", "Очистити ескіз", "secondary")}${btn("road-apply", "check", "Побудувати", "primary")}</div>${btn("path-undo", "undo", "Скасувати останню доріжку", "secondary", lastGardenPath === null ? "disabled" : "")}<div class="path-wallet">${gemImage()} ${state.gems}</div></section>`;
     if (route === "furniture")
       html =
         bar("Облаштуй кімнату") +
@@ -394,7 +399,7 @@
         ]
           .map(
             ([k, t]) =>
-              `<button class="choice ${edit.kind === k ? "active" : ""}" data-action="furniture-kind" data-value="${k}">${icon("home")}<span>${t}</span></button>`,
+              `<button class="choice ${edit.kind === k ? "active" : ""}" data-action="furniture-kind" data-value="${k}">${objectImage(`models/ui/furniture-${k}.png`, "furniture-object")}<span>${t}</span></button>`,
           )
           .join(
             "",
@@ -425,7 +430,7 @@
           .map((t) => `<span>${t}</span>`)
           .join(
             "",
-          )}</div><div class="reward-total">${icon("gem")} +${3 + run.party.credited}</div><p>3 за заняття${run.party.credited ? ` + ${run.party.credited} за свято` : ""}. Можна повертатися до друзів!</p>${btn("reward-home", "home", "На острів", "primary")}${btn("again", "play", "Ще пограти", "secondary")}</section></div>`;
+          )}</div><div class="reward-total">${gemImage()} +${3 + run.party.credited}</div><p>3 за заняття${run.party.credited ? ` + ${run.party.credited} за свято` : ""}. Можна повертатися до друзів!</p>${btn("reward-home", "home", "На острів", "primary")}${btn("again", "play", "Ще пограти", "secondary")}</section></div>`;
     }
     if (route === "gate")
       html = modal(
@@ -1385,7 +1390,7 @@
       .then((reg) => {
         const check = async () => {
           if (reg.active?.state === "activated") {
-            const cache = await caches.open("emilia-living-v5-10-catalog-cleanup");
+            const cache = await caches.open("emilia-living-v5-11-living-catalog");
             offlineReady = (
               await Promise.all(
                 [

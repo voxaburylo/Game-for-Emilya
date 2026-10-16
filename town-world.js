@@ -233,23 +233,38 @@
         A.box(this.outside, "#5a7663", x, 2.9, z, 0.5, 0.1, 0.5);
       }
       this.butterflies = [];
-      for (let i = 0; i < 9; i++) {
-        const g = A.group(
-          this.outside,
-          Math.sin(i * 4.3) * 15,
-          1.4,
-          Math.cos(i * 2.3) * 13,
-        );
-        const wings = [
-          A.ball(g, "#d8ad73", -0.1, 0, 0, 0.16, 0.025, 0.1),
-          A.ball(g, "#b889ab", 0.1, 0, 0, 0.16, 0.025, 0.1),
-        ];
+      const butterflyColors = [
+        ["#f8b84e", "#db674e"],
+        ["#65c4c0", "#5078bf"],
+        ["#eb80ad", "#955eb8"],
+        ["#ffe071", "#ef8f43"],
+        ["#ddd6ff", "#7469b6"],
+      ];
+      for (let i = 0; i < 10; i++) {
+        const angle = i * 2.399,
+          radius = 5 + (i % 4) * 3.1,
+          x = Math.cos(angle) * radius,
+          z = Math.sin(angle) * radius,
+          g = A.group(this.outside, x, 1.2 + (i % 3) * 0.35, z),
+          palette = butterflyColors[i % butterflyColors.length],
+          wings = [
+            A.ball(g, palette[0], -0.105, 0.025, 0, 0.17, 0.028, 0.11),
+            A.ball(g, palette[0], 0.105, 0.025, 0, 0.17, 0.028, 0.11),
+            A.ball(g, palette[1], -0.075, -0.075, 0.015, 0.11, 0.024, 0.075),
+            A.ball(g, palette[1], 0.075, -0.075, 0.015, 0.11, 0.024, 0.075),
+          ];
+        A.cyl(g, "#49372b", 0, 0, 0.015, 0.022, 0.23).rotation.x = Math.PI / 2;
         this.butterflies.push({
           g,
           wings,
-          x: g.position.x,
-          z: g.position.z,
           i,
+          phase: angle,
+          speed: 0.18 + (i % 4) * 0.025,
+          spanX: 8 + (i % 5) * 2.5,
+          spanZ: 7 + ((i * 3) % 5) * 2.2,
+          height: 1.05 + (i % 4) * 0.28,
+          lastX: x,
+          lastZ: z,
         });
       }
     }
@@ -305,10 +320,11 @@
       if (window.IslandLandscape)
         this.groundGroup.add(IslandLandscape.build(plots));
       const land = (x, z, w, h) => {
-        if (!window.IslandLandscape)
+        if (!window.IslandLandscape) {
           this.groundGroup.add(WorldAtmosphere.cliff(x, z, w, h));
-        A.box(this.groundGroup, "#478c3b", x, -0.09, z, w, 0.2, h);
-        A.box(this.groundGroup, "#70aa3e", x, 0.01, z, w, 0.08, h);
+          A.box(this.groundGroup, "#478c3b", x, -0.09, z, w, 0.2, h);
+          A.box(this.groundGroup, "#70aa3e", x, 0.01, z, w, 0.08, h);
+        }
       };
       land(0, 0, 36, 32);
       S.LANDS.filter((l) => this.state.lands.includes(l.id)).forEach((l) =>
@@ -1289,38 +1305,6 @@
       this.editor = editor;
       this.editFocus = (this.cameraAnchor || this.hero.position).clone();
       this.clear(this.previewGroup);
-      if (editor && ["objects", "road", "select"].includes(editor.type)) {
-        const verts = [];
-        for (let x = -S.BOUNDS.x; x < S.BOUNDS.x; x += 2)
-          for (let z = -S.BOUNDS.z; z < S.BOUNDS.z; z += 2)
-            if (S.inside(this.state, x + 1, z + 1)) {
-              verts.push(
-                x,
-                0.18,
-                z,
-                x + 2,
-                0.18,
-                z,
-                x,
-                0.18,
-                z,
-                x,
-                0.18,
-                z + 2,
-              );
-            }
-        const geo = new T.BufferGeometry();
-        geo.setAttribute("position", new T.Float32BufferAttribute(verts, 3));
-        this.grid = new T.LineSegments(
-          geo,
-          new T.LineBasicMaterial({
-            color: "#f9f3d9",
-            transparent: true,
-            opacity: 0.35,
-          }),
-        );
-        this.previewGroup.add(this.grid);
-      }
       this.ghost = null;
     }
     preview(kind, x, z, rotation, valid) {
@@ -1638,14 +1622,26 @@
         this.rebuildStatic();
       }
       if (!this.reduced) {
-        this.butterflies.forEach(({ g, wings, x, z, i }) => {
-          g.position.x = x + Math.sin(this.time * 0.7 + i) * 0.8;
-          g.position.z = z + Math.cos(this.time * 0.6 + i) * 0.5;
-          g.position.y = 1.4 + Math.sin(this.time * 2 + i) * 0.25;
-          wings.forEach(
-            (w, j) =>
-              (w.rotation.z = Math.sin(this.time * 11 + i) * (j ? 1 : -1)),
-          );
+        this.butterflies.forEach((b) => {
+          const t = this.time * b.speed + b.phase,
+            drift = this.time * 0.037 + b.i * 1.73,
+            candidateX = Math.sin(t * 1.13) * b.spanX + Math.sin(drift) * 7,
+            candidateZ = Math.sin(t * 0.71 + b.i) * b.spanZ + Math.cos(drift * 0.83) * 6;
+          if (S.inside(this.state, candidateX, candidateZ, 0.8) && !S.water(candidateX, candidateZ)) {
+            b.g.position.x += (candidateX - b.g.position.x) * 0.025;
+            b.g.position.z += (candidateZ - b.g.position.z) * 0.025;
+          } else {
+            b.g.position.x += (Math.sin(b.phase) * 4 - b.g.position.x) * 0.018;
+            b.g.position.z += (Math.cos(b.phase) * 4 - b.g.position.z) * 0.018;
+          }
+          const dx = b.g.position.x - b.lastX,
+            dz = b.g.position.z - b.lastZ;
+          if (Math.abs(dx) + Math.abs(dz) > 0.0001) b.g.rotation.y = Math.atan2(dx, dz);
+          b.lastX = b.g.position.x;
+          b.lastZ = b.g.position.z;
+          b.g.position.y = b.height + Math.sin(this.time * (1.6 + (b.i % 3) * 0.18) + b.phase) * 0.3;
+          const flap = Math.sin(this.time * (10 + (b.i % 4)) + b.phase) * 0.95;
+          b.wings.forEach((w, j) => (w.rotation.z = flap * (j % 2 ? -1 : 1)));
         });
         for (const g of this.objectGroup.children) {
           if (g.userData.swing)

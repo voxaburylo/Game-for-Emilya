@@ -177,6 +177,11 @@ button svg {
 .wallet .ico {
   color: #ba925c;
 }
+.wallet .gem-object {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
 #dock {
   position: fixed;
   bottom: 22px;

@@ -61,6 +61,52 @@
       indices = [],
       color = new T.Color();
     g.name = "One torn floating island";
+    // Render all owned plots as one top mesh. Separate beveled boxes overlap at
+    // their borders and make the invisible placement cells look like a grid.
+    const xs = [
+        ...new Set(rects.flatMap((r) => [r.x - r.w / 2, r.x + r.w / 2])),
+      ].sort((a, b) => a - b),
+      zs = [
+        ...new Set(rects.flatMap((r) => [r.z - r.h / 2, r.z + r.h / 2])),
+      ].sort((a, b) => a - b),
+      topPositions = [],
+      topIndices = [];
+    for (let ix = 0; ix < xs.length - 1; ix++)
+      for (let iz = 0; iz < zs.length - 1; iz++) {
+        const x0 = xs[ix],
+          x1 = xs[ix + 1],
+          z0 = zs[iz],
+          z1 = zs[iz + 1],
+          cx = (x0 + x1) / 2,
+          cz = (z0 + z1) / 2;
+        if (
+          !rects.some(
+            (r) => Math.abs(cx - r.x) < r.w / 2 && Math.abs(cz - r.z) < r.h / 2,
+          )
+        )
+          continue;
+        const base = topPositions.length / 3;
+        topPositions.push(
+          x0, 0.055, z0,
+          x0, 0.055, z1,
+          x1, 0.055, z0,
+          x1, 0.055, z1,
+        );
+        topIndices.push(base, base + 1, base + 2, base + 2, base + 1, base + 3);
+      }
+    const topGeometry = new T.BufferGeometry();
+    topGeometry.setAttribute(
+      "position",
+      new T.Float32BufferAttribute(topPositions, 3),
+    );
+    topGeometry.setIndex(topIndices);
+    topGeometry.computeVertexNormals();
+    const top = new T.Mesh(
+      topGeometry,
+      new T.MeshStandardMaterial({ color: "#70aa3e", roughness: 1 }),
+    );
+    top.receiveShadow = true;
+    g.add(top);
     const noise = (x, z) =>
       Math.sin(x * 1.73 + z * 0.43) * 0.55 +
       Math.sin(z * 1.13 - x * 0.37) * 0.45;

@@ -20,9 +20,10 @@ function test(name, f) {
   count++;
   console.log("PASS " + name);
 }
-test("28 purchases fit their placement footprints and use valid indexed geometry", () => {
-  assert.equal(C.items.length, 28);
-  assert.equal(Object.keys(data.models).length, 29);
+test("77 purchases fit their placement footprints and use all 96 valid models", () => {
+  assert.equal(C.items.length, 77);
+  assert.equal(Object.keys(data.models).length, 96);
+  const usedParts = new Set();
   for (const d of C.items) {
     const g = A.create(d.id);
     A.animate(g, 1);
@@ -31,6 +32,7 @@ test("28 purchases fit their placement footprints and use valid indexed geometry
     assert(b.min.z >= -d.h - 0.15 && b.max.z <= d.h + 0.15, d.id + " depth");
     g.traverse((o) => {
       if (!o.isMesh) return;
+      if (o.userData.parkPart !== undefined) usedParts.add(o.userData.parkPart);
       const p = o.geometry.attributes.position;
       assert([...p.array].every(Number.isFinite));
       if (o.geometry.index)
@@ -38,13 +40,16 @@ test("28 purchases fit their placement footprints and use valid indexed geometry
     });
     assert(fs.statSync(d.thumb).size > 1000);
   }
+  for (const [name, model] of Object.entries(data.models))
+    for (const part of model.parts)
+      assert(usedParts.has(part.id), `${name} is not used by the catalog`);
 });
 test("classic shop uses real previews and does not sell the duplicate fountain", () => {
   const visibleClassic = S.ITEMS.filter(
     (item) => !item.hidden && (item.category || "classic") === "classic",
   );
   assert(!visibleClassic.some((item) => item.id === "fountain"));
-  for (const id of ["tree", "swing"]) {
+  for (const id of ["flowers", "bench", "tree", "swing", "house"]) {
     const item = visibleClassic.find((entry) => entry.id === id);
     assert(item?.thumb, id + " preview");
     assert(fs.statSync(item.thumb).size > 1000, id + " preview file");

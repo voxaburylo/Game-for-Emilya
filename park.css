@@ -22,9 +22,11 @@
   border-color: #4e8373;
   background: #d6e9d4;
 }
-.park-tabs .ico {
-  width: 26px;
-  height: 26px;
+.park-tabs .category-thumb {
+  width: 45px;
+  height: 37px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 2px #27463725);
 }
 .park-tabs span {
   font-size: 11px;
@@ -74,6 +76,43 @@
   width: 19px;
   height: 19px;
 }
+.gem-object {
+  width: 25px;
+  height: 25px;
+  object-fit: contain;
+  vertical-align: middle;
+  filter: drop-shadow(0 2px 2px #24546c35);
+}
+.park-price .gem-object,
+.pet-price .gem-object,
+.land-card small .gem-object {
+  width: 19px;
+  height: 19px;
+}
+.object-image {
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+}
+.build-tools .object-button {
+  width: 62px;
+  height: 62px;
+  padding: 3px;
+  border-radius: 16px;
+  flex-direction: column;
+  gap: 0;
+}
+.build-tools .object-button .object-image {
+  width: 45px;
+  height: 39px;
+}
+.build-tools .object-button span {
+  max-width: 57px;
+  overflow: hidden;
+  font-size: 8px;
+  font-weight: 800;
+  white-space: nowrap;
+}
 .path-materials {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -96,6 +135,12 @@
   border-radius: 12px;
   border: 2px solid #ffffffc0;
   box-shadow: 0 3px 0 #0002;
+}
+.path-object {
+  width: 64px;
+  height: 48px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 2px #294a3630);
 }
 .swatch-sand {
   background: #d8be89;
@@ -155,6 +200,22 @@
   max-height: 48vh;
   overflow-y: auto;
 }
+.land-object {
+  width: 72px;
+  height: 62px;
+  object-fit: contain;
+}
+.land-card small {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.furniture-object {
+  width: 82px;
+  height: 70px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 2px #294a3630);
+}
 .land-card small.land-locked {
   color: #8c6b4a;
 }
@@ -188,6 +249,10 @@
   .path-swatch {
     width: 37px;
     height: 27px;
+  }
+  .path-object {
+    width: 45px;
+    height: 34px;
   }
   .path-materials .choice {
     padding: 5px 2px;
