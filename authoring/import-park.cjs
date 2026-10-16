@@ -9,24 +9,47 @@ const root = path.resolve(__dirname, ".."),
 fs.mkdirSync(out, { recursive: true });
 fs.mkdirSync(path.join(out, "licenses"), { recursive: true });
 const sources = [
-  [
-    "pretty-park",
-    "tiny_treats_pretty_park_set",
-    "",
-    null,
-  ],
-  [
-    "homely-house",
-    "tiny_treats_homely_house_set",
-    "home_",
-    null,
-  ],
-  [
-    "pleasant-picnic",
-    "tiny_treats_pleasant_picnic_set",
-    "picnic_",
-    null,
-  ],
+  {
+    pack: "pretty-park",
+    dir: "tools/assets-pretty-park/addons/tiny_treats_pretty_park_set/Assets/gltf",
+    license: "tools/assets-pretty-park/LICENSE.txt",
+    prefix: "",
+    author: "Isa Lousberg / Tiny Treats",
+    url: "https://tinytreats.itch.io/pretty-park",
+  },
+  {
+    pack: "homely-house",
+    dir: "tools/assets-homely-house/addons/tiny_treats_homely_house_set/Assets/gltf",
+    license: "tools/assets-homely-house/LICENSE.txt",
+    prefix: "home_",
+    author: "Isa Lousberg / Tiny Treats",
+    url: "https://tinytreats.itch.io/homely-house",
+  },
+  {
+    pack: "pleasant-picnic",
+    dir: "tools/assets-pleasant-picnic/addons/tiny_treats_pleasant_picnic_set/Assets/gltf",
+    license: "tools/assets-pleasant-picnic/LICENSE.txt",
+    prefix: "picnic_",
+    author: "Isa Lousberg / Tiny Treats",
+    url: "https://tinytreats.itch.io/pleasant-picnic",
+  },
+  {
+    pack: "fun-playground",
+    dir: "tools/assets-fun-playground/Tiny_Treats_Fun_Playground_1.0_FREE/Assets/gltf",
+    license: "tools/assets-fun-playground/Tiny_Treats_Fun_Playground_1.0_FREE/License.txt",
+    prefix: "play_",
+    author: "Isa Lousberg / Tiny Treats",
+    url: "https://tinytreats.itch.io/fun-playground",
+  },
+  {
+    pack: "city-builder-bits",
+    dir: "tools/assets-city-builder/KayKit_City_Builder_Bits_1.0_FREE/Assets/gltf",
+    license: "tools/assets-city-builder/KayKit_City_Builder_Bits_1.0_FREE/License.txt",
+    prefix: "city_",
+    exclude: /(?:_withoutBase$|^base$)/,
+    author: "Kay Lousberg / KayKit",
+    url: "https://kaylousberg.itch.io/city-builder-bits",
+  },
 ];
 const output = { version: 1, models: {}, materials: [], sources: [] },
   chunks = [];
@@ -39,25 +62,25 @@ function write(array) {
   return a;
 }
 const mats = new Map();
-for (const [pack, folder, prefix, names] of sources) {
-  const repo = path.join(root, "tools/assets-" + pack),
-    dir = path.join(repo, "addons", folder, "Assets/gltf");
+for (const source of sources) {
+  const { pack, prefix, names, author, url } = source,
+    dir = path.join(root, source.dir);
   const modelNames =
-    names ||
+    (names ||
     fs
       .readdirSync(dir)
       .filter((name) => name.endsWith(".gltf"))
       .map((name) => path.basename(name, ".gltf"))
-      .sort();
-  const license = fs.readFileSync(path.join(repo, "LICENSE.txt"), "utf8");
+      .sort()).filter((name) => !source.exclude?.test(name));
+  const license = fs.readFileSync(path.join(root, source.license), "utf8");
   if (!/CC0/.test(license) || !/commercial/.test(license))
     throw Error("Unverified license: " + pack);
   fs.writeFileSync(path.join(out, "licenses", pack + ".txt"), license);
   output.sources.push({
     pack,
-    author: "Isa Lousberg / Tiny Treats",
+    author,
     license: "CC0-1.0",
-    url: "https://tinytreats.itch.io/" + pack,
+    url,
   });
   for (const name of modelNames) {
     const g = JSON.parse(

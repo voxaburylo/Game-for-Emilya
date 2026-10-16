@@ -613,7 +613,7 @@
     if ($("placement-note")) $("placement-note").textContent = error || "";
   }
   // mode "auto" is the guided game ("Грати"); other modes are free play from the menu.
-  function begin(mode) {
+  function begin(mode, carry = []) {
     resetAudio();
     route = "lesson";
     world.paused = true;
@@ -623,7 +623,9 @@
       total: 3,
       rewarded: false,
       previous: null,
-      used: [],
+      // A continued game remembers recent material, so "Ще пограти" really
+      // continues the learning path instead of replaying the same three cards.
+      used: [...new Set(carry)].slice(-36),
       discoveries: [],
       newItems: [],
     };
@@ -647,9 +649,9 @@
   }
   // Free play: the child picked the exercise, the game picks the content.
   function freeTask(mode) {
-    const pool = S.FAMILIES[family],
-      letters = L.activeLetters(state);
-    if (mode === "sound-part") return L.soundPartTask(state);
+    const letters = L.activeLetters(state);
+    if (mode === "sound-part")
+      return L.soundPartTask(state, Math.random, run.used);
     if (mode === "train") return L.trainTask(state, run.used);
     if (["letters", "hear"].includes(mode)) {
       const unused = letters.filter((l) => !run.used.includes("L:" + l)),
@@ -666,13 +668,27 @@
       };
     }
     if (mode === "pairs") {
-      const p = Core.shuffle(letters).slice(0, 3);
-      return { mode, target: p.join(""), options: Core.shuffle([...p, ...p]) };
+      const unused = letters.filter(
+          (letter) => !run.used.includes("L:" + letter),
+        ),
+        p = [
+          ...Core.shuffle(unused),
+          ...Core.shuffle(letters.filter((letter) => !unused.includes(letter))),
+        ].slice(0, 3);
+      return {
+        mode,
+        target: p.join(""),
+        keys: p.map((letter) => "L:" + letter),
+        options: Core.shuffle([...p, ...p]),
+      };
     }
     if (mode === "words") {
       let words = L.readyWords(state);
       if (!words.length) words = [S.WORDS[0]];
-      const fresh = words.filter((w) => w.text !== run.previous),
+      const fresh = words.filter(
+          (w) =>
+            w.text !== run.previous && !run.used.includes("W:" + w.text),
+        ),
         w = Core.shuffle(fresh.length ? fresh : words)[0];
       return {
         mode,
@@ -682,7 +698,9 @@
         options: Core.shuffle(w.parts.map((text, id) => ({ text, id }))),
       };
     }
-    const unused = pool.filter((v) => !run.used.includes("S:" + v)),
+    family = L.nextFamily(state, family, run.used);
+    const pool = S.FAMILIES[family],
+      unused = pool.filter((v) => !run.used.includes("S:" + v)),
       target = Core.choose(
         unused.length ? unused : pool,
         state.syllableScores,
@@ -737,6 +755,8 @@
     };
     if (t.word) Object.assign(task, t.word, { target: t.word.text });
     if (t.key) run.used.push(t.key);
+    if (t.keys) run.used.push(...t.keys);
+    run.used = [...new Set(run.used)].slice(-36);
     if (t.isNew) run.newDone = true;
     if (mode === "pairs") run.pairsDone = true;
     if (mode === "sound-part") run.soundDone = true;
@@ -1514,7 +1534,7 @@
       render();
     }
     if (act === "lesson") begin(v);
-    if (act === "again") begin(run.mode);
+    if (act === "again") begin(run.mode, run.used);
     if (act === "answer") answer(Number(v));
     if (act === "help") help();
     if (act === "play-task") playTask();
@@ -1640,7 +1660,7 @@
         const check = async () => {
           if (reg.active?.state === "activated") {
             const cache = await caches.open(
-              "emilia-living-v5-29-demolition-tool",
+              "emilia-living-v5-30-city-playground-learning",
             );
             offlineReady = (
               await Promise.all(

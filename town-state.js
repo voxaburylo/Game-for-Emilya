@@ -37,7 +37,7 @@
       cost: 6,
       w: 2,
       h: 1,
-      thumb: "models/thumbs/build-swing.png",
+      thumb: "models/park/thumbs/play-swing-b-small.png",
     },
     // Kept for old v5 saves, but hidden from the shop because the Park tab
     // already offers three better fountains with real model previews.

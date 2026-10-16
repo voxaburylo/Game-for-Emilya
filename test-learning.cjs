@@ -138,6 +138,34 @@ test("syllable families open with known letters; words with heard syllables", ()
   assert.equal(L.plan(s, { index: 0, used: [] }, D).mode, "hear-syllable");
 });
 
+test("continued games prefer new letters and advance to another syllable family", () => {
+  const s = S.fresh();
+  s.allLevels = true;
+  assert.equal(
+    L.nextFamily(s, 0, ["S:МА", "S:МО", "S:МУ"]),
+    0,
+    "the current family stays selected while it has new cards",
+  );
+  assert.equal(
+    L.nextFamily(s, 0, S.FAMILIES[0].map((part) => "S:" + part)),
+    1,
+    "an exhausted family advances",
+  );
+  const lettersState = S.fresh();
+  for (const letter of ["А", "О", "У", "І", "И", "М"])
+    L.record(lettersState, "letters", letter, true, D);
+  const repeated = new Set(["L:А", "L:О", "L:У"]),
+    pair = L.plan(
+      lettersState,
+      { index: 2, used: [...repeated], newDone: true },
+      D,
+      () => 0,
+    );
+  assert.equal(pair.mode, "pairs");
+  assert.equal(pair.keys.length, 3);
+  assert(pair.keys.every((key) => !repeated.has(key)));
+});
+
 test("large syllable library is voiced, varied and has no duplicate trains", () => {
   assert.equal(S.FAMILIES.flat().length, 30);
   assert.equal(S.SYLLABLE_TRAINS.length, 180);

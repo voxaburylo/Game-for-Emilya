@@ -154,6 +154,19 @@ assert.equal(sharedDisposals, 0);
 assert(ownedDisposals > 0);
 const a = assets.girl({ dress: 0, shoes: 0, hair: 0, color: 0 });
 const b = assets.girl({ dress: 0, shoes: 0, hair: 0, color: 3 });
+const overalls = assets.girl({ dress: 3, shoes: 0, hair: 0, color: 0 });
+const skinLayers = (model) => {
+  let count = 0;
+  model.traverse((part) => {
+    if (part.isMesh && part.name === "base · skin") count++;
+  });
+  return count;
+};
+assert.equal(
+  skinLayers(overalls),
+  skinLayers(a) - 2,
+  "close-fitting trousers hide both bare leg layers so bent knees cannot clip through",
+);
 assets.animate(a, 2, false);
 assert(Math.abs(a.userData.torso.rotation.z) > 0.001, "idle weight shift");
 assert(Math.abs(a.userData.head.rotation.y) > 0.01, "idle glance");

@@ -13,4 +13,14 @@ Author: Isa Lousberg / Tiny Treats
 License: CC0-1.0
 https://tinytreats.itch.io/pleasant-picnic
 
+fun-playground
+Author: Isa Lousberg / Tiny Treats
+License: CC0-1.0
+https://tinytreats.itch.io/fun-playground
+
+city-builder-bits
+Author: Kay Lousberg / KayKit
+License: CC0-1.0
+https://kaylousberg.itch.io/city-builder-bits
+
 Original glTF meshes repacked for this game. Placement, scale and combined picnic/flower arrangements by this project. Original license notices are in licenses/.

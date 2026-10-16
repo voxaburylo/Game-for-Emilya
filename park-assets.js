@@ -203,6 +203,7 @@
   }
   function animate(g, time, reduced = false) {
     const active = g.userData.activatedUntil > time;
+    const actionTime = active ? Math.max(0, time - (g.userData.activatedAt || 0)) : 0;
     if (g.userData.fountainDrops) {
       const height = g.userData.fountainHeight,
         water = g.userData.fountainDrops,
@@ -229,9 +230,29 @@
       });
     if (g.userData.parkAction === "gate" && g.children[0])
       g.children[0].rotation.y = active ? Math.PI * 0.42 : 0;
+    if (g.userData.parkAction === "spin" && g.children[0])
+      g.children[0].rotation.y = reduced ? 0 : active ? actionTime * Math.PI : 0;
+    if (g.userData.parkAction === "rock" && g.children[0])
+      g.children[0].rotation.z = reduced ? 0 : active ? Math.sin(actionTime * Math.PI * 2) * 0.11 : 0;
+    if (g.userData.parkAction === "bounce" && g.children[0]) {
+      const target = g.children[0];
+      if (g.userData.actionBaseY === undefined)
+        g.userData.actionBaseY = target.position.y;
+      target.rotation.z = reduced
+        ? 0
+        : active
+          ? Math.sin(actionTime * Math.PI * 2.5) * 0.07
+          : 0;
+      target.position.y =
+        g.userData.actionBaseY +
+        (reduced || !active
+          ? 0
+          : Math.max(0, Math.sin(actionTime * Math.PI * 5)) * 0.055);
+    }
   }
   function react(g, time) {
     g.userData.activatedUntil = time + 4;
+    g.userData.activatedAt = time;
     if (g.userData.parkAction === "light")
       g.traverse((o) => {
         if (o.isMesh && !o.material.userData.parkInstance) {

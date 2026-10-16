@@ -1,6 +1,6 @@
 .park-tabs {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 5px;
   margin: 14px 0;
   padding-bottom: 7px;
@@ -29,7 +29,7 @@
   filter: drop-shadow(0 2px 2px #27463725);
 }
 .park-tabs span {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
 }
 .park-catalog {

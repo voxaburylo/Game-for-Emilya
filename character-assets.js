@@ -168,6 +168,17 @@
     const instanceMaterials = new Map();
     for (const part of library.meshes) {
       if (part.model !== model || !variants.has(part.variant)) continue;
+      // The overalls fully cover the legs down to the socks. Keeping the bare
+      // leg mesh under the close-fitting trousers lets the knee break through
+      // the cloth when it bends, so omit only that hidden skin layer.
+      if (
+        model === "girl" &&
+        look.dress === 3 &&
+        part.variant === "base" &&
+        part.material === "skin" &&
+        (part.node === "legL" || part.node === "legR")
+      )
+        continue;
       const definition = library.materials[part.material],
         painted = !!part.color,
         cubePaint = painted && model.startsWith("cube-");

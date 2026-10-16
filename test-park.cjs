@@ -20,9 +20,9 @@ function test(name, f) {
   count++;
   console.log("PASS " + name);
 }
-test("77 purchases fit their placement footprints and use all 96 valid models", () => {
-  assert.equal(C.items.length, 77);
-  assert.equal(Object.keys(data.models).length, 96);
+test("139 purchases fit their placement footprints and use all 175 valid models", () => {
+  assert.equal(C.items.length, 139);
+  assert.equal(Object.keys(data.models).length, 175);
   const usedParts = new Set();
   for (const d of C.items) {
     const g = A.create(d.id);
@@ -44,10 +44,10 @@ test("77 purchases fit their placement footprints and use all 96 valid models", 
     for (const part of model.parts)
       assert(usedParts.has(part.id), `${name} is not used by the catalog`);
 });
-test("four clear shop groups hide classic duplicates without breaking old saves", () => {
+test("five clear shop groups hide classic duplicates without breaking old saves", () => {
   assert.deepEqual(
     ParkCatalog.groups.map((group) => group.id),
-    ["garden", "park", "picnic", "home"],
+    ["garden", "park", "picnic", "home", "city"],
   );
   const visible = S.ITEMS.filter((item) =>
     ParkCatalog.groups.some((group) => ParkCatalog.inGroup(item, group.id)),
@@ -295,7 +295,13 @@ test("CC0 commercial licenses, thumbnails, atlases and runtime are cached offlin
     "park.css",
   ])
     assert(files.includes(f));
-  for (const name of ["pretty-park", "homely-house", "pleasant-picnic"]) {
+  for (const name of [
+    "pretty-park",
+    "homely-house",
+    "pleasant-picnic",
+    "fun-playground",
+    "city-builder-bits",
+  ]) {
     const license = fs.readFileSync(
       "models/park/licenses/" + name + ".txt",
       "utf8",

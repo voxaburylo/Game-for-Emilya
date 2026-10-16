@@ -106,6 +106,21 @@
   }
   // Free-play tabs: the first family is always open to explore.
   const familyOpen = (s, index) => index === 0 || familyReady(s, index);
+  // Keep a continued game moving forward. Prefer the selected family while it
+  // still has unseen syllables, then walk through every other unlocked family.
+  function nextFamily(s, index, used = []) {
+    const recent = new Set(used),
+      count = S.FAMILIES.length;
+    for (let step = 0; step < count; step++) {
+      const candidate = (index + step) % count;
+      if (
+        familyOpen(s, candidate) &&
+        S.FAMILIES[candidate].some((part) => !recent.has("S:" + part))
+      )
+        return candidate;
+    }
+    return index;
+  }
   function newSyllables(s) {
     const out = [];
     S.FAMILIES.forEach((f, i) => {
@@ -264,10 +279,22 @@
     else if (run.index === 2 && soundPart && !run.soundDone)
       return soundPart;
     else if (run.index === 2 && !run.pairsDone && letters.length >= 3) {
-      const three = letters
-        .sort((a, b) => box(s, "L:" + a) - box(s, "L:" + b))
-        .slice(0, 3);
-      return { mode: "pairs", target: three.join(""), options: shuffle([...three, ...three]) };
+      const byNeed = (a, b) =>
+          box(s, "L:" + a) - box(s, "L:" + b) ||
+          (s.items["L:" + a]?.seen || 0) - (s.items["L:" + b]?.seen || 0),
+        freshLetters = letters
+          .filter((letter) => !used.has("L:" + letter))
+          .sort(byNeed),
+        three = [
+          ...freshLetters,
+          ...letters.filter((letter) => used.has("L:" + letter)).sort(byNeed),
+        ].slice(0, 3);
+      return {
+        mode: "pairs",
+        target: three.join(""),
+        keys: three.map((letter) => "L:" + letter),
+        options: shuffle([...three, ...three]),
+      };
     } else if (
       run.index === 3 &&
       train &&
@@ -358,7 +385,7 @@
   const api = {
     INTERVAL, MASTERED, KNOWN, ORDER,
     day, keyOf, record, confuse, box, status,
-    activeLetters, familyReady, familyOpen, readyWords, readySyllables,
+    activeLetters, familyReady, familyOpen, nextFamily, readyWords, readySyllables,
     readyTrains, progress, letterOptions, syllableOptions, soundPartTask,
     trainTask, plan, placementTask, placementResult,
   };
