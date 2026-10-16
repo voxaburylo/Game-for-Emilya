@@ -7,3 +7,6 @@ node_modules/
 
 *.blend1
 *.blend2
+android/.build/
+android/*.keystore
+*.apk
