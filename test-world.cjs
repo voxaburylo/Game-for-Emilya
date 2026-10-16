@@ -1,6 +1,7 @@
 const assert = require("node:assert/strict");
 global.window = global;
 global.THREE = require("./three.min.js");
+require("./pet-rig.js");
 global.TownState = require("./town-state.js");
 global.Navigation = require("./navigation.js");
 global.devicePixelRatio = 1;
@@ -49,6 +50,12 @@ require("./character-assets.js").install(
   JSON.parse(fs.readFileSync("./models/characters.json", "utf8")),
   bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
 );
+require("./vendor/reflector.js");
+require("./vendor/water.js");
+require("./surface-art.js");
+require("./atmosphere.js");
+require("./companion-assets.js");
+require("./pet-behavior.js");
 require("./art.js");
 require("./town-world.js");
 const s = TownState.fresh(),
@@ -80,6 +87,35 @@ console.log(
 );
 w.setView("wardrobe");
 tick(10);
+assert(w.mirror.isReflector);
+assert(
+  w.room.children
+    .find((o) => o.userData.doors)
+    .userData.doors.every((d) => Math.abs(d.rotation.y) > 1.5),
+  "wardrobe doors open",
+);
+assert(!w.reflection, "no duplicated avatar in mirror");
+// A window pass must restore visibility and renderer state even on render errors.
+const r = w.renderer,
+  initialTarget = {};
+let currentTarget = initialTarget;
+r.getRenderTarget = () => currentTarget;
+r.setRenderTarget = (t) => (currentTarget = t);
+r.shadowMap.autoUpdate = true;
+r.render = () => {
+  assert.equal(w.outside.visible, true);
+  assert.equal(w.room.visible, false);
+  throw Error("test context loss");
+};
+assert.throws(() => w.renderWindow(), /test context loss/);
+assert.equal(w.outside.visible, false);
+assert.equal(w.room.visible, true);
+assert.equal(w.hero.visible, true);
+assert.equal(currentTarget, initialTarget);
+assert.equal(r.shadowMap.autoUpdate, true);
+r.render = () => {};
+w.renderWindow();
+assert(w.windowView.next > w.time);
 assert(
   Math.abs(new THREE.Box3().setFromObject(w.hero).min.y - 0.13) < 0.005,
   "shoes rest on wardrobe platform",
@@ -89,7 +125,8 @@ for (const p of TownState.PETS) {
   w.setPet(p);
   tick(1);
   assert(
-    new THREE.Box3().setFromObject(w.pet).min.y >= 0.265,
+    (w.pet.updateMatrixWorld(true),
+    new THREE.Box3().setFromObject(w.pet, true).min.y) >= 0.265,
     "paws above pet platform",
   );
   w.petReact("ball");
@@ -102,12 +139,43 @@ for (const p of TownState.PETS) {
   assert(w.petProp.parent === w.room);
   assert(w.petProp.children.length);
   tick(160);
+  w.setView("street");
+  w.paused = false;
+  w.hero.position.set(0, 0, 5);
+  w.pet.position.set(0, 0, 11);
+  tick(180);
+  assert(
+    Math.hypot(w.pet.position.x, w.pet.position.z - 5) <= 2.1,
+    `${p} follows the girl`,
+  );
+  assert.notEqual(
+    w.pet.userData.behavior.name,
+    "walk",
+    `${p} stops its gait after arriving`,
+  );
 }
-console.log("PASS four pets, reactions and repeated room entry");
+console.log(
+  "PASS seven pets, reactions, real following and no running in place",
+);
 w.setView("street");
 w.paused = false;
+w.pet.position.copy(w.hero.position).add(new THREE.Vector3(1, 0, 0));
+w.petPath = [{ x: w.hero.position.x, z: w.hero.position.z }];
+tick(1);
+assert.equal(w.petPath.length, 0, "clear stale follow path near girl");
+assert.notEqual(
+  w.pet.userData.behavior.name,
+  "walk",
+  "stationary pet must not run in place",
+);
 const street = w.hero.position.clone();
 w.setView("room", "home");
+assert(
+  w.room.children
+    .find((o) => o.userData.doors)
+    .userData.doors.every((d) => d.rotation.y === 0),
+  "room wardrobe closed",
+);
 w.sit();
 assert(w.sitting);
 w.navigate(0, 2);

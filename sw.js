@@ -1,5 +1,5 @@
 "use strict";
-const CACHE = "emilia-living-v5-2";
+const CACHE = "emilia-living-v5-3";
 const ASSETS = [
   "./",
   "index.html",
@@ -9,7 +9,14 @@ const ASSETS = [
   "town-state.js",
   "learning.js",
   "art.js",
+  "surface-art.js",
+  "atmosphere.js",
+  "vendor/reflector.js",
+  "vendor/water.js",
   "character-assets.js",
+  "pet-behavior.js",
+  "pet-rig.js",
+  "companion-assets.js",
   "models/characters.json",
   "models/characters.bin",
   "models/thumbs/dress-0.png",
@@ -28,6 +35,9 @@ const ASSETS = [
   "models/thumbs/hair-3.png",
   "models/thumbs/hair-4.png",
   "models/thumbs/dog-0.png",
+  "models/thumbs/cat-0.png",
+  "models/thumbs/rabbit-0.png",
+  "models/thumbs/fox-0.png",
   "speech-manifest.js",
   "voice-pack.js",
   "human-audio.js",

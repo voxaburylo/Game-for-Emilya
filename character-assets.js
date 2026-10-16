@@ -54,8 +54,7 @@
     const T = root.THREE,
       group = new T.Group(),
       nodes = { root: group };
-    group.name =
-      model === "girl" ? "Емілія · Blender model" : "Песик · Blender model";
+    group.name = model + " · Blender model";
     const pivots = library.pivots[model];
     for (const [key, position] of Object.entries(pivots)) {
       if (key === "root") continue;
@@ -73,6 +72,7 @@
       "dress" + look.dress,
       "shoes" + look.shoes,
       "hair" + look.hair,
+      look.apple ? "apple" : "",
     ]);
     const instanceMaterials = new Map();
     for (const part of library.meshes) {
@@ -80,7 +80,9 @@
       const definition = library.materials[part.material],
         painted = !!part.color;
       const key = part.material + ":" + painted;
-      const cache = definition.tint ? instanceMaterials : sharedMaterials;
+      const override = look.materials?.[part.material];
+      const cache =
+        definition.tint || override ? instanceMaterials : sharedMaterials;
       if (!cache.has(key)) {
         const material = new T.MeshStandardMaterial({
           color: painted ? 0xffffff : new T.Color().setRGB(...definition.color),
@@ -92,6 +94,7 @@
           material.color.set(
             root.TownState.COLORS[look.color] || root.TownState.COLORS[0],
           );
+        else if (override) material.color.set(override);
         else material.userData.characterShared = true;
         cache.set(key, material);
       }
@@ -101,8 +104,36 @@
       mesh.receiveShadow = true;
       nodes[part.node].add(mesh);
     }
+    let torso;
+    if (model === "girl") {
+      const upper = group.children.filter(
+        (o) => o !== nodes.legL && o !== nodes.legR,
+      );
+      torso = new T.Group();
+      torso.name = "Relaxed upper body";
+      torso.position.y = 1.28;
+      group.add(torso);
+      group.updateMatrixWorld(true);
+      upper.forEach((o) => torso.attach(o));
+    } else if (["dog", "cat", "rabbit", "fox"].includes(model)) {
+      const legs = [nodes.legL, nodes.legR, nodes.backL, nodes.backR];
+      const upper = group.children.filter((o) => !legs.includes(o));
+      torso = new T.Group();
+      torso.name = "Animal chest and hips";
+      torso.position.set(0, 0.55, -0.1);
+      group.add(torso);
+      group.updateMatrixWorld(true);
+      upper.forEach((o) => torso.attach(o));
+    }
+    const rig = [];
+    if (["dog", "cat", "rabbit", "fox"].includes(model))
+      for (const leg of [nodes.legL, nodes.legR, nodes.backL, nodes.backR])
+        rig.push(root.PetRig.create(leg, group, model));
     group.userData = {
       characterModel: model,
+      torso,
+      rig,
+      ankles: rig.map((r) => r.ankle),
       head: nodes.head,
       tail: nodes.tail,
       legs:
@@ -110,8 +141,8 @@
           ? [nodes.legL, nodes.legR]
           : [nodes.legL, nodes.legR, nodes.backL, nodes.backR],
       arms: model === "girl" ? [nodes.armL, nodes.armR] : [],
-      eyes: [nodes.eyeL, nodes.eyeR],
-      ears: model === "dog" ? [nodes.earL, nodes.earR] : [],
+      eyes: [nodes.eyeL, nodes.eyeR].filter(Boolean),
+      ears: [nodes.earL, nodes.earR].filter(Boolean),
     };
     return group;
   }
@@ -126,15 +157,26 @@
         : 1;
     data.eyes.forEach((eye) => (eye.scale.y = blink));
     if (data.characterModel === "girl") {
-      data.head.rotation.z = reduced ? 0 : Math.sin(time * 1.1) * 0.018;
-      data.head.rotation.x = moving ? Math.sin(time * 11) * 0.015 : 0;
-    }
-    data.ears.forEach((ear, i) => {
-      ear.rotation.z = reduced
+      const idle = !moving && !reduced;
+      data.head.rotation.z = reduced ? 0 : Math.sin(time * 0.7) * 0.028;
+      data.head.rotation.x = reduced
         ? 0
-        : Math.sin(time * (moving ? 12 : 2) + i * 0.7) *
-          (moving ? 0.11 : 0.018);
-    });
+        : moving
+          ? Math.sin(time * 11) * 0.015
+          : -0.012 + Math.sin(time * 0.85) * 0.025;
+      data.head.rotation.y = idle ? Math.sin(time * 0.43) * 0.13 : 0;
+      data.torso.rotation.z = idle ? Math.sin(time * 0.68) * 0.012 : 0;
+      data.torso.rotation.y = idle ? Math.sin(time * 0.52) * 0.022 : 0;
+      data.torso.rotation.x = idle ? Math.sin(time * 0.8) * 0.007 : 0;
+      data.torso.position.y = 1.28 + (idle ? Math.sin(time * 1.65) * 0.006 : 0);
+    }
+    if (data.characterModel === "girl")
+      data.ears.forEach((ear, i) => {
+        ear.rotation.z = reduced
+          ? 0
+          : Math.sin(time * (moving ? 12 : 2) + i * 0.7) *
+            (moving ? 0.11 : 0.018);
+      });
   }
   root.CharacterAssets = {
     load,
@@ -142,6 +184,21 @@
     animate,
     girl: (look) => instantiate("girl", look),
     dog: () => instantiate("dog"),
+    pet: (type) => instantiate(type),
+    tree: (apple) =>
+      instantiate("tree", {
+        apple,
+        materials: { leaf: "#b4ed8b", leafDark: "#43823b" },
+      }),
+    cottage: (wall, roof) =>
+      instantiate("cottage", {
+        materials: {
+          plaster: wall,
+          roof,
+          roofLight: new THREE.Color(roof).multiplyScalar(1.12),
+          roofDark: new THREE.Color(roof).multiplyScalar(0.85),
+        },
+      }),
   };
   if (typeof module !== "undefined") module.exports = root.CharacterAssets;
 })(typeof window !== "undefined" ? window : globalThis);

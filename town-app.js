@@ -66,7 +66,15 @@
     console.error(e);
     return;
   }
-  const names = { cat: "Киця", dog: "Песик", rabbit: "Кролик", fox: "Лисичка" },
+  const names = {
+      cat: "Киця",
+      dog: "Песик",
+      rabbit: "Кролик",
+      fox: "Лисичка",
+      turtle: "Черепашка",
+      chicken: "Курочка",
+      zombie: "Зомбі-садівник",
+    },
     modes = {
       letters: ["Знайди таку саму", "book"],
       hear: ["Послухай літеру", "ear"],
@@ -289,7 +297,7 @@
     if (route === "pets")
       html =
         bar("Маленький друг") +
-        `<section class="side-panel pet-panel"><h3>${names[draft]}</h3><div class="choice-grid">${S.PETS.map((p, i) => `<button class="choice ${draft === p ? "active" : ""}" data-action="pet-choice" data-value="${p}" aria-label="${names[p]}">${A.thumb("pet", i)}<span>${names[p]}</span></button>`).join("")}</div><div class="row">${btn("rotate-left", "rotate", "Повернути ліворуч")}${btn("rotate-right", "rotate", "Повернути праворуч")}</div><p class="note">Торкнись друга, щоб погладити.</p><div class="actions">${btn("back", "close", "Скасувати", "secondary")}${btn("apply-pet", "check", "Готово", "primary")}</div></section><div class="scene-actions pet-actions">${[
+        `<section class="side-panel pet-panel"><div class="row"><h3>${names[draft]}</h3><span class="wallet">${icon("gem")}${state.gems}</span></div><div class="choice-grid">${S.PETS.map((p, i) => `<button class="choice ${draft === p ? "active" : ""}" data-action="pet-choice" data-value="${p}" aria-label="${names[p]}">${A.thumb("pet", i)}<span>${names[p]}</span>${S.ownsPet(state, p) ? "" : `<small class="pet-price">${icon("gem")}${S.PET_PRICES[p]}</small>`}</button>`).join("")}</div><div class="row">${btn("rotate-left", "rotate", "Повернути ліворуч")}${btn("rotate-right", "rotate", "Повернути праворуч")}</div><p class="note">Торкнись друга, щоб погладити.</p><div class="actions">${btn("back", "close", "Скасувати", "secondary")}${S.ownsPet(state, draft) ? btn("apply-pet", "check", "Готово", "primary") : btn("buy-pet", "gem", `${S.PET_PRICES[draft]} · Відкрити`, "primary")}</div></section><div class="scene-actions pet-actions">${[
           ["stroke", "hand", "Погладити"],
           ["feed", "food", "Погодувати"],
           ["ball", "ball", "М’ячик"],
@@ -939,7 +947,16 @@
       render();
     }
     if (act === "pet-react") world.petReact(v);
-    if (act === "apply-pet") {
+    if (act === "buy-pet") {
+      if (S.buyPet(state, draft)) {
+        save();
+        world.petReact("stroke");
+        render();
+        toast("Новий друг тепер твій!");
+      } else
+        toast("Потрібно ще трохи кристалів. Пограй з літерами чи складами!");
+    }
+    if (act === "apply-pet" && S.ownsPet(state, draft)) {
       state.pet = draft;
       save();
       back();
@@ -1183,7 +1200,7 @@
       .then((reg) => {
         const check = async () => {
           if (reg.active?.state === "activated") {
-            const cache = await caches.open("emilia-living-v5-2");
+            const cache = await caches.open("emilia-living-v5-3");
             offlineReady = (
               await Promise.all(
                 [
