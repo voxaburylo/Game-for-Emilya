@@ -1,0 +1,186 @@
+const assert = require("node:assert/strict");
+global.Core = require("./core.js");
+global.TownState = require("./town-state.js");
+const S = global.TownState,
+  L = require("./learning.js");
+let checks = 0;
+function test(name, fn) {
+  fn();
+  console.log("PASS " + name);
+  checks++;
+}
+const D = 20000; // a fixed day number
+
+test("recognition promotes, mastery needs two different days, misses demote", () => {
+  const s = S.fresh();
+  L.record(s, "hear", "А", true, D);
+  L.record(s, "hear", "А", true, D);
+  assert.equal(L.box(s, "L:А"), 2);
+  L.record(s, "hear", "А", true, D);
+  assert.equal(L.box(s, "L:А"), 2, "same day cannot master");
+  assert.equal(s.items["L:А"].due, D + 1);
+  L.record(s, "hear", "А", true, D + 1);
+  assert.equal(L.box(s, "L:А"), 3);
+  assert.equal(L.status(s, "L:А"), "mastered");
+  assert.equal(s.items["L:А"].due, D + 1 + L.INTERVAL[3]);
+  L.record(s, "hear", "А", false, D + 3);
+  assert.equal(L.box(s, "L:А"), 2);
+  assert.equal(s.items["L:А"].due, D + 3);
+  assert.equal(s.items["L:А"].miss, 1);
+  assert(S.valid(s));
+});
+
+test("matching, pairs and copying never count as knowing", () => {
+  const s = S.fresh();
+  for (let i = 0; i < 5; i++) {
+    L.record(s, "letters", "О", true, D + i);
+    L.record(s, "blend", "МА", true, D + i);
+    L.record(s, "pairs", "АОУ", true, D + i);
+  }
+  assert.equal(L.box(s, "L:О"), 1);
+  assert.equal(L.box(s, "S:МА"), 1);
+  assert.equal(L.box(s, "L:У"), 1);
+  L.record(s, "letters", "К", false, D);
+  assert.equal(L.box(s, "L:К"), 0, "a hinted first meeting stays new");
+});
+
+test("new letters arrive only when fewer than two are still being learned", () => {
+  const s = S.fresh(),
+    run = { index: 1, used: [] };
+  let t = L.plan(s, run, D);
+  assert.equal(t.key, "L:А");
+  assert(t.isNew);
+  assert.equal(t.mode, "letters");
+  L.record(s, "letters", "А", true, D);
+  L.record(s, "letters", "О", true, D);
+  t = L.plan(s, { index: 1, used: [] }, D);
+  assert(!t.isNew, "two letters still being learned");
+  L.record(s, "hear", "А", true, D);
+  t = L.plan(s, { index: 1, used: [] }, D);
+  assert.equal(t.key, "L:У");
+  assert(t.isNew);
+});
+
+test("planner: valid options, no repeats in a run, due reviews come back", () => {
+  const s = S.fresh();
+  for (const l of ["А", "О", "У", "М", "С"]) {
+    L.record(s, "hear", l, true, D);
+    L.record(s, "hear", l, true, D);
+  }
+  const run = { index: 0, used: [], newDone: false };
+  for (let i = 0; i < 5; i++) {
+    run.index = i;
+    const t = L.plan(s, run, D + 1, () => 0.9);
+    if (["blend", "words"].includes(t.mode))
+      assert.equal(
+        t.options.map((o) => o.text).sort().join(""),
+        [...(t.mode === "words" ? t.word.parts : [...t.target])].sort().join(""),
+      );
+    if (["letters", "hear", "hear-syllable"].includes(t.mode)) {
+      assert.equal(new Set(t.options).size, 3);
+      assert(t.options.includes(t.target));
+      assert(!t.options.includes("Ь"));
+    }
+    assert(!run.used.includes(t.key), "repeated " + t.key);
+    run.used.push(t.key);
+    if (t.isNew) run.newDone = true;
+  }
+  // A brand-new child starts with the first letter.
+  assert.equal(L.plan(S.fresh(), { index: 0, used: [] }, D).key, "L:А");
+  // A mastered letter is left alone until its review day, then it comes back.
+  const m = S.fresh();
+  for (const l of L.ORDER) m.items["L:" + l] = { box: 3, seen: 3, ok: 3, miss: 0, due: D + 9, lastUp: D };
+  m.items["L:Ж"].due = D + 4;
+  assert.notEqual(L.plan(m, { index: 0, used: [] }, D, () => 0.9).mode, "letters");
+  const back = L.plan(m, { index: 0, used: [] }, D + 4, () => 0.9);
+  assert.equal(back.key, "L:Ж");
+  assert.equal(back.mode, "hear");
+});
+
+test("confusions and look-alikes become distractors", () => {
+  const s = S.fresh();
+  for (const l of L.ORDER.slice(0, 12)) L.record(s, "hear", l, true, D);
+  for (let i = 0; i < 4; i++) L.confuse(s, "И", "Н");
+  for (let i = 0; i < 50; i++) assert(L.letterOptions(s, "И").includes("Н"));
+  s.items["L:И"].box = 2;
+  delete s.conf["И|Н"];
+  for (let i = 0; i < 50; i++) assert(L.letterOptions(s, "И").includes("І"));
+  L.confuse(s, "А", "А");
+  assert(!s.conf["А|А"]);
+  assert(S.valid(s));
+});
+
+test("syllable families open with known letters; words with heard syllables", () => {
+  const s = S.fresh();
+  assert(L.familyOpen(s, 0));
+  assert(!L.familyReady(s, 0));
+  for (const l of ["М", "А", "О", "У"]) {
+    L.record(s, "hear", l, true, D);
+    L.record(s, "hear", l, true, D);
+  }
+  assert(L.familyReady(s, 0));
+  assert(!L.familyOpen(s, 1));
+  const t = L.plan(s, { index: 1, used: [] }, D);
+  assert.equal(t.key, "S:МА");
+  assert.equal(t.mode, "blend");
+  assert.deepEqual(L.readyWords(s), []);
+  L.record(s, "blend", "МА", true, D);
+  assert.deepEqual(L.readyWords(s).map((w) => w.text), ["МАМА"]);
+  assert.equal(L.plan(s, { index: 0, used: [] }, D).mode, "hear-syllable");
+});
+
+test("placement stops early and marks known letters for confirmation", () => {
+  const s = S.fresh(),
+    run = { place: { k: 0, misses: 0, streak: 0 } },
+    answers = [true, true, true, false, true, false, false];
+  let n = 0,
+    t;
+  while ((t = L.placementTask(s, run))) {
+    assert(t.placement && t.options.includes(t.target));
+    assert.equal(new Set(t.options).size, 3);
+    L.placementResult(s, run, t.target, answers[n++], D);
+  }
+  assert.equal(n, 7, "two misses in a row end the check");
+  assert.equal(L.box(s, "L:А"), 2);
+  assert.equal(s.items["L:А"].due, D + 1);
+  assert.equal(L.box(s, "L:М"), 0);
+  assert.equal(L.status(s, "L:С"), "known");
+  const all = { place: { k: 0, misses: 0, streak: 0 } };
+  let count = 0;
+  while ((t = L.placementTask(S.fresh(), all))) {
+    L.placementResult(s, all, t.target, true, D);
+    count++;
+  }
+  assert.equal(count, 15, "the check is capped");
+  assert(S.valid(s));
+});
+
+test("v4 saves upgrade to v5 without losing progress", () => {
+  const v4 = S.fresh();
+  v4.version = 4;
+  delete v4.items;
+  delete v4.conf;
+  delete v4.placed;
+  v4.gems = 31;
+  v4.letterScores = { А: 2, О: 1 };
+  v4.syllableScores = { МА: 1 };
+  const before = JSON.stringify(v4),
+    s = S.migrate(v4);
+  assert.equal(JSON.stringify(v4), before);
+  assert(S.valid(s));
+  assert.equal(s.gems, 31);
+  assert.equal(L.box(s, "L:А"), 1);
+  assert.equal(L.box(s, "S:МА"), 1);
+  assert.equal(s.placed, false);
+  for (const bad of [
+    (x) => (x.items = { "L:A": { box: 1, seen: 0, ok: 0, miss: 0, due: 0, lastUp: 0 } }),
+    (x) => (x.items = { "L:А": { box: 9, seen: 0, ok: 0, miss: 0, due: 0, lastUp: 0 } }),
+    (x) => (x.conf = { "А|<b>": 1 }),
+    (x) => (x.placed = "yes"),
+  ]) {
+    const x = S.fresh();
+    bad(x);
+    assert(!S.valid(x));
+  }
+});
+console.log(checks + " learning checks passed");

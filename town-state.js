@@ -72,7 +72,7 @@
   }
   function fresh() {
     return {
-      version: 4,
+      version: 5,
       gems: 12,
       runs: 0,
       independent: 0,
@@ -91,10 +91,32 @@
       allLevels: false,
       seen: {},
       nextId: 1,
+      // Mastery per item ("L:А" letter, "S:МА" syllable, "W:МАМА" word), see learning.js.
+      items: {},
+      // How often a target was confused with another pick: "А|О" -> count.
+      conf: {},
+      // The short "what do you already know" check has been played.
+      placed: false,
     };
   }
   function migrate(old) {
     if (valid(old)) return JSON.parse(JSON.stringify(old));
+    if (old && old.version === 4 && validBody(old)) {
+      // v4 -> v5: keep everything; old scores came mostly from visual matching,
+      // so they only mark an item as introduced and heard (box 1).
+      const s = JSON.parse(JSON.stringify(old));
+      s.version = 5;
+      s.items = {};
+      s.conf = {};
+      s.placed = false;
+      for (const [l, n] of Object.entries(s.letterScores))
+        if (n > 0 && /^[А-ЯҐЄІЇЬ]$/.test(l))
+          s.items["L:" + l] = { box: 1, seen: n, ok: n, miss: 0, due: 0, lastUp: 0 };
+      for (const [v, n] of Object.entries(s.syllableScores))
+        if (n > 0 && /^[А-ЯҐЄІЇЬ]{2}$/.test(v))
+          s.items["S:" + v] = { box: 1, seen: n, ok: n, miss: 0, due: 0, lastUp: 0 };
+      return valid(s) ? s : null;
+    }
     if (!root.Core?.valid(old)) return null;
     const s = fresh();
     for (const k of [
@@ -134,10 +156,40 @@
     return s;
   }
   const integer = (n) => Number.isInteger(n) && n >= 0 && n <= 1e7;
+  const ITEM_KEY = /^[LSW]:[А-ЯҐЄІЇЬ]{1,8}$/,
+    CONF_KEY = /^[А-ЯҐЄІЇЬ]{1,2}\|[А-ЯҐЄІЇЬ]{1,2}$/;
   function valid(s) {
+    if (!s || s.version !== 5 || !validBody(s)) return false;
+    if (
+      typeof s.placed !== "boolean" ||
+      !s.items ||
+      typeof s.items !== "object" ||
+      Array.isArray(s.items) ||
+      Object.keys(s.items).length > 400 ||
+      !s.conf ||
+      typeof s.conf !== "object" ||
+      Array.isArray(s.conf) ||
+      Object.keys(s.conf).length > 1000
+    )
+      return false;
+    for (const [k, v] of Object.entries(s.items))
+      if (
+        !ITEM_KEY.test(k) ||
+        !v ||
+        !Number.isInteger(v.box) ||
+        v.box < 0 ||
+        v.box > 5 ||
+        !["seen", "ok", "miss", "due", "lastUp"].every((f) => integer(v[f]))
+      )
+        return false;
+    return Object.entries(s.conf).every(
+      ([k, v]) => CONF_KEY.test(k) && integer(v),
+    );
+  }
+  // Everything shared by save versions 4 and 5.
+  function validBody(s) {
     if (
       !s ||
-      s.version !== 4 ||
       !integer(s.gems) ||
       !integer(s.runs) ||
       !integer(s.independent) ||
@@ -446,14 +498,6 @@
     s.modeRuns[run.mode] = (s.modeRuns[run.mode] || 0) + 1;
     return true;
   }
-  function familyOpen(s, index) {
-    return (
-      index === 0 ||
-      s.allLevels ||
-      FAMILIES[index - 1].filter((v) => (s.syllableScores[v] || 0) >= 1)
-        .length >= 3
-    );
-  }
   function room(s, id) {
     return (
       s.rooms[id] ||
@@ -492,7 +536,6 @@
     roadLine,
     skill,
     reward,
-    familyOpen,
     room,
   };
   if (typeof module !== "undefined") module.exports = api;

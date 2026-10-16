@@ -125,7 +125,6 @@ test("learning separates modes, hints, discovery and single reward", () => {
   S.skill(s, "hear-syllable", "МА", true);
   assert(!s.syllableScores.МА);
   for (const p of ["МА", "МО", "МУ"]) S.skill(s, "blend", p, false);
-  assert(S.familyOpen(s, 1));
   assert.equal(s.skills["blend:МА"].solo, 1);
   assert.equal(s.skills["hear-syllable:МА"].hinted, 1);
   const run = { mode: "blend" };

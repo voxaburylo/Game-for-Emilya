@@ -912,7 +912,64 @@ p {
   font-weight: 700;
 }
 .alphabet .learned {
-  background: #d7e3ca;
+  background: #b9d3a8;
+}
+.alphabet .learning {
+  background: #ece0b4;
+}
+.play-big {
+  width: 100%;
+  min-height: 120px;
+  margin-bottom: 22px;
+  border-radius: 28px;
+  background: var(--green);
+  color: #fff9ee;
+  box-shadow: 0 6px 0 #2c5149;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  font-size: 34px;
+  font-weight: 700;
+  animation: playInvite 2.4s ease-in-out infinite;
+}
+.play-big .ico {
+  width: 58px;
+  height: 58px;
+  stroke-width: 2.2;
+}
+@keyframes playInvite {
+  50% {
+    transform: scale(1.02);
+  }
+}
+.all-games {
+  margin: 4px 0 12px;
+}
+.letter-status {
+  margin: 10px 0;
+}
+.letter-status span {
+  min-height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  font-weight: 700;
+  background: #f3efe2;
+  color: #a5ab98;
+}
+.letter-status .learning {
+  background: #ece0b4;
+  color: #6f6236;
+}
+.letter-status .known {
+  background: #cfe0bf;
+  color: #46653f;
+}
+.letter-status .mastered {
+  background: #7fa478;
+  color: #fff9ee;
 }
 .letter-detail {
   text-align: center;
