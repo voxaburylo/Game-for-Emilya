@@ -82,6 +82,30 @@
       rabbit: "Кролик",
       fox: "Лисичка",
       shiba: "Шіба",
+      "cube-beaver": "Бобер",
+      "cube-bee": "Бджілка",
+      "cube-bunny": "Кубічний зайчик",
+      "cube-cat": "Кубічна киця",
+      "cube-caterpillar": "Гусінь",
+      "cube-chick": "Курчатко",
+      "cube-cow": "Корівка",
+      "cube-crab": "Крабик",
+      "cube-deer": "Оленятко",
+      "cube-dog": "Кубічний песик",
+      "cube-elephant": "Слоненя",
+      "cube-fish": "Рибка",
+      "cube-fox": "Кубічна лисичка",
+      "cube-giraffe": "Жирафеня",
+      "cube-hog": "Кабанчик",
+      "cube-koala": "Коала",
+      "cube-lion": "Левеня",
+      "cube-monkey": "Мавпеня",
+      "cube-panda": "Панда",
+      "cube-parrot": "Папужка",
+      "cube-penguin": "Пінгвіненя",
+      "cube-pig": "Поросятко",
+      "cube-polar": "Біле ведмежа",
+      "cube-tiger": "Тигреня",
       turtle: "Черепашка",
       chicken: "Курочка",
       zombie: "Зомбі-садівник",
@@ -371,7 +395,6 @@
           ["brick", "Цегла"],
           ["wood", "Дерево"],
           ["stepping", "Садові плити"],
-          ["erase", "Гумка"],
         ]
           .map(
             ([v, t]) =>
@@ -389,7 +412,7 @@
           )
           .join(
             "",
-          )}</div><p class="path-quote" id="path-quote"></p><div class="actions">${btn("road-clear", "undo", "Очистити ескіз", "secondary")}${btn("road-apply", "check", "Побудувати", "primary")}</div>${btn("path-undo", "undo", "Скасувати останню доріжку", "secondary", lastGardenPath === null ? "disabled" : "")}<div class="path-wallet">${gemImage()} ${state.gems}</div></section>`;
+          )}</div><p class="path-quote" id="path-quote"></p><div class="actions">${btn("road-apply", "check", "Побудувати", "primary")}${btn("path-undo", "undo", "Скасувати останню доріжку", "secondary", lastGardenPath === null ? "disabled" : "")}</div><div class="path-wallet">${gemImage()} ${state.gems}</div></section>`;
     if (route === "furniture")
       html =
         bar("Облаштуй кімнату") +
@@ -1391,7 +1414,7 @@
       .then((reg) => {
         const check = async () => {
           if (reg.active?.state === "activated") {
-            const cache = await caches.open("emilia-living-v5-12-external-art");
+            const cache = await caches.open("emilia-living-v5-16-stable-pets");
             offlineReady = (
               await Promise.all(
                 [

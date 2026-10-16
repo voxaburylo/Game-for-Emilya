@@ -20,6 +20,14 @@
       ["lie", 5.5],
       ["stretch", 2.3],
     ],
+    kenney: [
+      ["look", 2.4],
+      ["sniff", 2.6],
+      ["sit", 3.2],
+      ["look", 2.2],
+      ["stretch", 2.1],
+      ["lie", 3.8],
+    ],
     cat: [
       ["look", 2],
       ["groom", 6],
@@ -108,7 +116,7 @@
     if (moving) state = "walk";
     else if (action) state = action;
     else if (!reduced) {
-      const cycle = cycles[type],
+      const cycle = cycles[type] || cycles.kenney,
         length = cycle.reduce((n, a) => n + a[1], 0);
       phase = b.idle % length;
       for (const [name, duration] of cycle) {
@@ -127,7 +135,7 @@
       head = poses.head,
       tail = poses.tail;
     const wave = reduced ? 0 : Math.sin(time * 1.8),
-      breath = reduced ? 0 : Math.sin(time * 2) * 0.007;
+      breath = reduced ? 0 : Math.sin(time * 1.7) * 0.002;
     body.p[1] = breath;
     head.r[1] = reduced ? 0 : Math.sin(time * 0.65) * 0.22;
     head.r[2] = reduced ? 0 : Math.sin(time * 0.9) * 0.035;
@@ -181,8 +189,10 @@
 
       bounce = reduced
         ? 0
-        : Math.abs(Math.sin(a)) * (type === "rabbit" ? 0.11 : 0.018);
-      body.r[2] = reduced ? 0 : Math.sin(a) * 0.018;
+        : Math.abs(Math.sin(a)) * (type === "rabbit" ? 0.045 : 0.006);
+      // A stable horizon reads better on a tablet; leg motion and the small
+      // vertical bounce already communicate walking without rocking the pet.
+      body.r[2] = 0;
       for (let i = 0; i < d.ears.length; i++)
         poses["ear" + i].r[0] = reduced
           ? 0
@@ -245,6 +255,57 @@
       head.r[1] = reduced ? 0 : Math.sin(time * 2) * 0.35;
       head.r[0] = 0.12;
       tail.r[2] = reduced ? 0 : Math.sin(time * 8) * 0.24;
+    }
+    if (d.staticPet) {
+      // This CC model was supplied without a skeleton. Keep its sculpt and
+      // collar intact, while giving it readable whole-body motions.
+      // The source Shiba was sculpted in a deep crouch. Lift its torso while
+      // PetRig keeps the paws planted, giving it a natural standing height.
+      body.p = [0, breath + (type === "shiba" ? 0.18 : 0), 0];
+      body.r = [0, 0, 0];
+      // Static imports animate their complete sculpt through the body/leg
+      // bones. Do not add a second root bounce: it made every foot contact
+      // move vertically and looked like rapid trembling.
+      bounce = 0;
+      if (state === "walk") {
+        const hop = reduced ? 0 : Math.abs(Math.sin(b.distance * 10));
+        body.p[1] += hop * (d.hoverPet ? 0.012 : type === "shiba" ? 0.008 : 0.016);
+        body.r[0] = d.hoverPet ? 0 : type === "shiba" ? 0 : -0.025;
+        body.r[2] =
+          reduced || type === "shiba" ? 0 : Math.sin(b.distance * 10) * 0.035;
+      } else if (state === "sniff" || state === "feed") {
+        body.p[1] += state === "feed" ? 0.02 : 0;
+        body.r[0] = state === "feed" && type !== "shiba" ? -0.22 : -0.075;
+      } else if (state === "shake") {
+        body.r[2] = reduced ? 0 : Math.sin(time * 23) * 0.045;
+      } else if (state === "lie") {
+        body.p[1] -= 0.07;
+        body.r[0] = 0.045;
+      } else if (state === "stretch") {
+        body.p[1] -= 0.035;
+        body.r[0] = 0.065;
+      } else if (state === "stroke") {
+        body.r[2] = reduced ? 0 : Math.sin(time * 3) * 0.025;
+      } else if (state === "ball") {
+        body.r[1] = reduced ? 0 : Math.sin(time * 2) * 0.045;
+      }
+      if (type === "shiba" && head) {
+        head.p = [0, 0, 0];
+        head.r = [0, 0, 0];
+        if (state === "walk" && !reduced)
+          head.r[0] = Math.sin(b.distance * 10) * 0.045;
+        else if (state === "feed") head.r[0] = -0.18;
+        else if (state === "sniff") head.r[0] = -0.09;
+        else if (state === "stroke") head.r[2] = 0.09;
+        else if (!reduced) head.r[1] = Math.sin(time * 0.7) * 0.065;
+      } else if (head) {
+        head.p = [0, 0, 0];
+        head.r = [0, 0, 0];
+      }
+      if (tail) {
+        tail.p = [0, 0, 0];
+        tail.r = [0, 0, 0];
+      }
     }
     const blend = reduced ? 1 : 1 - Math.exp(-Math.min(dt, 0.1) * 7);
     for (const [key, node] of Object.entries(b.parts)) {

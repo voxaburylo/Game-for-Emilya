@@ -52,6 +52,8 @@
     );
   }
   function thumb(kind, index = 0, color = "#be7186") {
+    if (kind === "pet" && TownState.PETS[index]?.startsWith("cube-"))
+      return `<img class="model-thumb" src="models/thumbs/${TownState.PETS[index]}.png" alt="" draggable="false">`;
     if (kind === "pet" && TownState.PETS[index] === "shiba")
       return '<img class="model-thumb" src="models/thumbs/shiba-0.png" alt="" draggable="false">';
     if (kind === "pet" && CompanionAssets.types.includes(TownState.PETS[index]))

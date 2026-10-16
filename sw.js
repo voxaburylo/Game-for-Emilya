@@ -1,5 +1,5 @@
 "use strict";
-const CACHE = "emilia-living-v5-12-external-art";
+const CACHE = "emilia-living-v5-16-stable-pets";
 const ASSETS = [
   "park.css",
   "park-catalog.js",
@@ -26,6 +26,8 @@ const ASSETS = [
   "companion-assets.js",
   "models/characters.json",
   "models/characters.bin",
+  "models/cube-pets.json",
+  "models/cube-pets.bin",
   "speech-manifest.js",
   "voice-pack.js",
   "human-audio.js",
@@ -259,6 +261,30 @@ const ASSETS = [
   "models/thumbs/build-swing.png",
   "models/thumbs/build-tree.png",
   "models/thumbs/cat-0.png",
+  "models/thumbs/cube-beaver.png",
+  "models/thumbs/cube-bee.png",
+  "models/thumbs/cube-bunny.png",
+  "models/thumbs/cube-cat.png",
+  "models/thumbs/cube-caterpillar.png",
+  "models/thumbs/cube-chick.png",
+  "models/thumbs/cube-cow.png",
+  "models/thumbs/cube-crab.png",
+  "models/thumbs/cube-deer.png",
+  "models/thumbs/cube-dog.png",
+  "models/thumbs/cube-elephant.png",
+  "models/thumbs/cube-fish.png",
+  "models/thumbs/cube-fox.png",
+  "models/thumbs/cube-giraffe.png",
+  "models/thumbs/cube-hog.png",
+  "models/thumbs/cube-koala.png",
+  "models/thumbs/cube-lion.png",
+  "models/thumbs/cube-monkey.png",
+  "models/thumbs/cube-panda.png",
+  "models/thumbs/cube-parrot.png",
+  "models/thumbs/cube-penguin.png",
+  "models/thumbs/cube-pig.png",
+  "models/thumbs/cube-polar.png",
+  "models/thumbs/cube-tiger.png",
   "models/thumbs/dog-0.png",
   "models/thumbs/dress-0.png",
   "models/thumbs/dress-1.png",
@@ -289,6 +315,7 @@ const ASSETS = [
   "models/party-fruit/pineapple.png",
   "models/party-fruit/pomegranate.png",
   "models/party-fruit/strawberry.png",
+  "models/licenses/kenney-cube-pets.txt",
   "models/licenses/shiba.txt"
 ];
 async function rangeResponse(request, cached) {

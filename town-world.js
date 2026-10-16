@@ -24,6 +24,8 @@
       this.streetPose = { x: 0, z: 5 };
       this.petAction = "";
       this.petUntil = 0;
+      this.petActionStart = 0;
+      this.petShowcaseStart = 0;
       this.jumpY = 0;
       this.jumpV = 0;
       this.reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -141,12 +143,19 @@
       }
       this.pet = A.pet(type);
       this.petSole = new T.Box3().setFromObject(this.pet).min.y;
+      this.petGroundBounce = 0;
       this.pet.position.copy(pos);
       this.pet.userData.action = { type: "pet" };
       this.scene.add(this.pet);
       if (this.view === "pets") {
         this.pet.position.set(0, 0, 0);
         this.pet.scale.setScalar(2);
+        this.petShowcaseStart = this.time;
+        this.petAction = "";
+        this.petUntil = 0;
+        if (this.petProp) this.clear(this.petProp);
+        this.ballProp = null;
+        this.foodBowl = null;
       }
       this.petPath = [];
     }
@@ -883,6 +892,7 @@
       }
       this.riding = null;
       this.view = view;
+      if (view === "pets") this.petShowcaseStart = this.time;
       this.portraitLight.visible = ["wardrobe", "pets"].includes(view);
       this.skyLight.groundColor.set(view === "street" ? "#aaa28f" : "#d3c1b6");
       this.outside.visible = view === "street";
@@ -1284,7 +1294,8 @@
     }
     petReact(action) {
       this.petAction = action;
-      this.petUntil = this.time + 2.2;
+      this.petActionStart = this.time;
+      this.petUntil = this.time + ({ feed: 5.2, ball: 6.2, stroke: 2.8 }[action] || 2.8);
       if (this.view === "pets" && !this.petProp) {
         this.petProp = new T.Group();
         this.room.add(this.petProp);
@@ -1292,8 +1303,40 @@
       if (this.petProp) {
         this.clear(this.petProp);
         this.ballProp = null;
-        if (action === "feed")
-          A.cyl(this.petProp, "#b77f6b", 0, 0.18, 1.4, 0.45, 0.3);
+        if (action === "feed") {
+          const bowl = new T.Group(),
+            shell = new T.Mesh(
+              new T.CylinderGeometry(0.5, 0.38, 0.24, 28, 1, true),
+              A.mat("#b85f4f"),
+            ),
+            base = new T.Mesh(
+              new T.CylinderGeometry(0.37, 0.37, 0.08, 28),
+              A.mat("#93473f"),
+            ),
+            rim = new T.Mesh(
+              new T.TorusGeometry(0.5, 0.065, 8, 28),
+              A.mat("#d98267"),
+            );
+          shell.position.y = 0.18;
+          base.position.y = 0.06;
+          rim.position.y = 0.31;
+          rim.rotation.x = Math.PI / 2;
+          bowl.add(shell, base, rim);
+          for (let i = 0; i < 9; i++)
+            A.ball(
+              bowl,
+              i % 3 ? "#7b4d31" : "#9b653d",
+              Math.cos(i * 2.4) * (0.12 + (i % 2) * 0.13),
+              0.33 + (i % 3) * 0.018,
+              Math.sin(i * 2.4) * (0.12 + (i % 2) * 0.13),
+              0.075,
+              0.045,
+              0.075,
+            );
+          bowl.position.set(0, 0, 1.55);
+          this.petProp.add(bowl);
+          this.foodBowl = bowl;
+        }
         if (action === "ball") {
           this.ballProp = A.ball(this.petProp, "#daa95f", 0, 0.25, 1.5, 0.22);
         }
@@ -1512,6 +1555,48 @@
       if (this.pet) {
         const previousX = this.pet.position.x,
           previousZ = this.pet.position.z;
+        if (this.view === "pets") {
+          const active = this.petUntil > this.time,
+            actionTime = Math.max(0, this.time - this.petActionStart),
+            phase = (this.time - this.petShowcaseStart) % 14;
+          let targetX = 0,
+            targetZ = 0,
+            targetRotation = this.yaw + (this.pet.userData.headingOffset || 0);
+          if (active && this.petAction === "feed") {
+            const approach = T.MathUtils.smoothstep(actionTime, 0.15, 1.45);
+            targetZ = approach * 0.82;
+            targetRotation = this.pet.userData.headingOffset || 0;
+          } else if (active && this.petAction === "ball") {
+            const ballX = Math.sin(Math.max(0, actionTime - 0.25) * 2.25) * 1.45;
+            targetX = ballX * 0.72;
+            targetZ = 0.42 + Math.abs(Math.sin(actionTime * 1.7)) * 0.16;
+            targetRotation =
+              Math.atan2(ballX - this.pet.position.x, 1.45 - this.pet.position.z) +
+              (this.pet.userData.headingOffset || 0);
+          } else if (!active) {
+            if (phase >= 2 && phase < 7) targetX = -1.05;
+            else if (phase >= 7 && phase < 12) targetX = 0.8;
+            else targetX = 0;
+            targetZ = 0;
+          }
+          const dx = targetX - this.pet.position.x,
+            dz = targetZ - this.pet.position.z,
+            remaining = Math.hypot(dx, dz),
+            speed = active && this.petAction === "ball" ? 2.35 : 1.15;
+          if (remaining > 0.008) {
+            const step = Math.min(remaining, dt * speed);
+            this.pet.position.x += (dx / remaining) * step;
+            this.pet.position.z += (dz / remaining) * step;
+            if (!(active && this.petAction === "feed"))
+              targetRotation =
+                Math.atan2(dx, dz) + (this.pet.userData.headingOffset || 0);
+          }
+          const turn = Math.atan2(
+            Math.sin(targetRotation - this.pet.rotation.y),
+            Math.cos(targetRotation - this.pet.rotation.y),
+          );
+          this.pet.rotation.y += turn * (1 - Math.exp(-dt * 4));
+        }
         if (["street", "room"].includes(this.view) && !this.paused) {
           const p = this.hero.position,
             d = Math.hypot(
@@ -1531,6 +1616,11 @@
                 len = Math.hypot(dx, dz);
               if (len < 0.15) this.petPath.shift();
               else {
+                // Keep imported pets moving continuously. The previous
+                // on/off stride changed their velocity every few frames,
+                // which made their whole body jerk at each turn.
+                const oldX = this.pet.position.x,
+                  oldZ = this.pet.position.z;
                 const next = nav.move(
                   this.pet.position,
                   (dx / len) * Math.min(dt * 6.5, len),
@@ -1538,17 +1628,26 @@
                 );
                 this.pet.position.x = next.x;
                 this.pet.position.z = next.z;
-                const angle = Math.atan2(dx, dz),
-                  delta = Math.atan2(
-                    Math.sin(angle - this.pet.rotation.y),
-                    Math.cos(angle - this.pet.rotation.y),
-                  );
-                this.pet.rotation.y += delta * (1 - Math.exp(-dt * 12));
+                const movedX = next.x - oldX,
+                  movedZ = next.z - oldZ;
+                // Face the direction the navigator actually accepted. Grid
+                // corrections can differ from the next waypoint direction;
+                // steering toward the rejected direction made pets flick
+                // left and right at corners.
+                if (Math.hypot(movedX, movedZ) > 0.00005) {
+                  const angle =
+                      Math.atan2(movedX, movedZ) +
+                      (this.pet.userData.headingOffset || 0),
+                    delta = Math.atan2(
+                      Math.sin(angle - this.pet.rotation.y),
+                      Math.cos(angle - this.pet.rotation.y),
+                    );
+                  this.pet.rotation.y += delta * (1 - Math.exp(-dt * 3.5));
+                }
               }
             }
           } else this.petPath = [];
         }
-        if (this.view === "pets") this.pet.rotation.y = this.yaw;
         const distance = Math.hypot(
           this.pet.position.x - previousX,
           this.pet.position.z - previousZ,
@@ -1567,27 +1666,43 @@
           action: active ? this.petAction : "",
           reduced: this.reduced,
         });
+        this.petGroundBounce +=
+          (behavior.bounce - this.petGroundBounce) *
+          (this.reduced ? 1 : 1 - Math.exp(-dt * 12));
         this.pet.rotation.z = 0;
         this.pet.position.y = 0;
         this.pet.updateMatrixWorld(true);
-        this.petBounds ||= new T.Box3();
-        const sole = this.petBounds.setFromObject(this.pet, true).min.y;
+        // Keep a stable floor anchor. Recomputing the animated bounding box on
+        // every frame made the whole animal jump whenever a paw rotated.
+        const sole = this.petSole * this.pet.scale.y;
         const floor =
           this.view === "pets"
             ? 0.27
             : this.view === "wardrobe"
               ? 0.045
               : this.surfaceHeight(this.pet.position);
-        this.pet.position.y = floor - sole + behavior.bounce;
-        if (this.ballProp)
+        this.pet.position.y =
+          floor -
+          sole +
+          (this.pet.userData.characterModel === "shiba" ? 0.08 : 0) +
+          this.petGroundBounce +
+          (this.pet.userData.hoverPet
+            ? 0.42 + (this.reduced ? 0 : Math.sin(this.time * 3.1) * 0.08)
+            : 0);
+        if (this.ballProp) {
+          const ballTime = Math.max(0, this.time - this.petActionStart);
           this.ballProp.position.set(
-            Math.sin(this.time * 2) * 1.3,
-            0.25 + Math.abs(Math.sin(this.time * 4)) * 0.7,
-            1.5,
+            Math.sin(Math.max(0, ballTime - 0.25) * 2.25) * 1.45,
+            0.24 + Math.abs(Math.sin(ballTime * 4.5)) * 0.72,
+            1.45,
           );
+          this.ballProp.rotation.x += dt * 7;
+          this.ballProp.rotation.z += dt * 4;
+        }
         if (!active && this.petProp) {
           this.clear(this.petProp);
           this.ballProp = null;
+          this.foodBowl = null;
         }
       }
       if (this.doorPending && this.time >= this.doorPending.at) {

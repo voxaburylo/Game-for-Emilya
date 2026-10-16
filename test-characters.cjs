@@ -6,10 +6,19 @@ require("./pet-rig.js");
 global.TownState = require("./town-state.js");
 const pack = JSON.parse(fs.readFileSync("models/characters.json", "utf8"));
 const bytes = fs.readFileSync("models/characters.bin");
+const cubePack = JSON.parse(fs.readFileSync("models/cube-pets.json", "utf8"));
+const cubeBytes = fs.readFileSync("models/cube-pets.bin");
 const assets = require("./character-assets.js");
 assets.install(
   pack,
   bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+);
+assets.installAdditional(
+  cubePack,
+  cubeBytes.buffer.slice(
+    cubeBytes.byteOffset,
+    cubeBytes.byteOffset + cubeBytes.byteLength,
+  ),
 );
 require("./art.js");
 let packTriangles = 0;
@@ -60,6 +69,9 @@ for (const model of [
   girl,
   dog,
   ...["cat", "rabbit", "fox", "shiba"].map(assets.pet),
+  ...["cube-elephant", "cube-bee", "cube-tiger", "cube-parrot"].map(
+    assets.pet,
+  ),
 ]) {
   let triangles = 0,
     draws = 0;
@@ -147,14 +159,27 @@ for (const file of [
   "character-assets.js",
   "models/characters.json",
   "models/characters.bin",
+  "models/cube-pets.json",
+  "models/cube-pets.bin",
   "models/licenses/shiba.txt",
+  "models/licenses/kenney-cube-pets.txt",
   "models/thumbs/shiba-0.png",
+  "models/thumbs/cube-elephant.png",
   "surface-art.js",
   "vendor/reflector.js",
   "vendor/water.js",
 ])
   assert(files.includes(file));
 assert.match(fs.readFileSync("models/licenses/shiba.txt", "utf8"), /CC BY 4\.0/);
+assert.match(
+  fs.readFileSync("models/licenses/kenney-cube-pets.txt", "utf8"),
+  /CC0 1\.0/,
+);
+assert.equal(
+  cubePack.meshes.length,
+  24,
+  "every downloaded Kenney animal is in the runtime pack",
+);
 for (const model of [assets.tree(true), assets.cottage("#dfcbb2", "#ac7568")]) {
   const box = new THREE.Box3().setFromObject(model);
   assert(box.min.y > -0.3 && box.max.y < 6);

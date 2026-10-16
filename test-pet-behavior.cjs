@@ -11,8 +11,26 @@ assets.install(
   JSON.parse(fs.readFileSync("models/characters.json")),
   bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
 );
+const cubePack = JSON.parse(fs.readFileSync("models/cube-pets.json")),
+  cubeBytes = fs.readFileSync("models/cube-pets.bin");
+assets.installAdditional(
+  cubePack,
+  cubeBytes.buffer.slice(
+    cubeBytes.byteOffset,
+    cubeBytes.byteOffset + cubeBytes.byteLength,
+  ),
+);
 require("./art.js");
-for (const type of ["dog", "cat", "rabbit", "fox", "shiba"]) {
+for (const type of [
+  "dog",
+  "cat",
+  "rabbit",
+  "fox",
+  "shiba",
+  "cube-elephant",
+  "cube-bee",
+  "cube-tiger",
+]) {
   const pet = assets.pet(type),
     states = new Set();
   let t = 0;
@@ -25,7 +43,7 @@ for (const type of ["dog", "cat", "rabbit", "fox", "shiba"]) {
       reduced,
     });
   for (let i = 0; i < 2100; i++) states.add(step().state);
-  for (const [state] of behavior.cycles[type])
+  for (const [state] of behavior.cycles[type] || behavior.cycles.kenney)
     assert(states.has(state), `${type}: missing ${state}`);
   step("", 0.1);
   assert.equal(pet.userData.behavior.name, "walk");
@@ -46,6 +64,7 @@ for (const type of ["dog", "cat", "rabbit", "fox", "shiba"]) {
     "stretch",
     "stroke",
     "ball",
+    "feed",
   ]) {
     for (let i = 0; i < 90; i++) step(action);
     pet.position.y = 0;
@@ -107,8 +126,8 @@ for (const type of ["dog", "cat", "rabbit", "fox", "shiba"]) {
       n.geometry.addEventListener("dispose", () => ownedDisposed++);
   });
   Art.dispose(pet);
-  if (type === "shiba")
-    assert.equal(ownedDisposed, 0, "shared Shiba geometry stays reusable");
+  if (pet.userData.staticPet)
+    assert.equal(ownedDisposed, 0, "shared static-pet geometry stays reusable");
   else assert(ownedDisposed >= 4, "owned skin geometry is released");
   console.log(
     `PASS ${type}: species cycle, displacement gait, articulated poses, ground contact, reduced motion and disposal`,

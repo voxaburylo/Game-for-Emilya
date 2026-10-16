@@ -49,9 +49,18 @@ THREE.WebGLRenderer = class {
 };
 const fs = require("node:fs");
 const bytes = fs.readFileSync("./models/characters.bin");
-require("./character-assets.js").install(
+const characterAssets = require("./character-assets.js");
+characterAssets.install(
   JSON.parse(fs.readFileSync("./models/characters.json", "utf8")),
   bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+);
+const cubeBytes = fs.readFileSync("./models/cube-pets.bin");
+characterAssets.installAdditional(
+  JSON.parse(fs.readFileSync("./models/cube-pets.json", "utf8")),
+  cubeBytes.buffer.slice(
+    cubeBytes.byteOffset,
+    cubeBytes.byteOffset + cubeBytes.byteLength,
+  ),
 );
 require("./vendor/reflector.js");
 require("./vendor/water.js");
@@ -131,7 +140,7 @@ for (const p of TownState.PETS) {
   assert(
     (w.pet.updateMatrixWorld(true),
     new THREE.Box3().setFromObject(w.pet, true).min.y) >= 0.265,
-    "paws above pet platform",
+    `${p} paws above pet platform`,
   );
   w.petReact("ball");
   tick(20);
@@ -147,7 +156,31 @@ for (const p of TownState.PETS) {
   w.paused = false;
   w.hero.position.set(0, 0, 5);
   w.pet.position.set(0, 0, 11);
-  tick(180);
+  tick(1);
+  let previousYaw = w.pet.rotation.y,
+    previousY = w.pet.position.y,
+    maxTurnStep = 0,
+    maxHeightStep = 0;
+  for (let frame = 1; frame < 180; frame++) {
+    tick(1);
+    maxTurnStep = Math.max(
+      maxTurnStep,
+      Math.abs(
+        Math.atan2(
+          Math.sin(w.pet.rotation.y - previousYaw),
+          Math.cos(w.pet.rotation.y - previousYaw),
+        ),
+      ),
+    );
+    maxHeightStep = Math.max(
+      maxHeightStep,
+      Math.abs(w.pet.position.y - previousY),
+    );
+    previousYaw = w.pet.rotation.y;
+    previousY = w.pet.position.y;
+  }
+  assert(maxTurnStep < 0.19, `${p} turns without snapping`);
+  assert(maxHeightStep < 0.025, `${p} stays vertically stable`);
   assert(
     Math.hypot(w.pet.position.x, w.pet.position.z - 5) <= 2.1,
     `${p} follows the girl`,
@@ -159,7 +192,7 @@ for (const p of TownState.PETS) {
   );
 }
 console.log(
-  "PASS seven pets, reactions, real following and no running in place",
+  `PASS ${TownState.PETS.length} pets, reactions, smooth turning, stable height and real following`,
 );
 w.setView("street");
 w.paused = false;

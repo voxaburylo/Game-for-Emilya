@@ -2,7 +2,7 @@
   "use strict";
   let library, pending;
   const sharedMaterials = new Map();
-  function install(data, buffer) {
+  function decode(data, buffer) {
     if (data.version !== 1)
       throw new Error("Unsupported character asset version");
     const T = root.THREE;
@@ -46,7 +46,16 @@
       geometry.userData.characterShared = true;
       return { ...part, geometry };
     });
-    library = { ...data, meshes };
+    return { ...data, meshes };
+  }
+  function install(data, buffer) {
+    library = decode(data, buffer);
+  }
+  function installAdditional(data, buffer) {
+    const extra = decode(data, buffer);
+    library.meshes.push(...extra.meshes);
+    Object.assign(library.materials, extra.materials);
+    Object.assign(library.pivots, extra.pivots);
   }
   async function load() {
     if (library) return;
@@ -60,8 +69,19 @@
           if (!r.ok) throw Error("Character mesh: " + r.status);
           return r.arrayBuffer();
         }),
+        fetch("models/cube-pets.json").then((r) => {
+          if (!r.ok) throw Error("Cube pets manifest: " + r.status);
+          return r.json();
+        }),
+        fetch("models/cube-pets.bin").then((r) => {
+          if (!r.ok) throw Error("Cube pets mesh: " + r.status);
+          return r.arrayBuffer();
+        }),
       ])
-        .then(([data, buffer]) => install(data, buffer))
+        .then(([data, buffer, pets, petBuffer]) => {
+          install(data, buffer);
+          installAdditional(pets, petBuffer);
+        })
         .catch((error) => {
           pending = null;
           throw error;
@@ -73,6 +93,7 @@
       throw Error("Character assets must be loaded before creating the world");
     const T = root.THREE,
       group = new T.Group(),
+      staticPet = model === "shiba" || model.startsWith("cube-"),
       nodes = { root: group };
     group.name = model + " · Blender model";
     const pivots = library.pivots[model];
@@ -112,6 +133,9 @@
           roughness: definition.roughness,
           metalness: definition.metalness,
           vertexColors: painted,
+          transparent: false,
+          opacity: 1,
+          depthWrite: true,
         });
         if (definition.tint)
           material.color.set(
@@ -152,7 +176,7 @@
       group.add(torso);
       group.updateMatrixWorld(true);
       upper.forEach((o) => torso.attach(o));
-    } else if (model === "shiba") {
+    } else if (staticPet) {
       torso = nodes.body;
     } else if (["dog", "cat", "rabbit", "fox"].includes(model)) {
       const legs = [nodes.legL, nodes.legR, nodes.backL, nodes.backR];
@@ -168,7 +192,7 @@
     if (["dog", "cat", "rabbit", "fox"].includes(model))
       for (const leg of [nodes.legL, nodes.legR, nodes.backL, nodes.backR])
         rig.push(root.PetRig.create(leg, group, model));
-    if (model === "shiba")
+    if (staticPet)
       for (const leg of [nodes.legL, nodes.legR, nodes.backL, nodes.backR]) {
         const knee = new T.Object3D(),
           ankle = new T.Object3D();
@@ -182,6 +206,9 @@
       }
     group.userData = {
       characterModel: model,
+      staticPet,
+      headingOffset: model === "shiba" ? Math.PI : 0,
+      hoverPet: ["cube-bee", "cube-fish", "cube-parrot"].includes(model),
       torso,
       rig,
       ankles: rig.map((r) => r.ankle),
@@ -232,6 +259,7 @@
   root.CharacterAssets = {
     load,
     install,
+    installAdditional,
     animate,
     girl: (look) => instantiate("girl", look),
     dog: () => instantiate("dog"),

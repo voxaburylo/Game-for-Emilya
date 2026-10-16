@@ -49,12 +49,12 @@ width = hi.x - lo.x
 PIVOTS = {
     "root": (0, 0, 0),
     "body": (0, 0, 0),
-    "head": (0, height * .72, length * .31),
-    "tail": (0, height * .64, -length * .34),
-    "legL": (-width * .22, height * .42, length * .24),
-    "legR": (width * .22, height * .42, length * .24),
-    "backL": (-width * .24, height * .42, -length * .24),
-    "backR": (width * .24, height * .42, -length * .24),
+    "head": (0, height * .72, -length * .31),
+    "tail": (0, height * .64, length * .34),
+    "legL": (-width * .22, height * .42, -length * .24),
+    "legR": (width * .22, height * .42, -length * .24),
+    "backL": (-width * .24, height * .42, length * .24),
+    "backR": (width * .24, height * .42, length * .24),
 }
 
 
@@ -66,23 +66,36 @@ def smoothstep(a, b, value):
     return t * t * (3 - 2 * t)
 
 
-def skin(point):
-    candidates = {
-        "head": smoothstep(length * .08, length * .30, point.z)
-        * smoothstep(height * .30, height * .53, point.y),
-        "tail": smoothstep(length * .20, length * .40, -point.z)
-        * smoothstep(height * .37, height * .58, point.y),
-    }
-    leg = (1 - smoothstep(height * .30, height * .54, point.y)) * smoothstep(
-        width * .07, width * .18, abs(point.x)
-    )
-    front = point.z > -length * .03
-    candidates[("leg" if front else "back") + ("L" if point.x < 0 else "R")] = leg
-    bone, weight = max(candidates.items(), key=lambda item: item[1])
-    weight = min(.98, weight)
-    if weight < .02:
+def skin(point, object_name):
+    # The source has no armature. Use small, soft regions around the corrected
+    # pivots. The collar stays on the body, while the separate eye shells follow
+    # the head exactly. Motion amplitudes are intentionally modest in runtime.
+    if object_name == "Object001":
+        return (1, 0, 0, 0), (1, 0, 0, 0)
+    if object_name != "Box002":
         return (0, 0, 0, 0), (1, 0, 0, 0)
-    return (0, SKIN_BONES.index(bone), 0, 0), (1 - weight, weight, 0, 0)
+    x, y, z = point
+    head = smoothstep(height * .62, height * .84, y) * (
+        1 - smoothstep(-length * .18, length * .02, z)
+    )
+    lower = 1 - smoothstep(height * .25, height * .48, y)
+    front = lower * (1 - smoothstep(-length * .08, length * .12, z))
+    back = lower * smoothstep(length * .02, length * .25, z)
+    left = 1 - smoothstep(-width * .08, width * .08, x)
+    right = 1 - left
+    candidates = [
+        (1, head),
+        (3, front * left),
+        (4, front * right),
+        (5, back * left),
+        (6, back * right),
+    ]
+    moving = sum(weight for _, weight in candidates)
+    values = [(0, max(.08, 1 - min(.92, moving))), *candidates]
+    values = sorted(values, key=lambda value: value[1], reverse=True)[:4]
+    total = sum(weight for _, weight in values) or 1
+    values += [(0, 0)] * (4 - len(values))
+    return tuple(index for index, _ in values), tuple(weight / total for _, weight in values)
 
 
 image = bpy.data.images.load(str(TEXTURE), check_existing=True)
@@ -121,10 +134,12 @@ for obj in objects:
             runtime["normal"].extend(normal)
             uv = uv_layer.data[loop_index].uv if uv_layer else Vector((.5, .5))
             runtime["color"].extend(sample(uv))
-            indices, weights = skin(point)
+            indices, weights = skin(point, obj.name)
             runtime["skinIndex"].extend(indices)
             runtime["skinWeight"].extend(weights)
-        runtime["index"].extend((base, base + 1, base + 2))
+        # Swapping FBX Y/Z changes handedness, so reverse each triangle to keep
+        # the artist's exterior faces front-facing in Three.js.
+        runtime["index"].extend((base, base + 2, base + 1))
 
 data = json.loads(MANIFEST.read_text(encoding="utf8"))
 source_blob = BINARY.read_bytes()
@@ -176,5 +191,5 @@ MANIFEST.write_text(json.dumps(data, separators=(",", ":")), encoding="utf8")
 BINARY.write_bytes(blob)
 print(
     f"SHIBA COMPLETE: {len(runtime['index']) // 3} triangles, "
-    f"{len(SKIN_BONES)} smooth bones, {len(blob)} runtime bytes"
+    f"soft regional rig, {len(blob)} runtime bytes"
 )
