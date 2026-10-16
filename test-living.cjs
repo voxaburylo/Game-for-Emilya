@@ -73,9 +73,9 @@ test("all rotated houses reserve real footprint and entrance", () => {
     );
   }
 });
-test("four land expansions, continuous seams and finite boundaries", () => {
+test("136 land expansions, continuous seams and finite boundaries", () => {
   const s = S.fresh();
-  s.gems = 100;
+  s.gems = S.LANDS.reduce((sum, land) => sum + land.cost, 0);
   for (const l of S.LANDS) {
     assert(S.expand(s, l.id));
     const balance = s.gems;
@@ -90,8 +90,8 @@ test("four land expansions, continuous seams and finite boundaries", () => {
     [0, -16],
   ])
     assert(S.inside(s, x, z, 0.8));
-  assert(!S.inside(s, 29, 0));
-  assert(!S.inside(s, 25, 22));
+  assert(!S.inside(s, 69, 0));
+  assert(S.inside(s, 25, 22));
   assert(S.valid(s));
 });
 test("roads atomic, connected, persistent, erasable; water/house/locked blocked", () => {

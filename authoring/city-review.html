@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <base href="../" />
+    <title>Перевірка міста — без зміни збереження</title>
+    <style>
+      body {
+        margin: 0;
+        font: 14px system-ui;
+        background: #8ccde7;
+      }
+      #world {
+        position: fixed;
+        inset: 0;
+        touch-action: none;
+      }
+      aside {
+        position: fixed;
+        left: 12px;
+        top: 12px;
+        max-width: 270px;
+        background: #fff9eced;
+        border-radius: 15px;
+        padding: 12px;
+      }
+      button {
+        font: inherit;
+        padding: 10px;
+        margin: 3px;
+        border: 0;
+        border-radius: 10px;
+        background: #d6e5d1;
+      }
+      output {
+        display: block;
+        white-space: pre-wrap;
+        margin-top: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="world"></div>
+    <aside>
+      <strong>Перевірка міста</strong>
+      <div>
+        <button id="city">Велике місто</button
+        ><button id="far">Далекий район</button
+        ><button id="near">До дівчинки</button
+        ><button id="fresh">Початковий острів</button>
+      </div>
+      <output id="metrics">Завантаження…</output>
+    </aside>
+    <script src="three.min.js"></script>
+    <script src="core.js"></script>
+    <script src="park-catalog.js"></script>
+    <script src="garden-paths.js"></script>
+    <script src="town-state.js"></script>
+    <script src="navigation.js"></script>
+    <script src="pet-rig.js"></script>
+    <script src="pet-behavior.js"></script>
+    <script src="character-assets.js"></script>
+    <script src="companion-assets.js"></script>
+    <script src="art.js"></script>
+    <script src="park-assets.js"></script>
+    <script src="vendor/reflector.js"></script>
+    <script src="vendor/water.js"></script>
+    <script src="surface-art.js"></script>
+    <script src="atmosphere.js"></script>
+    <script src="island-landscape.js"></script>
+    <script src="town-world.js"></script>
+    <script>
+      (async () => {
+        document.querySelectorAll("button").forEach((b) => (b.disabled = true));
+        await CharacterAssets.load();
+        await ParkAssets.load();
+        const world = new TownWorld(
+          document.getElementById("world"),
+          TownState.fresh(),
+          () => {},
+        );
+        world.paused = false;
+        document
+          .querySelectorAll("button")
+          .forEach((b) => (b.disabled = false));
+        let frames = 0,
+          total = 0,
+          last = performance.now();
+        function install(s) {
+          world.state = s;
+          world.hero.position.set(0, 0, 5);
+          world.pet.position.set(2, 0, 5);
+          world.refreshTerrain();
+          world.refreshObjects();
+          world.homeCamera();
+        }
+        document.getElementById("fresh").onclick = () =>
+          install(TownState.fresh());
+        document.getElementById("city").onclick = () => {
+          const s = TownState.fresh();
+          s.gems = 100000;
+          for (const l of TownState.LANDS) TownState.expand(s, l.id);
+          let i = 0;
+          for (let z = -60; z <= 60; z += 6)
+            for (let x = -62; x <= 62; x += 6) {
+              const kind =
+                i % 19 === 0 ? "house" : ParkCatalog.items[i % 28].id;
+              TownState.place(s, kind, x, z, i % 4);
+              i++;
+            }
+          install(s);
+          world.cameraAnchor = new THREE.Vector3();
+          world.zoom = 65;
+          world.updateProjection();
+        };
+        document.getElementById("far").onclick = () => {
+          world.cameraAnchor = new THREE.Vector3(58, 0, 50);
+          world.zoom = 13;
+          world.updateProjection();
+        };
+        document.getElementById("near").onclick = () => world.homeCamera();
+        function measure(now) {
+          frames++;
+          total += now - last;
+          last = now;
+          if (total > 1000) {
+            document.getElementById("metrics").textContent =
+              `Ділянки: ${world.state.lands.length}\nОб’єкти: ${world.state.objects.length}\nПлоща: ${TownState.landArea(world.state)}\nІнтервал кадрів (фон сповільнює): ${(total / frames).toFixed(1)} мс\nВиклики малювання: ${world.renderer.info.render.calls}\nТрикутники: ${world.renderer.info.render.triangles}\nКамера: ${world.cameraAnchor ? "вільна" : "за дівчинкою"}\nПомилки: ${TownState.valid(world.state) ? "немає у збереженні" : "НЕВАЛІДНИЙ СТАН"}`;
+            frames = 0;
+            total = 0;
+          }
+          requestAnimationFrame(measure);
+        }
+        requestAnimationFrame(measure);
+      })().catch(
+        (e) => (document.getElementById("metrics").textContent = e.stack),
+      );
+    </script>
+  </body>
+</html>

@@ -56,3 +56,18 @@ surface-art.js створює локальні текстури дерева й 
 companion-assets.js — оригінальні кодові 3D-моделі черепашки, кубічної
 курочки та зомбі-садівника. Вони не копіюють файли моделей Minecraft.
 atmosphere.js — скельна основа острова, хмари, птахи, прапорці й вітрячки.
+
+Садові CC0-моделі (Tiny Treats / Isa Lousberg)
+Офіційні джерела:
+https://github.com/TinyTreats-Game-Assets/Tiny-Treats-Pretty-Park-1.0
+https://github.com/TinyTreats-Game-Assets/Tiny-Treats-Homely-House-1.0
+https://github.com/TinyTreats-Game-Assets/Tiny-Treats-Pleasant-Picnic-1.0
+Клонуйте відповідно в tools/assets-pretty-park, tools/assets-homely-house,
+tools/assets-pleasant-picnic. Імпортер перевіряє LICENSE.txt перед конвертацією.
+  node authoring/import-park.cjs
+  node authoring/park-render-jobs.cjs
+  blender --background --python authoring/render_park.py
+Мініатюра окремого предмета: додайте -- --only=tea-picnic до команди Blender.
+Результат: models/park/{park.json,park.bin,atlas-*.png,thumbs/,licenses/}.
+Перевірка великого міста: /authoring/city-review.html. Жодного localStorage.
+Показник інтервалу кадрів у фоновій вкладці не є тестом FPS планшета.

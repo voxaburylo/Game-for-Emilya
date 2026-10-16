@@ -102,7 +102,7 @@
     const group = new T.Group();
     group.name = "Clouds below the floating island";
     const sky = new T.Mesh(
-      new T.SphereGeometry(125, 24, 16),
+      new T.SphereGeometry(500, 24, 16),
       new T.ShaderMaterial({
         side: T.BackSide,
         depthWrite: false,
@@ -117,7 +117,7 @@
     const geometry = cloudGeometry(),
       material = new T.MeshStandardMaterial({ color: "#f6fbff", roughness: 1 });
     const clouds = [];
-    for (let i = 0; i < 24; i++) {
+    for (let i = 0; i < 40; i++) {
       const a = i * 2.39996,
         r = 31 + (i % 4) * 10,
         x = Math.cos(a) * r,
@@ -303,11 +303,25 @@
       flags,
       rotors,
       birds,
+      flightWidth: 160,
+      setBounds(x, z) {
+        this.flightWidth = Math.max(160, x * 3.7 + 70);
+        for (const c of clouds) {
+          c.baseX ??= c.x;
+          c.baseZ ??= c.z;
+          c.x = c.baseX * Math.max(1, x / 18);
+          c.z = c.baseZ * Math.max(1, z / 16);
+        }
+      },
       update(time, reduced) {
         const t = reduced ? 0 : time;
         for (const { c, x, z, i } of clouds) {
-          c.position.x = x + Math.sin(t * 0.025 + i) * 3;
-          c.position.z = z + Math.cos(t * 0.018 + i) * 1.5;
+          const span = this.flightWidth;
+          c.position.x =
+            ((((x - t * (1.4 + (i % 4) * 0.25) + span / 2) % span) + span) %
+              span) -
+            span / 2;
+          c.position.z = z + Math.sin(t * 0.06 + i) * 0.6;
         }
         for (const [i, f] of flags.entries())
           f.rotation.x = Math.sin(t * 2.1 + i * 0.6) * 0.16;

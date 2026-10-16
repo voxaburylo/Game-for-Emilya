@@ -7,6 +7,8 @@ const tests = [
   "test-learning.cjs",
   "test-learning-party.cjs",
   "test-world.cjs",
+  "test-park.cjs",
+  "test-city.cjs",
   "test-characters.cjs",
   "test-pet-behavior.cjs",
   "test-companions.cjs",

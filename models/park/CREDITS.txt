@@ -1,0 +1,16 @@
+pretty-park
+Author: Isa Lousberg / Tiny Treats
+License: CC0-1.0
+https://tinytreats.itch.io/pretty-park
+
+homely-house
+Author: Isa Lousberg / Tiny Treats
+License: CC0-1.0
+https://tinytreats.itch.io/homely-house
+
+pleasant-picnic
+Author: Isa Lousberg / Tiny Treats
+License: CC0-1.0
+https://tinytreats.itch.io/pleasant-picnic
+
+Original glTF meshes repacked for this game. Placement, scale and combined picnic/flower arrangements by this project. Original license notices are in licenses/.

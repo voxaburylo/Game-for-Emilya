@@ -1,5 +1,11 @@
 (function (root) {
   "use strict";
+  const Park =
+    root.ParkCatalog ||
+    (typeof require !== "undefined" ? require("./park-catalog.js") : null);
+  const Paths =
+    root.GardenPaths ||
+    (typeof require !== "undefined" ? require("./garden-paths.js") : null);
   const ITEMS = [
     { id: "flowers", name: "Квітник", cost: 2, w: 1, h: 1 },
     { id: "bench", name: "Лавочка", cost: 3, w: 1, h: 1 },
@@ -7,6 +13,7 @@
     { id: "swing", name: "Гойдалка", cost: 6, w: 2, h: 1 },
     { id: "fountain", name: "Фонтан", cost: 8, w: 2, h: 2 },
     { id: "house", name: "Будиночок", cost: 10, w: 2, h: 2 },
+    ...Park.items,
   ];
   const LANDS = [
     { id: "east", name: "Сонячний берег", x: 23, z: 0, w: 10, h: 32, cost: 6 },
@@ -30,6 +37,48 @@
       cost: 15,
     },
   ];
+  LANDS.push(...Park.lands);
+  LANDS.push(...Park.districts(LANDS));
+  const BOUNDS = Park.bounds,
+    MAX_OBJECTS = 900;
+  const landCache = new WeakMap();
+  function ownedLand(s) {
+    let cached = landCache.get(s);
+    if (cached && cached.ref === s.lands && cached.count === s.lands.length)
+      return cached;
+    const owned = new Set(s.lands),
+      plots = LANDS.filter((l) => owned.has(l.id)),
+      cells = new Map();
+    for (const l of plots)
+      for (
+        let x = Math.floor((l.x - l.w / 2) / 8);
+        x <= Math.floor((l.x + l.w / 2) / 8);
+        x++
+      )
+        for (
+          let z = Math.floor((l.z - l.h / 2) / 8);
+          z <= Math.floor((l.z + l.h / 2) / 8);
+          z++
+        ) {
+          const key = x + "," + z;
+          if (!cells.has(key)) cells.set(key, []);
+          cells.get(key).push(l);
+        }
+    cached = { ref: s.lands, count: s.lands.length, plots, cells };
+    landCache.set(s, cached);
+    return cached;
+  }
+  function availableLands(s) {
+    const owned = new Set(s.lands);
+    return LANDS.filter(
+      (l) =>
+        !owned.has(l.id) &&
+        (!l.requires || l.requires.some((id) => owned.has(id))),
+    );
+  }
+  function landArea(s) {
+    return 36 * 32 + ownedLand(s).plots.reduce((sum, l) => sum + l.w * l.h, 0);
+  }
   const NATURAL = [
     [-16, -13],
     [-17, -4],
@@ -140,10 +189,24 @@
       s.placed = false;
       for (const [l, n] of Object.entries(s.letterScores))
         if (n > 0 && /^[А-ЯҐЄІЇЬ]$/.test(l))
-          s.items["L:" + l] = { box: 1, seen: n, ok: n, miss: 0, due: 0, lastUp: 0 };
+          s.items["L:" + l] = {
+            box: 1,
+            seen: n,
+            ok: n,
+            miss: 0,
+            due: 0,
+            lastUp: 0,
+          };
       for (const [v, n] of Object.entries(s.syllableScores))
         if (n > 0 && /^[А-ЯҐЄІЇЬ]{2}$/.test(v))
-          s.items["S:" + v] = { box: 1, seen: n, ok: n, miss: 0, due: 0, lastUp: 0 };
+          s.items["S:" + v] = {
+            box: 1,
+            seen: n,
+            ok: n,
+            miss: 0,
+            due: 0,
+            lastUp: 0,
+          };
       return valid(s) ? s : null;
     }
     if (!root.Core?.valid(old)) return null;
@@ -188,7 +251,8 @@
   const ITEM_KEY = /^[LSW]:[А-ЯҐЄІЇЬ]{1,8}$/,
     CONF_KEY = /^[А-ЯҐЄІЇЬ]{1,2}\|[А-ЯҐЄІЇЬ]{1,2}$/;
   function valid(s) {
-    if (!s || s.version !== 5 || !validBody(s)) return false;
+    if (!s || s.version !== 5 || !validBody(s) || !Paths.valid(s.paths))
+      return false;
     if (
       typeof s.placed !== "boolean" ||
       !s.items ||
@@ -254,7 +318,7 @@
       new Set(s.lands).size !== s.lands.length ||
       s.lands.some((l) => !LANDS.some((v) => v.id === l)) ||
       !Array.isArray(s.objects) ||
-      s.objects.length > 150
+      s.objects.length > MAX_OBJECTS
     )
       return false;
     if (
@@ -266,8 +330,8 @@
           !ITEMS.some((v) => v.id === o.kind) ||
           !Number.isFinite(o.x) ||
           !Number.isFinite(o.z) ||
-          Math.abs(o.x) > 28 ||
-          Math.abs(o.z) > 26 ||
+          Math.abs(o.x) > BOUNDS.x ||
+          Math.abs(o.z) > BOUNDS.z ||
           ![0, 1, 2, 3].includes(o.rotation) ||
           !integer(o.paid),
       )
@@ -333,14 +397,13 @@
     );
   }
   function inside(s, x, z, margin = 0) {
+    const cells = ownedLand(s).cells;
     const point = (a, b) =>
       (Math.abs(a) <= 18 && Math.abs(b) <= 16) ||
-      LANDS.some(
-        (l) =>
-          s.lands.includes(l.id) &&
-          Math.abs(a - l.x) <= l.w / 2 &&
-          Math.abs(b - l.z) <= l.h / 2,
+      (cells.get(Math.floor(a / 8) + "," + Math.floor(b / 8)) || []).some(
+        (l) => Math.abs(a - l.x) <= l.w / 2 && Math.abs(b - l.z) <= l.h / 2,
       );
+    if (!margin) return point(x, z);
     return [-margin, 0, margin].every((dx) =>
       [-margin, 0, margin].every((dz) => point(x + dx, z + dz)),
     );
@@ -399,6 +462,8 @@
       ].some((b) => overlaps(f, entrance({ ...b, kind: "house" })))
     )
       return "Залишимо вхід вільним";
+    if ((s.paths || []).some((p) => Paths.intersectsObject(p, f)))
+      return "Тут доріжка. Обери місце поруч або прибери її гумкою";
     const entry = entrance(o);
     if (
       o.kind === "house" &&
@@ -421,7 +486,7 @@
     )
       return false;
     const item = ITEMS.find((i) => i.id === kind);
-    if (!item || (s.objects.length >= 150 && !id)) return false;
+    if (!item || (s.objects.length >= MAX_OBJECTS && !id)) return false;
     const old = s.objects.find((o) => o.id === id),
       o = {
         id: id || "b" + s.nextId,
@@ -456,7 +521,13 @@
   }
   function expand(s, id) {
     const l = LANDS.find((v) => v.id === id);
-    if (!l || s.lands.includes(id) || s.gems < l.cost) return false;
+    if (
+      !l ||
+      s.lands.includes(id) ||
+      s.gems < l.cost ||
+      (l.requires && !l.requires.some((p) => s.lands.includes(p)))
+    )
+      return false;
     s.gems -= l.cost;
     s.lands.push(id);
     return true;
@@ -550,6 +621,10 @@
   const api = {
     ITEMS,
     LANDS,
+    BOUNDS,
+    MAX_OBJECTS,
+    availableLands,
+    landArea,
     FIXED,
     NATURAL,
     FAMILIES,
@@ -565,6 +640,7 @@
     inside,
     water,
     footprint,
+    overlaps,
     entrance,
     placement,
     place,

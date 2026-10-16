@@ -30,6 +30,8 @@
     fountain: "M3 16h18l-3 5H6zM12 16V6M12 8C4-2 3 11 7 11M12 8c8-10 9 3 5 3",
     lamp: "m9 3-4 10h14L15 3zM12 13v7M8 21h8",
     move: "M12 2v20M2 12h20M8 6l4-4 4 4M8 18l4 4 4-4M6 8l-4 4 4 4M18 8l4 4-4 4",
+    focus:
+      "M3 9V3h6M15 3h6v6M21 15v6h-6M9 21H3v-6M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0",
     hand: "M7 13V6a2 2 0 0 1 4 0v6-9a2 2 0 0 1 4 0v9-6a2 2 0 0 1 4 0v8c0 10-10 10-13 5l-3-5c-2-4 1-5 4-1",
     food: "M3 12h18c0 11-18 11-18 0M7 7c-3-4 3-4 0-7M13 7c-3-4 3-4 0-7",
     ball: "M21 12a9 9 0 1 1-18 0 9 9 0 1 1 18 0M7 5l5 7 8-4M12 12l-1 9",
@@ -204,6 +206,11 @@
     return g;
   }
   function item(kind) {
+    if (
+      window.ParkAssets &&
+      window.ParkCatalog.items.some((i) => i.id === kind)
+    )
+      return window.ParkAssets.create(kind);
     const g = new T.Group();
     if (kind === "flowers") {
       box(g, "#b68e65", 0, 0.28, 0, 1.7, 0.5, 1.4);
@@ -268,8 +275,11 @@
         o.skeleton.dispose();
       }
       if (o.isReflector || o.isWater) o.dispose();
+      if (o.isInstancedMesh) o.dispose();
+      if (o.userData.batchOnly) return;
       if (
         o.geometry &&
+        !o.geometry.userData.parkShared &&
         !o.geometry.userData.characterShared &&
         !sharedG.has(o.geometry)
       )
@@ -279,8 +289,12 @@
           ? o.material
           : [o.material]
         : []) {
-        if (!m.userData.characterShared && !sharedM.has(m)) {
-          if (m.map) m.map.dispose();
+        if (
+          !m.userData.characterShared &&
+          !m.userData.parkShared &&
+          !sharedM.has(m)
+        ) {
+          if (m.map && !m.map.userData.parkShared) m.map.dispose();
           m.dispose();
         }
       }

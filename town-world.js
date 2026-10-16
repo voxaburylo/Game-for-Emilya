@@ -29,7 +29,7 @@
       this.reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
       this.scene = new T.Scene();
       this.scene.background = new T.Color("#8ccde7");
-      this.scene.fog = new T.Fog("#8ccde7", 90, 170);
+      this.scene.fog = new T.Fog("#8ccde7", 180, 330);
       this.renderer = new T.WebGLRenderer({
         antialias: true,
         powerPreference: "high-performance",
@@ -41,7 +41,7 @@
       this.renderer.toneMapping = T.ACESFilmicToneMapping;
       this.renderer.toneMappingExposure = 1.05;
       container.append(this.renderer.domElement);
-      this.camera = new T.OrthographicCamera(-20, 20, 13, -13, 0.1, 180);
+      this.camera = new T.OrthographicCamera(-20, 20, 13, -13, 0.1, 900);
       this.focus = new T.Vector3();
       this.skyLight = new T.HemisphereLight("#fff6e7", "#aaa28f", 2);
       this.scene.add(this.skyLight);
@@ -62,7 +62,7 @@
       });
       this.sun.shadow.normalBias = 0.025;
       this.sun.shadow.bias = -0.0003;
-      this.scene.add(this.sun);
+      this.scene.add(this.sun, this.sun.target);
       this.outside = new T.Group();
       this.scene.add(this.outside);
       this.room = new T.Group();
@@ -72,9 +72,16 @@
       this.roadGroup = new T.Group();
       this.objectGroup = new T.Group();
       this.groundGroup = new T.Group();
-      this.outside.add(this.groundGroup, this.roadGroup, this.objectGroup);
+      this.staticBatchGroup = new T.Group();
+      this.batchedSources = [];
+      this.outside.add(
+        this.groundGroup,
+        this.roadGroup,
+        this.objectGroup,
+        this.staticBatchGroup,
+      );
       this.fixedGroups = new Map();
-      this.nav = new Navigation([], { x: 28, z: 26 });
+      this.nav = new Navigation([], S.BOUNDS);
       this.treeObstacles = [];
       this.makeOutside();
       this.refreshTerrain();
@@ -168,6 +175,13 @@
         this.outside.add(g);
       }
       this.lake = SurfaceArt.lake();
+      const reflectWater = this.lake.onBeforeRender;
+      this.waterNextUpdate = 0;
+      this.lake.onBeforeRender = (...args) => {
+        if (this.time < this.waterNextUpdate) return;
+        reflectWater.apply(this.lake, args);
+        this.waterNextUpdate = this.time + (this.zoom > 32 ? 1 / 6 : 1 / 15);
+      };
       this.outside.add(this.lake);
       this.outside.add(SurfaceArt.lakePlants());
       for (let i = 0; i < 15; i++) {
@@ -282,28 +296,33 @@
       return g;
     }
     refreshTerrain() {
+      this.restoreStatic();
       this.clear(this.groundGroup);
+      const plots = [
+        { x: 0, z: 0, w: 36, h: 32 },
+        ...S.LANDS.filter((l) => this.state.lands.includes(l.id)),
+      ];
+      if (window.IslandLandscape)
+        this.groundGroup.add(IslandLandscape.build(plots));
       const land = (x, z, w, h) => {
-        this.groundGroup.add(WorldAtmosphere.cliff(x, z, w, h));
+        if (!window.IslandLandscape)
+          this.groundGroup.add(WorldAtmosphere.cliff(x, z, w, h));
         A.box(this.groundGroup, "#478c3b", x, -0.09, z, w, 0.2, h);
-        A.box(
-          this.groundGroup,
-          "#70aa3e",
-          x,
-          0.01,
-          z,
-          w - 0.08,
-          0.08,
-          h - 0.08,
-        );
+        A.box(this.groundGroup, "#70aa3e", x, 0.01, z, w, 0.08, h);
       };
       land(0, 0, 36, 32);
       S.LANDS.filter((l) => this.state.lands.includes(l.id)).forEach((l) =>
         land(l.x, l.z, l.w, l.h),
       );
+      this.atmosphere.setBounds?.(
+        Math.max(...plots.map((l) => Math.abs(l.x) + l.w / 2)),
+        Math.max(...plots.map((l) => Math.abs(l.z) + l.h / 2)),
+      );
       this.updateNav();
+      this.rebuildStatic();
     }
     refreshRoads() {
+      this.restoreStatic();
       this.clear(this.roadGroup);
       for (const [key, material] of Object.entries(this.state.roads)) {
         const [ix, iz] = key.split(",").map(Number),
@@ -339,8 +358,12 @@
               0.89,
             );
       }
+      for (const p of this.state.paths || [])
+        this.roadGroup.add(GardenPaths.mesh(p.points, p.material, p.border));
+      this.rebuildStatic();
     }
     refreshObjects(animateId) {
+      this.restoreStatic();
       this.clear(this.objectGroup);
       this.animations = [];
       for (const o of this.state.objects) {
@@ -387,13 +410,95 @@
         if (p) this.hero.position.set(p.x, 0, p.z);
       }
     }
+    restoreStatic() {
+      for (const o of this.batchedSources || []) {
+        o.visible = true;
+        delete o.userData.renderBatched;
+      }
+      this.batchedSources = [];
+      if (this.staticBatchGroup) this.clear(this.staticBatchGroup);
+    }
+    rebuildStatic() {
+      if (!this.staticBatchGroup) return;
+      this.restoreStatic();
+      this.outside.updateMatrixWorld(true);
+      const skip = new Set([
+        this.staticBatchGroup,
+        this.atmosphere?.group,
+        this.lake,
+        ...(this.butterflies || []).map((b) => b.g),
+        ...(this.animations || []).map((a) => a.g),
+      ]);
+      for (const g of [
+        ...this.fixedGroups.values(),
+        ...this.objectGroup.children,
+      ]) {
+        if (g.userData.door) skip.add(g.userData.door);
+        if (g.userData.swing) skip.add(g.userData.swing);
+        if (["gate", "light"].includes(g.userData.parkAction)) skip.add(g);
+        if (g.userData.fountainDrops) skip.add(g.userData.fountainDrops);
+      }
+      const batches = new Map();
+      function visit(o) {
+        if (skip.has(o) || !o.visible) return;
+        if (
+          o.isMesh &&
+          !o.isSkinnedMesh &&
+          !o.isInstancedMesh &&
+          !Array.isArray(o.material)
+        ) {
+          const key = o.geometry.uuid + o.material.uuid;
+          if (!batches.has(key)) batches.set(key, []);
+          batches.get(key).push(o);
+        }
+        for (const c of o.children) visit(c);
+      }
+      visit(this.outside);
+      for (const meshes of batches.values()) {
+        if (meshes.length < 2) continue;
+        const first = meshes[0],
+          batch = new T.InstancedMesh(
+            first.geometry,
+            first.material,
+            meshes.length,
+          );
+        batch.userData.batchOnly = true;
+        batch.castShadow = meshes.some((o) => o.castShadow);
+        batch.receiveShadow = meshes.some((o) => o.receiveShadow);
+        meshes.forEach((o, i) => {
+          batch.setMatrixAt(i, o.matrixWorld);
+          o.visible = false;
+          o.userData.renderBatched = true;
+          this.batchedSources.push(o);
+        });
+        batch.instanceMatrix.needsUpdate = true;
+        batch.computeBoundingSphere();
+        this.staticBatchGroup.add(batch);
+      }
+    }
     updateNav() {
       if (!this.nav) return;
       const rects = [...S.FIXED, ...this.state.objects.map(S.footprint)];
+      const buckets = new Map();
+      for (const r of rects)
+        for (
+          let x = Math.floor((r.x - r.w - 0.3) / 8);
+          x <= Math.floor((r.x + r.w + 0.3) / 8);
+          x++
+        )
+          for (
+            let z = Math.floor((r.z - r.h - 0.3) / 8);
+            z <= Math.floor((r.z + r.h + 0.3) / 8);
+            z++
+          ) {
+            const key = x + "," + z;
+            if (!buckets.has(key)) buckets.set(key, []);
+            buckets.get(key).push(r);
+          }
       this.nav.blocked = (x, z) =>
         !S.inside(this.state, x, z, 0.15) ||
         S.water(x, z) ||
-        rects.some(
+        (buckets.get(Math.floor(x / 8) + "," + Math.floor(z / 8)) || []).some(
           (r) => Math.abs(x - r.x) < r.w + 0.3 && Math.abs(z - r.z) < r.h + 0.3,
         ) ||
         this.treeObstacles.some(
@@ -404,24 +509,33 @@
       const canvas = this.renderer.domElement;
       let down = null;
       const points = new Map();
-      let pinch = 0;
+      let pinch = 0,
+        angle = 0,
+        midpoint = null,
+        multi = false;
       canvas.addEventListener("pointerdown", (e) => {
         if (this.paused) return;
         canvas.setPointerCapture(e.pointerId);
         points.set(e.pointerId, { x: e.clientX, y: e.clientY });
-        down = { x: e.clientX, y: e.clientY, lastX: e.clientX, moved: false };
+        if (points.size === 1) {
+          multi = false;
+          down = {
+            x: e.clientX,
+            y: e.clientY,
+            lastX: e.clientX,
+            lastY: e.clientY,
+            moved: false,
+            rotate: e.button === 2 || e.shiftKey,
+          };
+        }
         if (points.size === 2) {
           const p = [...points.values()];
           pinch = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
-        }
-        if (this.editor?.type === "road") {
-          const p = this.groundPoint(e.clientX, e.clientY);
-          if (p)
-            this.emit({
-              type: "road-start",
-              x: Math.round(p.x / 2),
-              z: Math.round(p.z / 2),
-            });
+          angle = Math.atan2(p[1].y - p[0].y, p[1].x - p[0].x);
+          midpoint = { x: (p[0].x + p[1].x) / 2, y: (p[0].y + p[1].y) / 2 };
+          multi = true;
+          down.moved = true;
+          return;
         }
       });
       canvas.addEventListener("pointermove", (e) => {
@@ -430,38 +544,69 @@
         if (points.size === 2) {
           const p = [...points.values()],
             d = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
-          this.changeZoom((pinch - d) * 0.035);
+          const a = Math.atan2(p[1].y - p[0].y, p[1].x - p[0].x),
+            mid = { x: (p[0].x + p[1].x) / 2, y: (p[0].y + p[1].y) / 2 };
+          if (this.view === "street") {
+            this.panCamera(midpoint.x, midpoint.y, mid.x, mid.y);
+            this.rotate(-Math.atan2(Math.sin(a - angle), Math.cos(a - angle)));
+          }
+          if (d > 10 && pinch > 10)
+            this.changeZoom(this.zoom * (pinch / d - 1));
+          angle = a;
+          midpoint = mid;
           pinch = d;
           down.moved = true;
           return;
         }
-        if (this.editor?.type === "road") {
+        if (multi) return;
+        if (this.editor?.type === "road" && !down.rotate) {
+          if (!down.roadStarted) {
+            const start = this.groundPoint(down.x, down.y);
+            if (start)
+              this.emit({ type: "road-start", x: start.x, z: start.z });
+            down.roadStarted = true;
+          }
           const p = this.groundPoint(e.clientX, e.clientY);
           if (p)
             this.emit({
               type: "road-move",
-              x: Math.round(p.x / 2),
-              z: Math.round(p.z / 2),
+              x: p.x,
+              z: p.z,
             });
           down.moved = true;
           return;
         }
-        if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > 10) {
-          if (!this.editor) this.rotate(-(e.clientX - down.lastX) * 0.008);
-          else if (["objects", "select"].includes(this.editor.type)) {
-            this.editFocus.x -= ((e.clientX - down.lastX) * this.zoom) / 250;
-            this.editFocus.z -=
-              ((e.clientY - (down.lastY ?? down.y)) * this.zoom) / 220;
-            down.lastY = e.clientY;
-          }
+        if (
+          Math.hypot(e.clientX - down.x, e.clientY - down.y) > 10 ||
+          down.moved
+        ) {
+          if (this.view === "street" && !down.rotate)
+            this.panCamera(down.lastX, down.lastY, e.clientX, e.clientY);
+          else this.rotate(-(e.clientX - down.lastX) * 0.008);
           down.moved = true;
         }
+        down.lastY = e.clientY;
         down.lastX = e.clientX;
       });
       canvas.addEventListener("pointerup", (e) => {
         points.delete(e.pointerId);
-        if (down && !down.moved && !this.paused) this.tap(e.clientX, e.clientY);
-        down = null;
+        if (down && !down.moved && !multi && !down.rotate && !this.paused) {
+          if (this.editor?.type === "road") {
+            const p = this.groundPoint(e.clientX, e.clientY);
+            if (p) this.emit({ type: "road-start", x: p.x, z: p.z });
+          } else this.tap(e.clientX, e.clientY);
+        }
+        const remaining = [...points.values()][0];
+        down = remaining
+          ? {
+              x: remaining.x,
+              y: remaining.y,
+              lastX: remaining.x,
+              lastY: remaining.y,
+              moved: true,
+              rotate: false,
+            }
+          : null;
       });
       canvas.addEventListener("pointercancel", () => {
         down = null;
@@ -631,6 +776,7 @@
     navigate(x, z, callback) {
       this.getUp();
       if (this.view === "street") {
+        this.followHero();
         this.path = this.nav.path(this.hero.position, { x, z });
       } else if (this.view === "room") {
         const p = {
@@ -659,7 +805,7 @@
       if (["wardrobe", "pets"].includes(this.view)) return;
       this.zoom = Math.max(
         this.view === "room" ? 6 : 8,
-        Math.min(24, this.zoom + d),
+        Math.min(this.view === "street" ? 90 : 24, this.zoom + d),
       );
       this.updateProjection();
     }
@@ -668,7 +814,32 @@
       if (this.view === "room")
         this.yaw = Math.max(-0.55, Math.min(0.55, this.yaw));
     }
+    followHero() {
+      this.cameraAnchor = null;
+    }
+    panCamera(fromX, fromY, toX, toY) {
+      if (this.view !== "street") return;
+      const a = this.groundPoint(fromX, fromY),
+        b = this.groundPoint(toX, toY);
+      if (!a || !b) return;
+      let anchor;
+      if (this.editor?.type === "land") anchor = this.landFocus;
+      else if (this.editor) anchor = this.editFocus;
+      else {
+        if (!this.cameraAnchor) this.cameraAnchor = this.hero.position.clone();
+        anchor = this.cameraAnchor;
+      }
+      if (!anchor) return;
+      const plots = S.LANDS.filter((l) => this.state.lands.includes(l.id));
+      const minX = Math.min(-18, ...plots.map((l) => l.x - l.w / 2)) - 8,
+        maxX = Math.max(18, ...plots.map((l) => l.x + l.w / 2)) + 8;
+      const minZ = Math.min(-16, ...plots.map((l) => l.z - l.h / 2)) - 8,
+        maxZ = Math.max(16, ...plots.map((l) => l.z + l.h / 2)) + 8;
+      anchor.x = Math.max(minX, Math.min(maxX, anchor.x + a.x - b.x));
+      anchor.z = Math.max(minZ, Math.min(maxZ, anchor.z + a.z - b.z));
+    }
     homeCamera() {
+      this.followHero();
       this.yaw = 0.53;
       this.zoom = this.view === "street" ? 13 : 8;
       this.updateProjection();
@@ -1116,12 +1287,12 @@
     setEditor(editor) {
       this.stop();
       this.editor = editor;
-      this.editFocus = this.hero.position.clone();
+      this.editFocus = (this.cameraAnchor || this.hero.position).clone();
       this.clear(this.previewGroup);
       if (editor && ["objects", "road", "select"].includes(editor.type)) {
         const verts = [];
-        for (let x = -28; x < 28; x += 2)
-          for (let z = -26; z < 26; z += 2)
+        for (let x = -S.BOUNDS.x; x < S.BOUNDS.x; x += 2)
+          for (let z = -S.BOUNDS.z; z < S.BOUNDS.z; z += 2)
             if (S.inside(this.state, x + 1, z + 1)) {
               verts.push(
                 x,
@@ -1166,6 +1337,7 @@
       g.traverse((o) => {
         if (o.isMesh || o.isSprite) {
           o.material = o.material.clone();
+          o.material.userData = {};
           o.material.transparent = true;
           o.material.opacity = 0.48;
           if (o.material.color)
@@ -1180,12 +1352,32 @@
       mark.material.transparent = true;
       mark.material.opacity = 0.4;
     }
-    previewRoad(cells, material) {
+    previewRoad(cells, material, border = "none") {
       if (this.ghost) {
         A.dispose(this.ghost);
         this.previewGroup.remove(this.ghost);
       }
       const g = new T.Group();
+      if (window.GardenPaths) {
+        if (cells.length) {
+          const valid =
+            material === "erase" ||
+            !GardenPaths.error(this.state, cells, material, border);
+          g.add(
+            GardenPaths.mesh(
+              cells,
+              material,
+              border,
+              material === "erase" ? "#d99383" : valid ? "#a8e1a2" : "#d9796e",
+            ),
+          );
+          if (cells.length === 1)
+            A.cyl(g, "#a8e1a2", cells[0].x, 0.18, cells[0].z, 0.75, 0.06);
+        }
+        this.previewGroup.add(g);
+        this.ghost = g;
+        return;
+      }
       for (const p of cells) {
         const valid = S.roadOK(this.state, p.x, p.z);
         A.box(
@@ -1219,8 +1411,8 @@
       m.material = m.material.clone();
       m.material.transparent = true;
       m.material.opacity = 0.6;
-      this.landFocus = new T.Vector3(l.x / 2, 0, l.z / 2);
-      this.zoom = 22;
+      this.landFocus = new T.Vector3(l.x, 0, l.z);
+      this.zoom = Math.max(15, Math.max(l.w, l.h) * 0.75);
       this.updateProjection();
     }
     loop(now) {
@@ -1248,6 +1440,7 @@
           dz = 0,
           travel = dt * (this.keys.ShiftLeft ? 7 : 5.5);
         if (Math.hypot(sx, sz) > 0.12) {
+          this.followHero();
           this.path = [];
           this.arrive = null;
           this.getUp();
@@ -1435,10 +1628,15 @@
             p.child.position.copy(p.pos);
           }
           this.emit({ type: "built" });
+          this.batchNeedsUpdate = true;
           return false;
         }
         return true;
       });
+      if (this.batchNeedsUpdate) {
+        this.batchNeedsUpdate = false;
+        this.rebuildStatic();
+      }
       if (!this.reduced) {
         this.butterflies.forEach(({ g, wings, x, z, i }) => {
           g.position.x = x + Math.sin(this.time * 0.7 + i) * 0.8;
@@ -1449,10 +1647,13 @@
               (w.rotation.z = Math.sin(this.time * 11 + i) * (j ? 1 : -1)),
           );
         });
-        for (const g of this.objectGroup.children)
+        for (const g of this.objectGroup.children) {
           if (g.userData.swing)
             g.userData.swing.rotation.x = Math.sin(this.time * 1.4) * 0.15;
+        }
       }
+      for (const g of this.objectGroup.children)
+        window.ParkAssets?.animate(g, this.time, this.reduced);
       if (this.riding) {
         const seat = this.riding.userData.swing;
         this.riding.updateMatrixWorld(true);
@@ -1470,8 +1671,10 @@
             ? this.landFocus
             : this.editor && this.editFocus
               ? this.editFocus
-              : this.hero.position,
+              : this.cameraAnchor || this.hero.position,
         );
+        dist = Math.max(35, this.zoom * 1.7);
+        height = dist * 0.8;
         target.z -= 1;
         target.y = 0.5;
       } else if (this.view === "room") {
@@ -1496,6 +1699,13 @@
           ),
         );
       this.camera.lookAt(this.focus);
+      if (this.view === "street") {
+        this.sun.position.set(this.focus.x - 15, 28, this.focus.z + 18);
+        this.sun.target.position.set(this.focus.x, 0, this.focus.z);
+      } else {
+        this.sun.position.set(-15, 28, 18);
+        this.sun.target.position.set(0, 0, 0);
+      }
       this.renderWindow();
       this.lake.material.uniforms.time.value = this.reduced
         ? 0

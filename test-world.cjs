@@ -13,7 +13,10 @@ function canvas() {
     width: 1,
     height: 1,
     style: {},
-    addEventListener() {},
+    listeners: {},
+    addEventListener(type, fn) {
+      this.listeners[type] = fn;
+    },
     setPointerCapture() {},
     getBoundingClientRect() {
       return { left: 0, top: 0, width: 1280, height: 800 };
@@ -57,6 +60,7 @@ require("./atmosphere.js");
 require("./companion-assets.js");
 require("./pet-behavior.js");
 require("./art.js");
+require("./island-landscape.js");
 require("./town-world.js");
 const s = TownState.fresh(),
   events = [],
@@ -205,7 +209,7 @@ assert(w.animations.length);
 tick(100);
 assert.equal(w.animations.length, 0);
 assert(events.some((e) => e.type === "built"));
-assert(group.children.every((g) => g.visible));
+assert(group.children.every((g) => g.visible || g.userData.renderBatched));
 assert.equal(s.gems, 90);
 console.log(
   "PASS staged construction, rotated entrance, completion and single payment",
@@ -220,4 +224,97 @@ tick(250);
 assert(Math.hypot(w.hero.position.x - 24, w.hero.position.z) < 0.2);
 console.log(
   "PASS expanded terrain is continuously walkable across old boundary",
+);
+
+s.gems = 100000;
+for (const land of TownState.LANDS)
+  if (!s.lands.includes(land.id)) assert(TownState.expand(s, land.id));
+w.refreshTerrain();
+assert.equal(TownState.landArea(s), 17952);
+assert(TownState.landArea(s) > 6 * 56 * 52);
+assert(w.nav.path({ x: 24, z: 0 }, { x: 62, z: 50 }).length);
+w.hero.position.set(62, 0, 50);
+w.navigate(63, 54);
+tick(100);
+assert(Math.hypot(w.hero.position.x - 63, w.hero.position.z - 54) < 0.2);
+w.setEditor({ type: "objects" });
+w.preview("house", 62, 54, 0, true);
+assert(w.ghost);
+w.setEditor(null);
+console.log(
+  "PASS full city: 136 connected purchases, 6.16x area and distant navigation",
+);
+
+// Exercise actual pointer handlers: drag never walks, two fingers never place.
+const listeners = w.renderer.domElement.listeners;
+const point = w.groundPoint;
+w.groundPoint = (x, y) => new THREE.Vector3(x / 20, 0, y / 20);
+let taps = 0;
+const tap = w.tap;
+w.tap = () => taps++;
+const pointer = (id, x, y, button = 0) => ({
+  pointerId: id,
+  clientX: x,
+  clientY: y,
+  button,
+  shiftKey: false,
+});
+listeners.pointerdown(pointer(1, 100, 100));
+listeners.pointermove(pointer(1, 180, 130));
+listeners.pointerup(pointer(1, 180, 130));
+assert(w.cameraAnchor);
+assert.equal(taps, 0);
+assert.notEqual(w.cameraAnchor.x, w.hero.position.x);
+const yaw = w.yaw,
+  zoom = w.zoom;
+listeners.pointerdown(pointer(1, 100, 100));
+listeners.pointerdown(pointer(2, 200, 100));
+listeners.pointermove(pointer(2, 240, 150));
+listeners.pointerup(pointer(2, 240, 150));
+listeners.pointermove(pointer(1, 110, 110));
+listeners.pointerup(pointer(1, 110, 110));
+assert.notEqual(w.yaw, yaw);
+assert.notEqual(w.zoom, zoom);
+assert.equal(taps, 0);
+w.setEditor({ type: "road" });
+events.length = 0;
+listeners.pointerdown(pointer(1, 100, 100));
+listeners.pointerdown(pointer(2, 200, 100));
+listeners.pointermove(pointer(2, 210, 120));
+listeners.pointerup(pointer(2, 210, 120));
+listeners.pointerup(pointer(1, 100, 100));
+assert(!events.some((e) => e.type === "road-start" || e.type === "road-move"));
+listeners.pointerdown(pointer(1, 100, 100));
+listeners.pointermove(pointer(1, 150, 120));
+listeners.pointerup(pointer(1, 150, 120));
+assert(events.some((e) => e.type === "road-start"));
+assert(events.some((e) => e.type === "road-move"));
+w.setEditor(null);
+w.homeCamera();
+assert.equal(w.cameraAnchor, null);
+assert.equal(w.zoom, 13);
+w.tap = tap;
+w.groundPoint = point;
+console.log(
+  "PASS one-finger pan, two-finger orbit/zoom, road gesture isolation and camera return",
+);
+
+const pickedA = Art.box(w.objectGroup, "#629372", 50, 1, 0, 1, 2, 1),
+  pickedB = Art.box(w.objectGroup, "#629372", 54, 1, 0, 1, 2, 1);
+w.rebuildStatic();
+assert(pickedA.userData.renderBatched && pickedB.userData.renderBatched);
+assert(!pickedA.visible && w.staticBatchGroup.children.length);
+const pickRay = new THREE.Raycaster(
+  new THREE.Vector3(50, 8, 0),
+  new THREE.Vector3(0, -1, 0),
+);
+assert(
+  pickRay.intersectObject(pickedA).length,
+  "batched objects remain individually selectable",
+);
+w.restoreStatic();
+assert(pickedA.visible && pickedB.visible);
+assert.equal(w.staticBatchGroup.children.length, 0);
+console.log(
+  "PASS static GPU batches retain original picking and restore before edits",
 );

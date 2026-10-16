@@ -23,7 +23,15 @@
     gateAnswer = 0,
     toastTimer,
     offlineReady = false;
+  function crystals(n) {
+    const t = n % 100,
+      u = n % 10;
+    return `${n} ${t >= 11 && t <= 14 ? "кристалів" : u === 1 ? "кристал" : u >= 2 && u <= 4 ? "кристали" : "кристалів"}`;
+  }
   let disposeParty = null;
+  let buildCategory = "garden",
+    pathBorder = "stone",
+    lastGardenPath = null;
   try {
     const raw = localStorage.getItem(KEY),
       legacy = localStorage.getItem(OLD);
@@ -51,6 +59,7 @@
   });
   try {
     await CharacterAssets.load();
+    await ParkAssets.load();
   } catch (error) {
     console.error(error);
     $("boot").innerHTML =
@@ -92,7 +101,8 @@
   function sfx(freqs, dur, type) {
     if (!state.sound) return;
     try {
-      sfxCtx = sfxCtx || new (window.AudioContext || window.webkitAudioContext)();
+      sfxCtx =
+        sfxCtx || new (window.AudioContext || window.webkitAudioContext)();
       if (sfxCtx.state === "suspended") sfxCtx.resume();
       const t0 = sfxCtx.currentTime;
       freqs.forEach((f, i) => {
@@ -197,7 +207,13 @@
         type: view === "build" ? "objects" : view === "roads" ? "road" : view,
       });
       if (view === "build") {
-        edit = { kind: "flowers", x: 4, z: 2, rotation: 0 };
+        edit = {
+          kind: "rose-bed",
+          x: Math.round((world.editFocus.x + 3) / 2) * 2,
+          z: Math.round((world.editFocus.z - 4) / 2) * 2,
+          rotation: 0,
+        };
+        buildCategory = "garden";
         preview();
       }
       if (view === "roads") {
@@ -205,7 +221,7 @@
         roadCells = [];
       }
       if (view === "land") {
-        draft = S.LANDS.find((l) => !state.lands.includes(l.id))?.id || "east";
+        draft = S.availableLands(state)[0]?.id || null;
         world.previewLand(draft);
       }
     }
@@ -300,7 +316,7 @@
     if (route === "pets")
       html =
         bar("Маленький друг") +
-        `<section class="side-panel pet-panel"><div class="row"><h3>${names[draft]}</h3><span class="wallet">${icon("gem")}${state.gems}</span></div><div class="choice-grid">${S.PETS.map((p, i) => `<button class="choice ${draft === p ? "active" : ""}" data-action="pet-choice" data-value="${p}" aria-label="${names[p]}">${A.thumb("pet", i)}<span>${names[p]}</span>${S.ownsPet(state, p) ? "" : `<small class="pet-price">${icon("gem")}${S.PET_PRICES[p]}</small>`}</button>`).join("")}</div><div class="row">${btn("rotate-left", "rotate", "Повернути ліворуч")}${btn("rotate-right", "rotate", "Повернути праворуч")}</div><p class="note">Торкнись друга, щоб погладити.</p><div class="actions">${btn("back", "close", "Скасувати", "secondary")}${S.ownsPet(state, draft) ? btn("apply-pet", "check", "Готово", "primary") : btn("buy-pet", "gem", `${S.PET_PRICES[draft]} · Відкрити`, "primary")}</div></section><div class="scene-actions pet-actions">${[
+        `<section class="side-panel pet-panel"><div class="row"><h3>${names[draft]}</h3><span class="wallet">${icon("gem")}${state.gems}</span></div><div class="choice-grid">${S.PETS.map((p, i) => `<button class="choice ${draft === p ? "active" : ""}" data-action="pet-choice" data-value="${p}" aria-label="${names[p]}">${A.thumb("pet", i)}<span>${names[p]}</span>${S.ownsPet(state, p) ? "" : `<small class="pet-price">${icon("gem")}${S.PET_PRICES[p]}</small>`}</button>`).join("")}</div><div class="row">${btn("rotate-left", "rotate", "Повернути ліворуч")}${btn("rotate-right", "rotate", "Повернути праворуч")}</div><div class="actions">${btn("back", "close", "Скасувати", "secondary")}${S.ownsPet(state, draft) ? btn("apply-pet", "check", "Готово", "primary") : btn("buy-pet", "gem", `${S.PET_PRICES[draft]} · Відкрити`, "primary")}</div></section><div class="scene-actions pet-actions">${[
           ["stroke", "hand", "Погладити"],
           ["feed", "food", "Погодувати"],
           ["ball", "ball", "М’ячик"],
@@ -313,7 +329,18 @@
     if (route === "build")
       html =
         bar(edit.id ? "Переставити" : "Майстерня") +
-        `<section class="side-panel build-panel"><div class="row">${btn("roads", "road", "Доріжки")}${btn("land", "land", "Нова земля")}${btn("select", "move", "Переставити споруду")}<span class="wallet">${icon("gem")}${state.gems}</span></div><div class="choice-grid">${S.ITEMS.map((i) => `<button class="choice ${edit.kind === i.id ? "active" : ""}" data-action="build-kind" data-value="${i.id}" ${edit.id ? "disabled" : ""}>${icon(i.id === "house" ? "home" : i.id)}<span>${i.name} · ${i.cost}</span></button>`).join("")}</div><p class="note" id="placement-note">Торкнись вільного місця на землі.</p><div class="actions">${btn("build-rotate", "rotate", "Повернути", "secondary")}${btn("build-apply", "check", edit.id ? "Готово" : "Будувати", "primary")}</div>${edit.id ? btn("remove-ask", "close", "Прибрати", "secondary danger") : ""}</section>`;
+        `<section class="side-panel build-panel"><div class="row">${btn("roads", "road", "Доріжки")}${btn("land", "land", "Нова земля")}${btn("select", "move", "Переставити споруду")}<span class="wallet">${icon("gem")}${state.gems}</span></div><div class="park-tabs" role="group" aria-label="Види прикрас">${ParkCatalog.groups.map((c) => `<button class="${buildCategory === c.id ? "active" : ""}" data-action="build-category" data-value="${c.id}" aria-label="${c.name}">${icon(c.icon)}<span>${c.name}</span></button>`).join("")}</div><div class="choice-grid park-catalog">${S.ITEMS.filter(
+          (i) =>
+            (i.category || "classic") === buildCategory ||
+            (i.id === edit.kind && edit.id),
+        )
+          .map(
+            (i) =>
+              `<button class="choice ${edit.kind === i.id ? "active" : ""}" data-action="build-kind" data-value="${i.id}" aria-label="${i.name}, ${crystals(i.cost)}" ${edit.id ? "disabled" : ""}>${i.thumb ? `<img src="${i.thumb}" alt="" width="112" height="96" />` : icon(i.id === "house" ? "home" : i.id)}<span>${i.name}</span><b class="park-price">${icon("gem")}${i.cost}</b></button>`,
+          )
+          .join(
+            "",
+          )}</div><p class="note" id="placement-note"></p><div class="actions">${btn("build-rotate", "rotate", "Повернути", "secondary")}${btn("build-apply", "check", edit.id ? "Готово" : "Будувати", "primary")}</div>${edit.id ? btn("remove-ask", "close", "Прибрати", "secondary danger") : ""}</section>`;
     if (route === "select")
       html =
         bar("Торкнись споруди") +
@@ -321,23 +348,42 @@
     if (route === "land")
       html =
         bar("Більше місця") +
-        `<section class="side-panel land-panel"><h3>Нові куточки острова</h3><div class="land-list" style="display:grid;gap:10px">${S.LANDS.map((l) => `<button class="land-card ${draft === l.id ? "active" : ""}" data-action="land-choice" data-value="${l.id}" ${state.lands.includes(l.id) ? "disabled" : ""}>${icon("land")}<span>${l.name}<small>${state.lands.includes(l.id) ? "Вже твоя" : l.cost + " кристалів"}</small></span></button>`).join("")}</div><div class="actions">${btn("expand", "plus", "Відкрити", "primary", state.lands.includes(draft) ? "disabled" : "")}</div></section>`;
+        `<section class="side-panel land-panel"><div class="row"><h3>Розширюй своє місто</h3><span class="wallet">${icon("gem")}${state.gems}</span></div><p class="note">Відкрито ${state.lands.length} із ${S.LANDS.length} ділянок.</p><div class="land-list" style="display:grid;gap:10px">${
+          S.availableLands(state)
+            .map(
+              (l) =>
+                `<button class="land-card ${draft === l.id ? "active" : ""}" data-action="land-choice" data-value="${l.id}">${icon("land")}<span>${l.name}<small>${crystals(l.cost)}</small></span></button>`,
+            )
+            .join("") || "Усі ділянки вже твої!"
+        }</div><div class="actions">${btn("expand", "plus", "Відкрити", "primary", !draft ? "disabled" : "")}</div></section>`;
     if (route === "roads")
       html =
         bar("Доріжки") +
-        `<section class="side-panel"><h3>Обери матеріал</h3><div class="choice-grid">${[
+        `<section class="side-panel path-panel"><h3>Обери покриття</h3><div class="path-materials">${[
           ["sand", "Пісочок"],
           ["stone", "Камінь"],
+          ["brick", "Цегла"],
           ["wood", "Дерево"],
+          ["stepping", "Садові плити"],
           ["erase", "Гумка"],
         ]
           .map(
             ([v, t]) =>
-              `<button class="choice ${material === v ? "active" : ""}" data-action="road-material" data-value="${v}">${icon(v === "erase" ? "undo" : "road")}<span>${t}</span></button>`,
+              `<button class="choice ${material === v ? "active" : ""}" data-action="road-material" data-value="${v}" aria-label="${t}"><span class="path-swatch swatch-${v}">${v === "erase" ? icon("undo") : ""}</span><span>${t}</span></button>`,
+          )
+          .join("")}</div><h3>Краї доріжки</h3><div class="path-borders">${[
+          ["none", "Без країв"],
+          ["stone", "Кам’яні"],
+          ["brick", "Цегляні"],
+          ["flowers", "Квіткові"],
+        ]
+          .map(
+            ([v, t]) =>
+              `<button class="choice ${pathBorder === v ? "active" : ""}" data-action="path-border" data-value="${v}" aria-label="${t}"><span class="edge-swatch edge-${v}" aria-hidden="true"></span><span>${t}</span></button>`,
           )
           .join(
             "",
-          )}</div><p class="note">Торкнись початку і кінця доріжки. Або проведи пальцем. Зелений колір — можна будувати.</p><div class="actions">${btn("road-clear", "undo", "Очистити", "secondary")}${btn("road-apply", "check", "Готово", "primary")}</div></section>`;
+          )}</div><p class="path-quote" id="path-quote"></p><div class="actions">${btn("road-clear", "undo", "Очистити ескіз", "secondary")}${btn("road-apply", "check", "Побудувати", "primary")}</div>${btn("path-undo", "undo", "Скасувати останню доріжку", "secondary", lastGardenPath === null ? "disabled" : "")}<div class="path-wallet">${icon("gem")} ${state.gems}</div></section>`;
     if (route === "furniture")
       html =
         bar("Облаштуй кімнату") +
@@ -352,25 +398,34 @@
           )
           .join(
             "",
-          )}</div><p class="note">Обери річ, а потім місце на підлозі.</p><div class="actions">${btn("back", "close", "Скасувати", "secondary")}${btn("furniture-apply", "check", "Готово", "primary")}</div></section>`;
+          )}</div><div class="actions">${btn("back", "close", "Скасувати", "secondary")}${btn("furniture-apply", "check", "Готово", "primary")}</div></section>`;
     if (route === "learn")
       html = modal(
         "Маленькі відкриття",
-        `<button class="play-big" data-action="lesson" data-value="auto" aria-label="Грати">${icon("play")}<span>Грати</span></button><div class="eyebrow all-games">Усі ігри</div><div class="menu-grid">${Object.entries(modes)
+        `<button class="play-big" data-action="lesson" data-value="auto" aria-label="Грати">${icon("play")}<span>Грати</span></button><div class="eyebrow all-games">Усі ігри</div><div class="menu-grid">${Object.entries(
+          modes,
+        )
           .map(
             ([k, [name, i]]) =>
               `<button class="menu-card" data-action="lesson" data-value="${k}"><div class="lesson-mark">${{ letters: "А → А", hear: icon("ear") + "А", pairs: "А · А", discover: "МА", blend: "М + А", "hear-syllable": icon("ear") + "МА", words: "МАМА" }[k]}</div><b>${name}</b><small>${["letters", "hear", "pairs"].includes(k) ? "Літери" : k === "words" ? "Слова" : "Склади"}</small></button>`,
           )
           .join(
             "",
-          )}<button class="menu-card" data-action="album">${icon("book")}<b>Моя абетка</b><small>Усі 33 літери</small></button></div><div class="families">${S.FAMILIES.map((f, i) => `<button data-action="family" data-value="${i}" class="${family === i ? "active" : ""}" ${L.familyOpen(state, i) ? "" : "disabled"}>${f[0]}</button>`).join("")}</div><p class="note parent-note">Кнопка «Грати» сама добирає завдання. Перша гра коротко перевіряє, які літери дитина вже знає. Нова літера з’являється, коли попередні впізнано на слух, а літера вважається вивченою після впізнавання в різні дні. Ряд складів відкривається, коли знайомі його літери. У меню батьків можна відкрити все.</p>`,
+          )}<button class="menu-card" data-action="album">${icon("book")}<b>Моя абетка</b><small>Усі 33 літери</small></button></div><div class="families">${S.FAMILIES.map((f, i) => `<button data-action="family" data-value="${i}" class="${family === i ? "active" : ""}" ${L.familyOpen(state, i) ? "" : "disabled"}>${f[0]}</button>`).join("")}</div>`,
       );
     if (route === "lesson") html = lessonHTML();
     if (route === "reward") {
       if (!run.party.closed)
         html = '<div class="cover" id="learning-party"></div>';
       else
-        html = `<div class="cover"><section class="modal reward"><div class="big-gem">${icon("check")}</div><h2>У тебе вийшло!</h2><div class="reward-discoveries" aria-label="Сьогодні грали з">${[...new Set(run.discoveries || [])].slice(0,5).map(t=>`<span>${t}</span>`).join("")}</div><div class="reward-total">${icon("gem")} +${3 + run.party.credited}</div><p>3 за заняття${run.party.credited ? ` + ${run.party.credited} за свято` : ""}. Можна повертатися до друзів!</p>${btn("reward-home", "home", "На острів", "primary")}${btn("again", "play", "Ще пограти", "secondary")}</section></div>`;
+        html = `<div class="cover"><section class="modal reward"><div class="big-gem">${icon("check")}</div><h2>У тебе вийшло!</h2><div class="reward-discoveries" aria-label="Сьогодні грали з">${[
+          ...new Set(run.discoveries || []),
+        ]
+          .slice(0, 5)
+          .map((t) => `<span>${t}</span>`)
+          .join(
+            "",
+          )}</div><div class="reward-total">${icon("gem")} +${3 + run.party.credited}</div><p>3 за заняття${run.party.credited ? ` + ${run.party.credited} за свято` : ""}. Можна повертатися до друзів!</p>${btn("reward-home", "home", "На острів", "primary")}${btn("again", "play", "Ще пограти", "secondary")}</section></div>`;
     }
     if (route === "gate")
       html = modal(
@@ -388,14 +443,22 @@
     if ($("learning-party")) {
       const current = run;
       disposeParty = LearningParty.mount($("learning-party"), run.party, {
-        icon, mode: run.partyMode,
+        icon,
+        mode: run.partyMode,
         reduced: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
         onPop(id) {
           if (route !== "reward" || run !== current) return null;
           const result = LearningParty.credit(state, current.party, id);
           if (result) {
-            sfx([run.partyMode === "fruit" ? 520 : 700, 900 + result.count * 35], .07, "sine");
-            if (result.gems) { save(); hud(); }
+            sfx(
+              [run.partyMode === "fruit" ? 520 : 700, 900 + result.count * 35],
+              0.07,
+              "sine",
+            );
+            if (result.gems) {
+              save();
+              hud();
+            }
           }
           return result;
         },
@@ -407,21 +470,43 @@
       });
     }
     if (route === "build") preview();
+    if (route === "roads") pathPreview();
+  }
+  function pathPreview() {
+    world.previewRoad(roadCells, material, pathBorder);
+    if (!$("path-quote")) return;
+    const reason =
+      material === "erase"
+        ? ""
+        : GardenPaths.error(state, roadCells, material, pathBorder);
+    $("path-quote").textContent =
+      roadCells.length < 2
+        ? ""
+        : material === "erase"
+          ? `Доріжок для прибирання: ${GardenPaths.near(state, roadCells).length}`
+          : reason ||
+            `Вартість: ${crystals(GardenPaths.price(GardenPaths.smooth(roadCells), pathBorder))}`;
   }
   function preview() {
     if (!edit) return;
     const error = S.placement(state, edit, edit.id);
     world.preview(edit.kind, edit.x, edit.z, edit.rotation, !error);
-    if ($("placement-note"))
-      $("placement-note").textContent =
-        error || "Місце підходить. Натисни галочку.";
+    if ($("placement-note")) $("placement-note").textContent = error || "";
   }
   // mode "auto" is the guided game ("Грати"); other modes are free play from the menu.
   function begin(mode) {
     resetAudio();
     route = "lesson";
     world.paused = true;
-    run = { mode, index: 0, total: 3, rewarded: false, previous: null, used: [], discoveries: [] };
+    run = {
+      mode,
+      index: 0,
+      total: 3,
+      rewarded: false,
+      previous: null,
+      used: [],
+      discoveries: [],
+    };
     if (mode === "auto") {
       run.total = 5;
       // The very first guided game finds out which letters the child already knows.
@@ -448,18 +533,22 @@
       const fresh = words.filter((w) => w.text !== run.previous),
         w = Core.shuffle(fresh.length ? fresh : words)[0];
       return {
-        mode, target: w.text, word: w,
+        mode,
+        target: w.text,
+        word: w,
         options: Core.shuffle(w.parts.map((text, id) => ({ text, id }))),
       };
     }
     const target = Core.choose(pool, state.syllableScores, run.previous);
     if (mode === "blend" || mode === "discover")
       return {
-        mode, target,
+        mode,
+        target,
         options: Core.shuffle([...target].map((text, id) => ({ text, id }))),
       };
     return {
-      mode, target,
+      mode,
+      target,
       options: Core.shuffle([
         target,
         ...Core.shuffle(pool.filter((x) => x !== target)).slice(
@@ -553,7 +642,8 @@
         .map((v, i) => {
           const text = typeof v === "string" ? v : v.text,
             used = task.picked.includes(i) || task.matched.includes(i);
-          const correct = task.done && !task.placement && (text === task.target || used);
+          const correct =
+            task.done && !task.placement && (text === task.target || used);
           return `<button class="answer ${correct ? "correct" : ""} ${text.length > 1 ? "long" : ""} ${task.selected.includes(i) ? "selected" : ""} ${task.matched.includes(i) ? "matched" : ""} ${task.hintIndex === i ? "hint" : ""}" data-action="answer" data-value="${i}" ${task.done || used || (hearing && !task.heard) ? "disabled" : ""}>${text}</button>`;
         })
         .join("");
@@ -567,8 +657,7 @@
       await audio.play("phrase", intro);
       if (task !== t || route !== "lesson") return;
     }
-    const
-      kind = ["letters", "hear", "pairs"].includes(task.mode)
+    const kind = ["letters", "hear", "pairs"].includes(task.mode)
         ? "letter"
         : task.mode === "words"
           ? "word"
@@ -593,10 +682,10 @@
   }
   function complete() {
     task.done = true;
-    run.discoveries.push(...(task.mode === "pairs" ? [...task.target] : [task.target]));
-    task.feedback = task.hinted
-      ? "Разом вийшло!"
-      : "У тебе вийшло!";
+    run.discoveries.push(
+      ...(task.mode === "pairs" ? [...task.target] : [task.target]),
+    );
+    task.feedback = task.hinted ? "Разом вийшло!" : "У тебе вийшло!";
     chimeCorrect();
     S.skill(state, task.mode, task.target, task.hinted);
     L.record(state, task.mode, task.target, !task.hinted);
@@ -689,7 +778,10 @@
       ];
       if (task.options[i].text === expected) {
         task.picked.push(i);
-        if (task.picked.length === (m === "words" ? task.parts.length : [...task.target].length)) {
+        if (
+          task.picked.length ===
+          (m === "words" ? task.parts.length : [...task.target].length)
+        ) {
           complete();
           return;
         }
@@ -797,12 +889,6 @@
     }
     if (e.type === "furniture") {
       if (e.kind === "sofa") world.sit();
-      else
-        toast(
-          e.kind === "table"
-            ? "На столику можна грати зі складами"
-            : "М’який куточок для відпочинку",
-        );
     }
     if (e.type === "place-position") {
       edit.x = e.x;
@@ -811,23 +897,37 @@
     }
     if (e.type === "edit-object") {
       edit = { ...state.objects.find((o) => o.id === e.id) };
+      buildCategory =
+        S.ITEMS.find((i) => i.id === edit.kind)?.category || "classic";
       route = "build";
       world.setEditor({ type: "objects" });
       render();
     }
     if (e.type === "object") {
       const o = state.objects.find((o) => o.id === e.id);
+      const def = ParkCatalog.items.find((i) => i.id === o?.kind);
+      if (def) {
+        const g = world.objectGroup.children.find(
+          (g) => g.userData.objectId === o.id,
+        );
+        if (g) ParkAssets.react(g, world.time);
+        if (def.action === "sit" || def.action === "picnic") {
+          world.stop();
+          world.hero.position.set(
+            o.x,
+            def.action === "sit" ? -0.18 : -0.65,
+            o.z,
+          );
+          world.hero.rotation.y = (o.rotation * Math.PI) / 2;
+          world.sitY = world.hero.position.y;
+          world.sitting = true;
+        }
+        return;
+      }
       if (o?.kind === "house") {
         world.roomId = e.id;
         open("room");
       } else {
-        toast(
-          o?.kind === "bench"
-            ? "Приємно відпочити!"
-            : o?.kind === "swing"
-              ? "Гойдаємось!"
-              : "Твоя маленька окраса острова",
-        );
         if (o?.kind === "bench") {
           world.hero.position.set(o.x, -0.1, o.z);
           world.sitY = -0.1;
@@ -837,13 +937,19 @@
       }
     }
     if (e.type === "road-start") {
-      if (!roadStart) roadStart = { x: e.x, z: e.z };
-      roadCells = S.roadLine(roadStart, e);
-      world.previewRoad(roadCells, material);
+      roadStart = { x: e.x, z: e.z };
+      if (roadCells.length < 240) roadCells.push(roadStart);
+      pathPreview();
     }
     if (e.type === "road-move" && roadStart) {
-      roadCells = S.roadLine(roadStart, e);
-      world.previewRoad(roadCells, material);
+      const last = roadCells.at(-1);
+      if (
+        roadCells.length < 240 &&
+        Math.hypot(last.x - e.x, last.z - e.z) > 0.45
+      ) {
+        roadCells.push({ x: e.x, z: e.z });
+        pathPreview();
+      }
     }
     if (e.type === "furniture-position") {
       edit.x = e.x;
@@ -887,7 +993,7 @@
       route = "street";
       save();
       render();
-      $("hint").innerHTML = icon("hand") + "Торкнись землі, щоб піти";
+
       audio.play("phrase", "welcome");
       return;
     }
@@ -984,7 +1090,6 @@
         save();
         world.petReact("stroke");
         render();
-        toast("Новий друг тепер твій!");
       } else
         toast("Потрібно ще трохи кристалів. Пограй з літерами чи складами!");
     }
@@ -1021,6 +1126,12 @@
     }
     if (act === "build-kind") {
       edit.kind = v;
+      render();
+    }
+    if (act === "build-category" && !edit.id) {
+      buildCategory = v;
+      const first = S.ITEMS.find((i) => (i.category || "classic") === v);
+      if (first) edit.kind = first.id;
       render();
     }
     if (act === "build-rotate") {
@@ -1072,7 +1183,13 @@
     }
     if (act === "expand") {
       if (!S.expand(state, draft)) {
-        toast("Потрібно ще трохи кристалів. Пограй зі складами!");
+        toast(
+          S.LANDS.find((l) => l.id === draft)?.requires?.some((id) =>
+            state.lands.includes(id),
+          ) === false
+            ? "Спочатку відкрий сусідній берег"
+            : "Потрібно ще трохи кристалів. Пограй зі складами!",
+        );
         return;
       }
       save();
@@ -1080,34 +1197,69 @@
       world.setEditor(null);
       route = "street";
       world.homeCamera();
+      const land = S.LANDS.find((l) => l.id === draft);
+      if (land) world.cameraAnchor = new THREE.Vector3(land.x, 0, land.z);
       render();
-      toast("Нова земля вже твоя!");
     }
     if (act === "road-material") {
       material = v;
-      world.previewRoad(roadCells, material);
+      render();
+    }
+    if (act === "path-border") {
+      pathBorder = v;
+      render();
+    }
+    if (act === "path-undo" && lastGardenPath !== null) {
+      if (GardenPaths.remove(state, lastGardenPath)) {
+        save();
+        world.refreshRoads();
+      }
+      lastGardenPath = null;
       render();
     }
     if (act === "road-clear") {
       roadStart = null;
       roadCells = [];
-      world.previewRoad([], material);
+      pathPreview();
     }
     if (act === "road-apply") {
       if (!roadCells.length) {
         toast("Обери початок і кінець доріжки");
         return;
       }
-      if (!S.road(state, roadCells, material)) {
-        toast("Доріжка має пройти по вільній землі");
-        return;
+      if (material === "erase") {
+        const ids = GardenPaths.near(state, roadCells);
+        ids.forEach((id) => GardenPaths.remove(state, id));
+        const samples = GardenPaths.smooth(roadCells);
+        for (const k of Object.keys(state.roads)) {
+          const [x, z] = k.split(",").map(Number);
+          if (samples.some((p) => Math.hypot(p.x - x * 2, p.z - z * 2) < 1.5))
+            delete state.roads[k];
+        }
+        if (ids.includes(lastGardenPath)) lastGardenPath = null;
+      } else {
+        const reason = GardenPaths.error(
+          state,
+          roadCells,
+          material,
+          pathBorder,
+        );
+        if (reason) {
+          toast(reason);
+          return;
+        }
+        const path = GardenPaths.add(state, roadCells, material, pathBorder);
+        if (!path) {
+          toast("Обери інше місце для доріжки");
+          return;
+        }
+        lastGardenPath = path.id;
       }
       save();
       world.refreshRoads();
       roadStart = null;
       roadCells = [];
-      world.previewRoad([], material);
-      toast("Доріжка готова!");
+      render();
     }
     if (act === "family") {
       family = Number(v);
@@ -1233,7 +1385,7 @@
       .then((reg) => {
         const check = async () => {
           if (reg.active?.state === "activated") {
-            const cache = await caches.open("emilia-living-v5-6-party");
+            const cache = await caches.open("emilia-living-v5-9-sky-city");
             offlineReady = (
               await Promise.all(
                 [
