@@ -4,3 +4,6 @@ audio/response-*
 Thumbs.db
 .DS_Store
 node_modules/
+
+*.blend1
+*.blend2

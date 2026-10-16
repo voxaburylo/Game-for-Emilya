@@ -43,6 +43,12 @@ THREE.WebGLRenderer = class {
   setSize() {}
   render() {}
 };
+const fs = require("node:fs");
+const bytes = fs.readFileSync("./models/characters.bin");
+require("./character-assets.js").install(
+  JSON.parse(fs.readFileSync("./models/characters.json", "utf8")),
+  bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+);
 require("./art.js");
 require("./town-world.js");
 const s = TownState.fresh(),
@@ -72,9 +78,20 @@ for (let dress = 0; dress < 6; dress++)
 console.log(
   "PASS 120 outfit combinations: finite complete geometry and shoes above ground",
 );
+w.setView("wardrobe");
+tick(10);
+assert(
+  Math.abs(new THREE.Box3().setFromObject(w.hero).min.y - 0.13) < 0.005,
+  "shoes rest on wardrobe platform",
+);
 for (const p of TownState.PETS) {
   w.setView("pets");
   w.setPet(p);
+  tick(1);
+  assert(
+    new THREE.Box3().setFromObject(w.pet).min.y >= 0.265,
+    "paws above pet platform",
+  );
   w.petReact("ball");
   tick(20);
   assert(w.petProp.parent === w.room);

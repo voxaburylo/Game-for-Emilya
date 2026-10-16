@@ -1,4 +1,4 @@
-(function () {
+(async function () {
   "use strict";
   const S = TownState,
     A = Art,
@@ -41,6 +41,15 @@
   const audio = new HumanAudio($("voice"), (text) => {
     if ($("audio-status")) $("audio-status").textContent = text;
   });
+  try {
+    await CharacterAssets.load();
+  } catch (error) {
+    console.error(error);
+    $("boot").innerHTML =
+      "<div><h2>Не вдалося завантажити друзів</h2><p>Перевірте з’єднання та спробуйте ще раз.</p><button id=retry-models class=primary>Спробувати ще</button></div>";
+    $("retry-models").onclick = () => location.reload();
+    return;
+  }
   let world;
   try {
     world = new TownWorld($("world"), state, onWorld);
@@ -1043,17 +1052,31 @@
       .register("sw.js")
       .then((reg) => {
         const check = async () => {
-          if (!reg.installing && reg.active?.state === "activated") {
-            const cache = await caches.open("emilia-living-v4-3");
-            offlineReady = !!(await cache.match("town-app.js"));
+          if (reg.active?.state === "activated") {
+            const cache = await caches.open("emilia-living-v4-7");
+            offlineReady = (
+              await Promise.all(
+                [
+                  "town-app.js",
+                  "models/characters.json",
+                  "models/characters.bin",
+                ].map((file) => cache.match(file)),
+              )
+            ).every(Boolean);
             if (route === "parents") render();
           }
         };
         check();
         navigator.serviceWorker.ready.then(check);
-        navigator.serviceWorker.addEventListener("controllerchange", check);
-        if (reg.installing)
-          reg.installing.addEventListener("statechange", check);
+        const watch = (worker) =>
+          worker?.addEventListener("statechange", check);
+        watch(reg.installing);
+        watch(reg.active);
+        reg.addEventListener("updatefound", () => watch(reg.installing));
+        navigator.serviceWorker.addEventListener("controllerchange", () => {
+          watch(reg.active);
+          check();
+        });
       })
       .catch(() => {});
 })();
