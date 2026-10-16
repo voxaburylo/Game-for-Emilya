@@ -138,7 +138,8 @@ def face(v):
     x,y,z=v; t=(y-2.71)/.58
     x*=.84+.16*(t+1)/2+.08*exp(-((t+.24)/.35)**2)
     if z>0:
-        z+=.145*exp(-(x/.088)**2-((y-2.60)/.105)**2)
+        z+=.035*exp(-(x/.075)**2-((y-2.67)/.12)**2)
+        z+=.075*exp(-(x/.105)**2-((y-2.575)/.060)**2)
         z+=.025*exp(-((abs(x)-.29)/.13)**2-((y-2.54)/.13)**2)
         z-=.027*exp(-((abs(x)-.19)/.115)**2-((y-2.73)/.10)**2)
     return x,y,z
@@ -197,20 +198,31 @@ for s in [-1,1]:
 line('Smile crease',[(-.105,2.435,.416),(-.052,2.413,.437),(0,2.409,.44),(.052,2.413,.437),(.105,2.435,.416)],.007,'lip',node='head')
 line('Lower lip',[(-.065,2.405,.428),(0,2.394,.439),(.065,2.405,.428)],.009,'earInner',node='head')
 for s in [-1,1]:
-    ell('Nostril',(s*.043,2.557,.523),(.014,.006,.004),'earInner',node='head',n=12,k=8)
+    ell('Nostril',(s*.036,2.54,.513),(.009,.004,.003),'earInner',node='head',n=12,k=8)
 loft('Neck',[(1.89,.145,.13,0,0),(2.10,.135,.12,0,0),(2.22,.18,.14,0,0)],'skin')
+
+def relax_hand(o,side):
+    # Rotate the palm inward, blending the twist smoothly through the wrist.
+    for v in o.data.vertices:
+        x,y,z=gv(v.co);t=max(0,min(1,(1.30-y)/.15));t=t*t*(3-2*t)
+        angle=side*pi*.5*t;dx=x-side*.57;dz=z-.035
+        v.co=bv((side*.57+dx*cos(angle)+dz*sin(angle),y,.035-dx*sin(angle)+dz*cos(angle)))
+    o.data.update()
 
 for s,label in [(-1,'L'),(1,'R')]:
     node='leg'+label
     loft('Leg',[(.13,.09,.105,s*.22,.005),(.25,.10,.105,s*.22,0),(.44,.12,.12,s*.22,-.015),(.61,.125,.13,s*.22,.025),(.82,.15,.15,s*.22,0),(1.0,.16,.17,s*.22,0)],'skin',node=node)
     arm='arm'+label
     arm_mesh=sweep('Relaxed arm',[(s*.4,1.85,0,.125,.125),(s*.50,1.66,0,.112,.11),(s*.55,1.42,.015,.09,.095),(s*.57,1.23,.035,.075,.07)],'skin',node=arm,n=24)
-    hand=[arm_mesh,ell('Palm',(s*.58,1.15,.04),(.085,.12,.065),'skin',node=arm)]
-    hand.append(sweep('Thumb',[(s*.54,1.19,.07,.037,.032),(s*.51,1.12,.09,.03,.027),(s*.52,1.08,.095,.02,.02)],'skin',node=arm,n=12))
+    hand=[arm_mesh,ell('Palm',(s*.58,1.155,.04),(.087,.105,.058),'skin',node=arm)]
+    hand.append(sweep('Thumb',[(s*.525,1.17,.055,.029,.028),(s*.48,1.115,.075,.025,.024),(s*.465,1.065,.095,.017,.018)],'skin',node=arm,n=16))
     for f in range(4):
-        x=s*(.536+f*.028); length=[.058,.084,.078,.055][f]
-        hand.append(sweep('Finger',[(x,1.12,.055,.022,.027),(x,1.04,.065,.021,.024),(x,1.04-length,.078,.013,.018)],'skin',node=arm,n=12))
-    union('Soft hand with fingers',hand,'skin',node=arm,voxel=.009)
+        x=s*(.518+f*.043); tip=[.975,.94,.95,.995][f]
+        hand.append(sweep('Separate finger',[(x,1.12,.045,.021,.025),(x+s*(f-1.5)*.004,1.035,.052,.018,.021),(x+s*(f-1.5)*.007,tip+.015,.069,.017,.019),(x+s*(f-1.5)*.007,tip,.077,.006,.008)],'skin',node=arm,n=16,steps=5))
+        ell('Fingernail',(x+s*(f-1.5)*.007,tip+.026,.087),(.010,.016,.003),'earInner',node=arm,n=16,k=10)
+    union('Soft hand with fingers',hand,'skin',node=arm,voxel=.004)
+    for o in PARTS:
+        if o['node']==arm and o.name.startswith(('Soft hand','Fingernail')):relax_hand(o,s)
     for i in range(4):
         variant='shoes'+str(i)
         leather='cloth' if i in [0,1] else 'ivory' if i==2 else 'leather'
@@ -261,11 +273,11 @@ for d in range(6):
             loft('Ruffled tier',[(y+.11,w-.07,z-.04,0,0),(y,w,z,0,0),(y-.035,w+.015,z+.01,0,0)],'cloth',variant=variant,folds=.055,n=64)
             line('Ruffle piping',[((w+.015)*sin(a)*(1+.055*sin(10*a)),y-.035,(z+.01)*cos(a)*(1+.055*sin(10*a))) for a in [j*2*pi/96 for j in range(97)]],.009,'ivory',variant=variant,steps=1)
     if d==3:
-        loft('Overall seat',[(.84,.32,.22,0,0),(1.03,.37,.25,0,0),(1.26,.30,.23,0,0)],'denim',variant=variant)
+        loft('Overall seat',[(1.03,.34,.19,0,0),(1.10,.35,.22,0,0),(1.26,.30,.23,0,0)],'denim',variant=variant)
         for s,label in [(-1,'L'),(1,'R')]:
             loft('Trouser leg',[(.35,.13,.14,s*.22,0),(.44,.14,.15,s*.22,0),(.73,.16,.17,s*.22,0),(1.03,.175,.19,s*.21,0),(1.16,.11,.13,s*.20,0)],'denim',node='leg'+label,variant=variant,folds=.025)
             loft('Turned up cuff',[(.34,.14,.15,s*.22,0),(.38,.145,.155,s*.22,0),(.43,.14,.15,s*.22,0)],'denimDark',node='leg'+label,variant=variant)
-            line('Overall strap',[(s*.22,1.38,.24),(s*.25,1.75,.24),(s*.25,1.91,.07),(s*.25,1.72,-.23)],.035,'denim',variant=variant)
+            line('Overall strap',[(s*.22,1.38,.24),(s*.25,1.75,.24),(s*.24,1.91,.07),(s*.23,1.89,-.11),(s*.22,1.73,-.22),(s*.20,1.50,-.21),(s*.18,1.28,-.20)],.035,'denim',variant=variant)
             ell('Brass fastening',(s*.22,1.69,.264),(.024,.024,.012),'gold',variant=variant,n=16,k=10)
         vs=[];fs=[]
         for j in range(16):
@@ -334,14 +346,15 @@ for h in range(5):
                 sweep('Twisted bun',[(s*.43,3.15,-.06,.07,.06),(s*(.53+.12*cos(a)),3.24+.12*sin(a),-.07,.11,.085),(s*.49,3.22,-.19,.04,.035)],'hair' if i%2 else 'hairLight',node='head',variant=variant,n=16)
             line('Bun ribbon',[(s*.43,3.10,.02),(s*.54,3.13,.07),(s*.66,3.19,.02)],.025,'cloth',node='head',variant=variant)
         if h==3:
+            sweep('Gathered hair behind ear',[(s*.39,2.94,-.25,.065,.045),(s*.49,2.76,-.24,.085,.055),(s*.50,2.60,-.15,.07,.055)],'hair',node='head',variant=variant,n=24,steps=6,groove=.02)
             for strand in range(3):
                 pts=[]
                 for i in range(22):
                     t=i/21;a=t*5*pi+strand*2*pi/3
-                    pts.append((s*(.49+.055*sin(a)),2.64-t*.79,.015+.055*cos(a),.055*(1-.35*t),.045*(1-.35*t)))
+                    pts.append((s*(.50+.06*t+.055*sin(a)),2.60-t*.79,-.145+.055*cos(a),.055*(1-.35*t),.045*(1-.35*t)))
                 sweep('Woven braid',pts,'hairLight' if strand==0 else 'hair',node='head',variant=variant,n=12,steps=2)
-            ell('Braid ribbon',(s*.49,1.87,.01),(.10,.035,.09),'cloth',node='head',variant=variant)
-            sweep('Braid tip',[(s*.49,1.84,.01,.065,.06),(s*.5,1.73,.02,.03,.025),(s*.47,1.69,.04,.004,.004)],'hair',node='head',variant=variant)
+            ell('Braid ribbon',(s*.56,1.83,-.15),(.10,.035,.09),'cloth',node='head',variant=variant)
+            sweep('Braid tip',[(s*.56,1.80,-.15,.065,.06),(s*.57,1.69,-.14,.03,.025),(s*.54,1.65,-.12,.004,.004)],'hair',node='head',variant=variant)
     if h==4:
         ell('Ponytail tie',(0,2.99,-.48),(.12,.12,.08),'cloth',node='head',variant=variant)
         for i in range(7):
@@ -413,10 +426,18 @@ for s in [-1,1]:line('Tag engraved heart',[(0,.80,.594),(s*.034,.835,.594),(s*.0
 sweep('Curled tail',[(0,.70,-.64,.105,.105),(.025,.84,-.85,.10,.10),(.05,1.04,-.92,.08,.08),(.07,1.20,-.85,.055,.055),(.065,1.25,-.75,.008,.008)],'fur','dog','tail',n=24,steps=5)
 sweep('Cream tail tip',[(.061,1.14,-.90,.067,.067),(.07,1.21,-.85,.051,.051),(.065,1.25,-.75,.008,.008)],'furCream','dog','tail',n=24,steps=5)
 
+exec(compile((ROOT/'authoring/organic_parts.py').read_text(encoding='utf8'), 'organic_parts.py', 'exec'))
+
 # Export an indexed mesh pack, grouped by articulation/material/variant for fewer draw calls.
 groups=defaultdict(list)
+runtime_lods={}
 for o in PARTS:
     groups[(o['model'],o['node'],o['variant'],o.data.materials[0].name,bool(o.data.color_attributes))].append(o)
+    if len(o.data.vertices)>128:
+        mobile=o.modifiers.new('Runtime LOD','DECIMATE')
+        mobile.ratio=.85 if o.name.startswith('Sculpted face') else .24 if o.name.startswith('Soft hand') else .52
+        runtime_lods[o.name]=mobile
+depsgraph=bpy.context.evaluated_depsgraph_get()
 blob=bytearray(); entries=[]
 def pack(values,typ):
     while len(blob)%4:blob.append(0)
@@ -426,11 +447,9 @@ for (model,node,variant,material,painted),objects in groups.items():
     for o in objects:
         # Keep editable source geometry, but simplify the actual tablet payload.
         # The face receives a smaller reduction to preserve eyelid/nose contours.
-        mobile=None;evaluated=None
-        if len(o.data.vertices)>128:
-            mobile=o.modifiers.new('Runtime LOD','DECIMATE')
-            mobile.ratio=.8 if o.name=='Sculpted face' else .52
-            evaluated=o.evaluated_get(bpy.context.evaluated_depsgraph_get())
+        evaluated=None
+        if o.name in runtime_lods:
+            evaluated=o.evaluated_get(depsgraph)
             me=evaluated.to_mesh()
         else:me=o.data
         me.calc_loop_triangles();base=len(pos)//3
@@ -441,7 +460,6 @@ for (model,node,variant,material,painted),objects in groups.items():
             if painted:colors.extend(ca.data[v.index].color[:3] if ca else (1,1,1))
         for tri in me.loop_triangles:indices.extend(base+i for i in tri.vertices)
         if evaluated:evaluated.to_mesh_clear()
-        if mobile:o.modifiers.remove(mobile)
     entry={'model':model,'node':node,'variant':variant,'material':material,'position':pack(pos,'f'),'normal':pack(norm,'f'),'index':pack(indices,'I')}
     if painted:entry['color']=pack(colors,'f')
     entries.append(entry)
@@ -449,9 +467,11 @@ materials={name:{'color':list(m.diffuse_color[:3]),'roughness':m['roughness'],'m
 manifest={'version':1,'generator':'Blender '+bpy.app.version_string,'pivots':PIVOTS,'parents':PARENTS,'materials':materials,'meshes':entries}
 (OUT/'characters.json').write_text(json.dumps(manifest,separators=(',',':')),encoding='utf8')
 (OUT/'characters.bin').write_bytes(blob)
+for o in PARTS:
+    if o.name in runtime_lods:o.modifiers.remove(runtime_lods[o.name])
 
 # Native vertex paint in Blender and GLB; runtime uses the same linear colors.
-for name in ['skin','fur']:
+for name in list(MATS):
     source=MATS[name]; painted=source.copy();painted.name=name+' painted'
     nodes=painted.node_tree.nodes;attr=nodes.new('ShaderNodeVertexColor');attr.layer_name='paint'
     painted.node_tree.links.new(attr.outputs['Color'],nodes.get('Principled BSDF').inputs['Base Color'])
@@ -460,11 +480,13 @@ for name in ['skin','fur']:
 
 defaults={'base','dress0','shoes0','hair0'}
 rigs={}
-for model in ['girl','dog']:
+for model in PIVOTS:
     rig={}
     for node,pivot in PIVOTS[model].items():
         o=bpy.data.objects.new(model+' · '+node,None);bpy.context.collection.objects.link(o)
         o.empty_display_type='PLAIN_AXES';o.empty_display_size=.08;o['model']=model
+        if node=='root' and model=='girl':o['relaxed_palms']=True
+        if node=='root' and model=='fox':o['orbital_refinement']=True
         parent=PARENTS.get(node,'root')
         if node!='root':
             o.parent=rig[parent];p=PIVOTS[model][parent]
@@ -474,14 +496,14 @@ for model in ['girl','dog']:
     for o in [p for p in PARTS if p['model']==model]:
         matrix=o.matrix_world.copy();o.parent=rig[o['node']];o.matrix_world=matrix
     rigs[model]=rig
-for model in ['girl','dog']:
+for model in PIVOTS:
     bpy.ops.object.select_all(action='DESELECT')
     for o in PARTS:o.select_set(o['model']==model and o['variant'] in defaults)
     for o in rigs[model].values():o.select_set(True)
     bpy.ops.export_scene.gltf(filepath=str(OUT/(model+'.glb')),use_selection=True,export_format='GLB',export_yup=True,export_extras=True)
 
 # Artist-friendly source: variant collections, logical pivot empties, a lit turntable.
-for model in ['girl','dog']:
+for model in PIVOTS:
     parent=bpy.data.collections.new(model.title());bpy.context.scene.collection.children.link(parent)
     variants={}
     for o in [p for p in PARTS if p['model']==model]:
@@ -493,6 +515,7 @@ for model in ['girl','dog']:
         for col in list(o.users_collection):col.objects.unlink(o)
         variants[key].objects.link(o)
     rigs[model]['root'].location.x=1.45 if model=='dog' else -.55
+    if model not in ['girl','dog']:parent.hide_render=True;parent.hide_viewport=True
 scene=bpy.context.scene
 scene.render.engine='CYCLES';scene.cycles.samples=40
 scene.cycles.use_denoising=True

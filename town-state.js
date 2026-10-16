@@ -62,8 +62,36 @@
     { text: "МИЛО", parts: ["МИ", "ЛО"], picture: "soap" },
     { text: "СИЛА", parts: ["СИ", "ЛА"], picture: "strong" },
   ];
-  const PETS = ["cat", "dog", "rabbit", "fox"],
+  const PETS = ["cat", "dog", "rabbit", "fox", "turtle", "chicken", "zombie"],
     COLORS = ["#be7186", "#7b9ca3", "#d5aa62", "#88a38a", "#8977a6"];
+  const PET_PRICES = {
+    cat: 0,
+    dog: 0,
+    rabbit: 0,
+    fox: 0,
+    turtle: 12,
+    chicken: 18,
+    zombie: 24,
+  };
+  function ownsPet(s, type) {
+    return (
+      PETS.includes(type) &&
+      (PET_PRICES[type] === 0 ||
+        (Array.isArray(s.ownedPets) && s.ownedPets.includes(type)))
+    );
+  }
+  function buyPet(s, type) {
+    if (
+      !PETS.includes(type) ||
+      ownsPet(s, type) ||
+      !Number.isInteger(s.gems) ||
+      s.gems < PET_PRICES[type]
+    )
+      return false;
+    s.gems -= PET_PRICES[type];
+    s.ownedPets = [...(s.ownedPets || []), type];
+    return true;
+  }
   function baseRoads() {
     const r = {};
     for (let z = -4; z <= 5; z++) r["0," + z] = "sand";
@@ -82,6 +110,7 @@
       skills: {},
       look: { dress: 0, shoes: 0, hair: 0, color: 0 },
       pet: "cat",
+      ownedPets: [],
       lands: [],
       objects: [],
       roads: baseRoads(),
@@ -158,7 +187,14 @@
       !Number.isInteger(s.look.color) ||
       s.look.color < 0 ||
       s.look.color > 4 ||
-      !PETS.includes(s.pet)
+      !ownsPet(s, s.pet)
+    )
+      return false;
+    if (
+      s.ownedPets !== undefined &&
+      (!Array.isArray(s.ownedPets) ||
+        s.ownedPets.some((p) => !PETS.includes(p)) ||
+        new Set(s.ownedPets).size !== s.ownedPets.length)
     )
       return false;
     if (
@@ -475,6 +511,9 @@
     FAMILIES,
     WORDS,
     PETS,
+    PET_PRICES,
+    ownsPet,
+    buyPet,
     COLORS,
     fresh,
     migrate,

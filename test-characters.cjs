@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 global.window = global;
 global.THREE = require("./three.min.js");
+require("./pet-rig.js");
 global.TownState = require("./town-state.js");
 const pack = JSON.parse(fs.readFileSync("models/characters.json", "utf8"));
 const bytes = fs.readFileSync("models/characters.bin");
@@ -41,7 +42,7 @@ for (const mesh of pack.meshes) {
 }
 const girl = assets.girl({ dress: 0, shoes: 0, hair: 0, color: 0 }),
   dog = assets.dog();
-for (const model of [girl, dog]) {
+for (const model of [girl, dog, ...["cat", "rabbit", "fox"].map(assets.pet)]) {
   let triangles = 0,
     draws = 0;
   model.traverse((o) => {
@@ -93,6 +94,16 @@ assert.equal(sharedDisposals, 0);
 assert(ownedDisposals > 0);
 const a = assets.girl({ dress: 0, shoes: 0, hair: 0, color: 0 });
 const b = assets.girl({ dress: 0, shoes: 0, hair: 0, color: 3 });
+assets.animate(a, 2, false);
+assert(Math.abs(a.userData.torso.rotation.z) > 0.001, "idle weight shift");
+assert(Math.abs(a.userData.head.rotation.y) > 0.01, "idle glance");
+assert(
+  a.userData.legs.every((leg) => leg.parent === a),
+  "idle torso motion keeps feet planted",
+);
+assets.animate(a, 3, false, true);
+assert.equal(a.userData.torso.rotation.z, 0);
+assert.equal(a.userData.head.rotation.y, 0);
 const tinted = (g) => {
   let result;
   g.traverse((o) => {
@@ -102,7 +113,7 @@ const tinted = (g) => {
 };
 assert.notEqual(tinted(a), tinted(b));
 assert.notEqual(tinted(a).color.getHex(), tinted(b).color.getHex());
-for (const name of ["girl", "dog"]) {
+for (const name of ["girl", "dog", "cat", "rabbit", "fox"]) {
   const glb = fs.readFileSync("models/" + name + ".glb");
   assert.equal(glb.toString("utf8", 0, 4), "glTF");
   assert.equal(glb.readUInt32LE(4), 2);
@@ -115,8 +126,20 @@ for (const file of [
   "character-assets.js",
   "models/characters.json",
   "models/characters.bin",
+  "surface-art.js",
+  "vendor/reflector.js",
+  "vendor/water.js",
 ])
   assert(files.includes(file));
+for (const model of [assets.tree(true), assets.cottage("#dfcbb2", "#ac7568")]) {
+  const box = new THREE.Box3().setFromObject(model);
+  assert(box.min.y > -0.3 && box.max.y < 6);
+  let draws = 0;
+  model.traverse((o) => {
+    if (o.isMesh) draws++;
+  });
+  assert(draws < 25);
+}
 console.log(
   `PASS ${packTriangles} library triangles, geometry bounds, indices, articulations, blink, color isolation, disposal, GLB pivots and offline assets`,
 );

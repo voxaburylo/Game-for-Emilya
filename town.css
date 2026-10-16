@@ -1581,3 +1581,53 @@ a {
   object-fit: contain;
   pointer-events: none;
 }
+
+.pet-panel .choice-grid {
+  max-height: 45vh;
+  overflow: auto;
+  align-content: start;
+}
+.pet-panel .choice {
+  position: relative;
+}
+.pet-price {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  color: #856319;
+}
+.pet-price .ico {
+  width: 15px;
+  height: 15px;
+}
+.pet-panel .wallet {
+  white-space: nowrap;
+}
+@media (max-aspect-ratio: 4/5) {
+  .pet-panel .choice-grid {
+    max-height: 18vh;
+  }
+}
+
+.pet-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.pet-panel > .row,
+.pet-panel > .note,
+.pet-panel > .actions {
+  flex-shrink: 0;
+}
+.pet-panel .choice-grid {
+  flex: 1;
+  min-height: 100px;
+  max-height: none;
+}
+.pet-panel .note {
+  margin: 8px 0;
+}
+.pet-panel .actions {
+  margin-top: 10px;
+}

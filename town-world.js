@@ -28,8 +28,8 @@
       this.jumpV = 0;
       this.reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
       this.scene = new T.Scene();
-      this.scene.background = new T.Color("#c7e0df");
-      this.scene.fog = new T.Fog("#c7e0df", 90, 170);
+      this.scene.background = new T.Color("#8ccde7");
+      this.scene.fog = new T.Fog("#8ccde7", 90, 170);
       this.renderer = new T.WebGLRenderer({
         antialias: true,
         powerPreference: "high-performance",
@@ -122,14 +122,7 @@
       this.hero.position.copy(pos);
       this.hero.rotation.y = rot;
       this.scene.add(this.hero);
-      if (this.reflection && this.view === "wardrobe") {
-        A.dispose(this.reflection);
-        this.room.remove(this.reflection);
-        this.reflection = A.avatar(look);
-        this.reflection.position.set(-3, 0.5, -2.55);
-        this.reflection.scale.setScalar(0.7);
-        this.room.add(this.reflection);
-      }
+
       this.poseUntil = this.time + 0.9;
       this.hero.visible = this.view !== "pets";
     }
@@ -151,21 +144,8 @@
       this.petPath = [];
     }
     makeOutside() {
-      A.box(this.outside, "#91bac2", 0, -1.5, 0, 160, 0.5, 160);
-      this.water = [];
-      for (let i = 0; i < 25; i++) {
-        const line = A.box(
-          this.outside,
-          "#b9d6d5",
-          Math.sin(i * 8.6) * 45,
-          -1.2,
-          Math.cos(i * 4.2) * 37,
-          1.7 + (i % 4),
-          0.02,
-          0.06,
-        );
-        this.water.push(line);
-      }
+      this.atmosphere = WorldAtmosphere.build();
+      this.outside.add(this.atmosphere.group);
       for (const f of S.FIXED) {
         const g = this.house(
           f.x,
@@ -176,10 +156,10 @@
               ? "#e9d8af"
               : "#c6d8cb",
           f.id === "home"
-            ? "#a86e68"
+            ? "#bb4837"
             : f.id === "letters"
-              ? "#71958c"
-              : "#ab8297",
+              ? "#218c87"
+              : "#7956a5",
           f.id === "home" ? "ДІМ" : f.id === "letters" ? "А" : "МА",
         );
         g.userData.action = { type: "enter", id: f.id };
@@ -187,8 +167,9 @@
         this.fixedGroups.set(f.id, g);
         this.outside.add(g);
       }
-      const ring = A.cyl(this.outside, "#729fa6", 12, 0.08, 8, 3.6, 0.06, 2.8);
-      ring.castShadow = false;
+      this.lake = SurfaceArt.lake();
+      this.outside.add(this.lake);
+      this.outside.add(SurfaceArt.lakePlants());
       for (let i = 0; i < 15; i++) {
         const a = (i / 15) * Math.PI * 2;
         A.ball(
@@ -225,7 +206,7 @@
           (z > 1 && x < 4)
         )
           continue;
-        A.flower(this.outside, x, z, ["#cc8c9a", "#e4bd6d", "#eee0ba"][i % 3]);
+        A.flower(this.outside, x, z, ["#e95585", "#f7ba24", "#fff1ae"][i % 3]);
       }
       for (const [x, z] of [
         [-8, -4],
@@ -260,44 +241,16 @@
     }
     house(x, z, wall, roof, sign) {
       const g = A.group(null, x, 0, z);
-      A.box(g, "#c9b89a", 0, 0.14, 0, 5.3, 0.28, 4.7);
-      A.box(g, wall, 0, 1.6, 0, 4.8, 3, 4.1);
-      A.box(g, "#f4e7cf", 0, 0.4, 2.1, 4.8, 0.25, 0.12);
-      const shape = new T.Shape();
-      shape.moveTo(-2.8, 0);
-      shape.lineTo(0, 1.8);
-      shape.lineTo(2.8, 0);
-      shape.closePath();
-      const rg = new T.ExtrudeGeometry(shape, {
-        depth: 4.8,
-        bevelEnabled: true,
-        bevelSize: 0.07,
-        bevelThickness: 0.07,
-        bevelSegments: 2,
-        steps: 1,
-      });
-      rg.translate(0, 3.1, -2.4);
-      const m = new T.Mesh(rg, A.mat(roof));
-      m.castShadow = true;
-      m.receiveShadow = true;
-      g.add(m);
-      for (let i = 0; i < 6; i++)
-        A.box(g, roof, 0, 3.16, 2.4 - i * 0.87, 5.7, 0.15, 0.08);
-      A.box(g, "#f3e5cb", 0, 1.4, 2.13, 1.45, 2.7, 0.18);
+      g.add(CharacterAssets.cottage(wall, roof));
       const door = A.group(g, -0.61, 0.14, 2.27);
       A.box(door, "#527b72", 0.61, 1.15, 0, 1.22, 2.3, 0.13);
       A.box(door, "#a7c4bd", 0.61, 1.65, 0.08, 0.8, 0.7, 0.03);
       A.ball(door, "#dbb46e", 1.02, 1, 0.1, 0.06);
       g.userData.door = door;
       [-1.65, 1.65].forEach((xx) => {
-        A.box(g, "#f9edda", xx, 1.85, 2.14, 0.96, 1.3, 0.14);
-        A.box(g, "#87b3bd", xx, 1.85, 2.23, 0.73, 1.06, 0.05);
-        A.box(g, "#fff2d8", xx, 1.85, 2.28, 0.06, 1.06, 0.03);
-        A.box(g, "#fff2d8", xx, 1.85, 2.28, 0.73, 0.06, 0.03);
-        A.box(g, "#ad845d", xx, 1.14, 2.35, 1.1, 0.23, 0.45);
         for (let i = 0; i < 3; i++) {
           const flower = A.group(g, xx - 0.3 + i * 0.3, 0.7, 2.4);
-          A.flower(flower, 0, 0, "#cf8593");
+          A.flower(flower, 0, 0, "#de4777");
         }
       });
       A.box(g, "#c8b495", 0, 0.12, 2.8, 2, 0.22, 1.1);
@@ -331,11 +284,11 @@
     refreshTerrain() {
       this.clear(this.groundGroup);
       const land = (x, z, w, h) => {
-        A.box(this.groundGroup, "#b7a88a", x, -0.65, z, w, 1.2, h);
-        A.box(this.groundGroup, "#8eac7d", x, -0.09, z, w, 0.2, h);
+        this.groundGroup.add(WorldAtmosphere.cliff(x, z, w, h));
+        A.box(this.groundGroup, "#478c3b", x, -0.09, z, w, 0.2, h);
         A.box(
           this.groundGroup,
-          "#adc48c",
+          "#70aa3e",
           x,
           0.01,
           z,
@@ -755,11 +708,14 @@
       this.jumpY = 0;
       this.jumpV = 0;
       if (view === "street") {
+        this.windowView?.target.dispose();
+        this.windowView = null;
+        this.mirror = null;
         this.hero.position.set(this.streetPose.x, 0, this.streetPose.z);
         this.pet.position.set(this.streetPose.x + 1, 0, this.streetPose.z + 1);
         this.yaw = this.streetYaw ?? 0.53;
         this.zoom = this.streetZoom || 13;
-        this.scene.background.set("#c7e0df");
+        this.scene.background.set("#8ccde7");
         this.clear(this.room);
         this.updateNav();
       } else {
@@ -782,77 +738,151 @@
       this.updateProjection();
       this.petPath = [];
     }
+    surfaceHeight(position) {
+      if (this.view === "room") {
+        const rug = this.furnitureGroups?.rug;
+        return rug &&
+          Math.abs(position.x - rug.position.x) < 1.98 &&
+          Math.abs(position.z - rug.position.z) < 1.43
+          ? 0.128
+          : 0.045;
+      }
+      return this.view === "street" &&
+        Math.abs(position.x - 12) < 4.2 &&
+        Math.abs(position.z - 8) < 1
+        ? 0.28
+        : 0;
+    }
     makeRoom(mode) {
+      this.mirror = null;
       this.petProp = null;
       this.ballProp = null;
       this.reflection = null;
       this.clear(this.room);
       A.box(this.room, "#c9a77d", 0, -0.14, 0, 12, 0.25, 10);
-      for (let i = 0; i < 12; i++)
-        A.box(
-          this.room,
-          i % 2 ? "#d8bd94" : "#d1b28a",
-          -5.5 + i,
-          0.025,
-          0,
-          0.96,
-          0.05,
-          10,
-        );
+      this.room.add(SurfaceArt.floor());
       A.box(this.room, "#dfd8c1", 0, 2.5, -4.9, 12, 5, 0.2);
       A.box(this.room, "#d1d9c6", -5.9, 2.5, 0, 0.2, 5, 10);
       A.box(this.room, "#eee4d0", 0, 0.24, -4.72, 12, 0.35, 0.13);
       A.box(this.room, "#eee4d0", -5.72, 0.24, 0, 0.13, 0.35, 10);
       A.box(this.room, "#f5ebd6", -2, 2.9, -4.73, 2.8, 2.5, 0.12);
-      A.box(this.room, "#98bec5", -2, 2.9, -4.64, 2.5, 2.2, 0.04);
+      this.makeWindow();
       A.box(this.room, "#f9efd9", -2, 2.9, -4.58, 0.1, 2.3, 0.05);
       A.box(this.room, "#f9efd9", -2, 2.9, -4.58, 2.6, 0.1, 0.05);
       [-3.7, -0.3].forEach((x) =>
         A.box(this.room, "#b4bc9c", x, 2.9, -4.5, 0.5, 2.8, 0.15),
       );
       const closet = A.group(this.room, 3.5, 0, -3.8);
-      A.box(closet, "#be9676", 0, 1.65, 0, 2.6, 3.3, 1.1);
-      [-0.65, 0.65].forEach((x) => {
-        A.box(closet, "#d4b391", x, 1.7, 0.6, 1.18, 2.9, 0.12);
-        A.ball(closet, "#705e4b", x * 0.4, 1.6, 0.73, 0.065);
-      });
-      closet.userData.action = { type: "wardrobe" };
-      if (mode === "wardrobe") {
-        A.cyl(this.room, "#bc8e8e", -0.5, 0.1, 0, 1.6, 0.06, 1.3);
-        const mirror = A.group(this.room, -3, 0, -2.7);
-        A.box(mirror, "#bda174", 0, 2.1, 0, 1.9, 3.8, 0.16);
-        A.box(mirror, "#b9d2d0", 0, 2.1, 0.11, 1.65, 3.55, 0.04);
-        const reflection = A.avatar(this.state.look);
-        reflection.position.set(-3, 0.5, -2.55);
-        reflection.scale.setScalar(0.7);
-        reflection.rotation.y = 0.2;
-        reflection.traverse((o) => {
-          if (o.isMesh) o.castShadow = false;
-        });
-        this.room.add(reflection);
-        this.reflection = reflection;
-        for (let i = 0; i < 3; i++) {
+      // A hollow carcass: shelves sit behind the door plane, not on the doors.
+      A.box(closet, "#ad8765", 0, 1.65, -0.51, 2.6, 3.3, 0.14);
+      for (const x of [-1.24, 1.24])
+        A.box(closet, "#c9a480", x, 1.65, 0, 0.15, 3.3, 1.15);
+      for (const y of [0.12, 3.25])
+        A.box(closet, "#d2b38e", 0, y, 0, 2.6, 0.16, 1.15);
+      const doors = [];
+      for (const side of [-1, 1]) {
+        const hinge = A.group(closet, side * 1.23, 0, 0.62);
+        A.box(hinge, "#d4b391", -side * 0.59, 1.7, 0, 1.18, 2.98, 0.12);
+        A.box(hinge, "#c7a27d", -side * 0.59, 1.72, 0.07, 0.94, 2.65, 0.045);
+        A.ball(hinge, "#806747", -side * 1.02, 1.6, 0.13, 0.055);
+        hinge.rotation.y = mode === "wardrobe" ? side * 1.9 : 0;
+        doors.push(hinge);
+      }
+      closet.userData.doors = doors;
+      for (let i = 0; i < 3; i++) {
+        const y = 0.48 + i * 0.48;
+        A.box(closet, "#c7a17b", 0, y, 0, 2.32, 0.075, 1.02);
+        for (let j = 0; j < 2; j++) {
+          const x = j ? 0.56 : -0.56;
           A.box(
-            this.room,
-            "#9d7c5c",
-            3.5,
-            0.5 + i * 0.52,
-            -2.8,
-            2.4,
-            0.08,
-            0.6,
+            closet,
+            ["#ad7b8d", "#8ba3a6", "#e3d2b6"][(i + j) % 3],
+            x,
+            y + 0.13,
+            0.1,
+            0.85,
+            0.18,
+            0.67,
           );
           A.box(
-            this.room,
-            ["#ae7586", "#8ba3a6", "#e8d7bb"][i],
-            3.2,
-            0.65 + i * 0.52,
-            -2.8,
-            0.7,
-            0.23,
-            0.45,
+            closet,
+            ["#c49aaa", "#a6babc", "#f0e3ca"][(i + j) % 3],
+            x,
+            y + 0.235,
+            0.1,
+            0.81,
+            0.055,
+            0.64,
           );
         }
+      }
+      A.tube(
+        closet,
+        "#a98b62",
+        new T.Vector3(-1.1, 2.86, 0),
+        new T.Vector3(1.1, 2.86, 0),
+        0.028,
+      );
+      for (let i = 0; i < 3; i++) {
+        const x = -0.72 + i * 0.72;
+        A.tube(
+          closet,
+          "#a5805b",
+          new T.Vector3(x - 0.28, 2.55, 0.02),
+          new T.Vector3(x, 2.73, 0.02),
+          0.018,
+        );
+        A.tube(
+          closet,
+          "#a5805b",
+          new T.Vector3(x, 2.73, 0.02),
+          new T.Vector3(x + 0.28, 2.55, 0.02),
+          0.018,
+        );
+        A.tube(
+          closet,
+          "#a5805b",
+          new T.Vector3(x - 0.28, 2.55, 0.02),
+          new T.Vector3(x + 0.28, 2.55, 0.02),
+          0.018,
+        );
+        A.tube(
+          closet,
+          "#a5805b",
+          new T.Vector3(x, 2.73, 0.02),
+          new T.Vector3(x, 2.87, 0),
+          0.014,
+        );
+        A.box(
+          closet,
+          ["#bd8599", "#89a39a", "#e1c58f"][i],
+          x,
+          2.22,
+          0.1,
+          0.49,
+          0.65,
+          0.13,
+        );
+      }
+      closet.userData.action = { type: "wardrobe" };
+      if (mode === "wardrobe") {
+        const dressingRug = SurfaceArt.rug();
+        dressingRug.position.x = -0.5;
+        dressingRug.scale.set(0.85, 1, 0.9);
+        this.room.add(dressingRug);
+        const mirror = A.group(this.room, -3, 0, -2.7);
+        A.box(mirror, "#bda174", 0, 2.1, 0, 1.9, 3.8, 0.16);
+        mirror.rotation.y = 0.38;
+        const glass = new T.Reflector(new T.PlaneGeometry(1.65, 3.55), {
+          textureWidth: 768,
+          textureHeight: 1024,
+          color: 0x919191,
+          multisample: 0,
+          clipBias: 0,
+        });
+        glass.position.set(0, 2.1, 0.13);
+        mirror.add(glass);
+        this.mirror = glass;
       }
       if (mode === "pets") {
         A.cyl(this.room, "#8ca99b", 0, 0.12, 0, 1.65, 0.16, 1.3);
@@ -938,6 +968,67 @@
         this.updateRoomNav();
       }
     }
+    makeWindow() {
+      this.windowView?.target.dispose();
+      const target = new T.WebGLRenderTarget(640, 560),
+        camera = new T.PerspectiveCamera(59, 640 / 560, 0.1, 180);
+      const home =
+        S.FIXED.find((f) => f.id === this.roomId) ||
+        this.state.objects.find((f) => f.id === this.roomId) ||
+        S.FIXED[0];
+      camera.position.set(home.x - 1.65, 2.1, home.z + 2.65);
+      camera.lookAt(home.x + 1, 1.8, home.z + 17);
+      camera.updateMatrixWorld();
+      const pane = new T.Mesh(
+        new T.PlaneGeometry(2.5, 2.2),
+        new T.MeshBasicMaterial({ map: target.texture, toneMapped: false }),
+      );
+      pane.position.set(-2, 2.9, -4.61);
+      this.room.add(pane);
+      this.windowView = { target, camera, next: 0 };
+    }
+    renderWindow() {
+      const w = this.windowView,
+        r = this.renderer;
+      if (
+        !w ||
+        this.view === "street" ||
+        this.time < w.next ||
+        !r.getRenderTarget
+      )
+        return;
+      const saved = {
+        target: r.getRenderTarget(),
+        outside: this.outside.visible,
+        room: this.room.visible,
+        hero: this.hero.visible,
+        pet: this.pet.visible,
+        light: this.portraitLight.visible,
+        shadow: r.shadowMap.autoUpdate,
+        background: this.scene.background,
+      };
+      try {
+        this.outside.visible = true;
+        this.room.visible = false;
+        this.hero.visible = false;
+        this.pet.visible = false;
+        this.portraitLight.visible = false;
+        r.shadowMap.autoUpdate = false;
+        this.scene.background = new T.Color("#8ccde7");
+        r.setRenderTarget(w.target);
+        r.render(this.scene, w.camera);
+        w.next = this.time + 0.25;
+      } finally {
+        r.setRenderTarget(saved.target);
+        this.outside.visible = saved.outside;
+        this.room.visible = saved.room;
+        this.hero.visible = saved.hero;
+        this.pet.visible = saved.pet;
+        this.portraitLight.visible = saved.light;
+        r.shadowMap.autoUpdate = saved.shadow;
+        this.scene.background = saved.background;
+      }
+    }
     addText(g, text, x, y, z, w, h) {
       const c = document.createElement("canvas");
       c.width = 512;
@@ -1013,6 +1104,7 @@
       }
       if (this.petProp) {
         this.clear(this.petProp);
+        this.ballProp = null;
         if (action === "feed")
           A.cyl(this.petProp, "#b77f6b", 0, 0.18, 1.4, 0.45, 0.3);
         if (action === "ball") {
@@ -1203,20 +1295,11 @@
       }
       if (this.hero) {
         CharacterAssets.animate(this.hero, this.time, moving, this.reduced);
-        if (this.reflection)
-          CharacterAssets.animate(
-            this.reflection,
-            this.time,
-            moving,
-            this.reduced,
-          );
         this.hero.position.y = this.sitting
           ? (this.sitY ?? 0.45)
-          : (this.view === "street" &&
-            Math.abs(this.hero.position.x - 12) < 4.2 &&
-            Math.abs(this.hero.position.z - 8) < 1
-              ? 0.28
-              : 0) + this.jumpY;
+          : this.surfaceHeight(this.hero.position) -
+            (this.view === "room" ? this.heroSole : 0) +
+            this.jumpY;
         this.hero.userData.legs.forEach(
           (m, i) =>
             (m.rotation.x = this.sitting
@@ -1226,21 +1309,32 @@
                 : 0),
         );
         this.hero.userData.arms.forEach((m, i) => {
+          const idle = !moving && !this.reduced;
           m.rotation.x = moving
             ? -Math.sin(this.time * 11 + i * Math.PI) * 0.35
-            : 0;
-          m.rotation.z =
-            this.time < this.poseUntil
-              ? (i ? 1 : -1) * Math.sin((this.poseUntil - this.time) * 4) * 0.35
+            : idle
+              ? Math.sin(this.time * 1.3 + i * 1.4) * 0.045
               : 0;
+          m.rotation.z =
+            !this.reduced && this.time < this.poseUntil
+              ? (i ? 1 : -1) *
+                (0.055 +
+                  Math.max(0, Math.sin((this.poseUntil - this.time) * 4)) *
+                    0.24)
+              : (i ? 1 : -1) *
+                (0.045 + (idle ? Math.sin(this.time * 0.9 + i) * 0.018 : 0));
+          m.rotation.y = idle ? Math.sin(this.time * 0.8 + i) * 0.025 : 0;
+          if (this.jumpY > 0.05)
+            m.rotation.z += (i ? 1 : -1) * Math.min(0.65, this.jumpY * 0.6);
         });
         if (this.view === "wardrobe") {
           this.hero.position.y = 0.13 - this.heroSole;
           this.hero.rotation.y = this.yaw;
-          if (this.reflection) this.reflection.rotation.y = -this.yaw;
         }
       }
       if (this.pet) {
+        const previousX = this.pet.position.x,
+          previousZ = this.pet.position.z;
         if (["street", "room"].includes(this.view) && !this.paused) {
           const p = this.hero.position,
             d = Math.hypot(
@@ -1267,44 +1361,47 @@
                 );
                 this.pet.position.x = next.x;
                 this.pet.position.z = next.z;
-                this.pet.rotation.y = Math.atan2(dx, dz);
+                const angle = Math.atan2(dx, dz),
+                  delta = Math.atan2(
+                    Math.sin(angle - this.pet.rotation.y),
+                    Math.cos(angle - this.pet.rotation.y),
+                  );
+                this.pet.rotation.y += delta * (1 - Math.exp(-dt * 12));
               }
             }
-          }
+          } else this.petPath = [];
         }
         if (this.view === "pets") this.pet.rotation.y = this.yaw;
-        const petMoving =
-          this.petPath?.length > 0 &&
-          !this.paused &&
-          ["street", "room"].includes(this.view);
-        CharacterAssets.animate(this.pet, this.time, petMoving, this.reduced);
-        this.pet.rotation.z = petMoving
-          ? Math.sin(this.time * (this.state.pet === "rabbit" ? 13 : 9)) * 0.045
-          : 0;
-        if (this.pet.userData.characterModel === "dog") {
-          this.pet.userData.legs.forEach((leg, i) => {
-            leg.rotation.x = petMoving
-              ? Math.sin(this.time * 12 + [0, Math.PI, Math.PI, 0][i]) * 0.32
-              : 0;
-          });
-        }
+        const distance = Math.hypot(
+          this.pet.position.x - previousX,
+          this.pet.position.z - previousZ,
+        );
+        CharacterAssets.animate(
+          this.pet,
+          this.time,
+          distance > 0.0005,
+          this.reduced,
+        );
         const active = this.petUntil > this.time;
-        this.pet.userData.tail.rotation.z =
-          Math.sin(this.time * (active ? 14 : 4)) * (active ? 0.5 : 0.1);
-        this.pet.userData.head.rotation.x =
-          active && this.petAction === "feed"
-            ? Math.sin(this.time * 8) * 0.2 + 0.2
-            : Math.sin(this.time * 1.7) * 0.035;
-        this.pet.position.y =
-          active && this.petAction === "stroke"
-            ? Math.abs(Math.sin(this.time * 5)) * 0.12
-            : petMoving
-              ? Math.abs(
-                  Math.sin(this.time * (this.state.pet === "rabbit" ? 9 : 12)),
-                ) * (this.state.pet === "rabbit" ? 0.18 : 0.035)
-              : 0;
-        if (this.view === "pets")
-          this.pet.position.y += 0.27 - this.petSole * 2;
+        const behavior = PetBehavior.update(this.pet, {
+          time: this.time,
+          dt,
+          distance,
+          action: active ? this.petAction : "",
+          reduced: this.reduced,
+        });
+        this.pet.rotation.z = 0;
+        this.pet.position.y = 0;
+        this.pet.updateMatrixWorld(true);
+        this.petBounds ||= new T.Box3();
+        const sole = this.petBounds.setFromObject(this.pet, true).min.y;
+        const floor =
+          this.view === "pets"
+            ? 0.27
+            : this.view === "wardrobe"
+              ? 0.045
+              : this.surfaceHeight(this.pet.position);
+        this.pet.position.y = floor - sole + behavior.bounce;
         if (this.ballProp)
           this.ballProp.position.set(
             Math.sin(this.time * 2) * 1.3,
@@ -1399,6 +1496,11 @@
           ),
         );
       this.camera.lookAt(this.focus);
+      this.renderWindow();
+      this.lake.material.uniforms.time.value = this.reduced
+        ? 0
+        : this.time * 0.35;
+      this.atmosphere.update(this.time, this.reduced);
       this.renderer.render(this.scene, this.camera);
     }
   }

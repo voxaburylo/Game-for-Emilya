@@ -50,11 +50,13 @@
     );
   }
   function thumb(kind, index = 0, color = "#be7186") {
-    if (
-      ["dress", "shoes", "hair"].includes(kind) ||
-      (kind === "pet" && index === 1)
-    ) {
-      const file = kind === "pet" ? "dog-0" : kind + "-" + index;
+    if (kind === "pet" && index >= 4)
+      return CompanionAssets.thumb(TownState.PETS[index]);
+    if (["dress", "shoes", "hair"].includes(kind) || kind === "pet") {
+      const file =
+        kind === "pet"
+          ? ["cat", "dog", "rabbit", "fox"][index] + "-0"
+          : kind + "-" + index;
       return `<img class="model-thumb" src="models/thumbs/${file}.png" alt="" draggable="false">`;
     }
     if (kind === "pet") {
@@ -146,68 +148,9 @@
     return CharacterAssets.girl(look);
   }
   function pet(type) {
-    if (type === "dog") return CharacterAssets.dog();
-    const g = new T.Group(),
-      fur = {
-        cat: "#c6a078",
-        dog: "#ac805c",
-        rabbit: "#ded0bf",
-        fox: "#d68e5a",
-      }[type],
-      cream = "#fff0d8";
-    ball(g, fur, 0, 0.49, -0.1, 0.4, 0.43, 0.61);
-    const head = group(g, 0, 0.87, 0.4);
-    ball(head, fur, 0, 0, 0, 0.43, 0.4, 0.38);
-    ball(head, cream, 0, -0.12, 0.29, 0.27, 0.18, 0.14);
-    [-1, 1].forEach((s) => {
-      if (type === "dog")
-        ball(head, "#795c46", s * 0.4, -0.05, -0.02, 0.15, 0.34, 0.2);
-      else if (type === "rabbit") {
-        const ear = ball(head, fur, s * 0.2, 0.48, -0.05, 0.12, 0.47, 0.11);
-        ear.rotation.z = s * -0.12;
-        ball(head, "#dcaea9", s * 0.2, 0.51, 0.025, 0.055, 0.33, 0.035);
-      } else {
-        const ear = mesh(
-          head,
-          "cone",
-          fur,
-          s * 0.29,
-          0.36,
-          0,
-          0.22,
-          0.45,
-          0.18,
-        );
-        ear.rotation.y = Math.PI / 4;
-        mesh(
-          head,
-          "cone",
-          "#dca49a",
-          s * 0.29,
-          0.37,
-          0.12,
-          0.11,
-          0.25,
-          0.045,
-        ).rotation.y = Math.PI / 4;
-      }
-      ball(head, "#35463f", s * 0.16, 0.03, 0.33, 0.046, 0.065, 0.025);
-      ball(head, "#ffffff", s * 0.15, 0.05, 0.35, 0.013);
-      for (const z of [-0.45, 0.27])
-        box(g, fur, s * 0.25, 0.14, z, 0.22, 0.27, 0.3);
-    });
-    ball(head, "#674a43", 0, -0.07, 0.43, 0.07, 0.045, 0.04);
-    const tail = group(g, 0, 0.5, -0.62);
-    if (type === "rabbit") ball(tail, cream, 0, 0, 0, 0.2);
-    else if (type === "cat") {
-      tube(tail, fur, new T.Vector3(), new T.Vector3(0.1, 0.65, -0.2), 0.08);
-      ball(tail, "#886548", 0.1, 0.65, -0.2, 0.085);
-    } else {
-      ball(tail, fur, 0, 0.13, -0.18, 0.2, 0.22, 0.45);
-      ball(tail, cream, 0, 0.2, -0.48, 0.16, 0.16, 0.18);
-    }
-    g.userData = { head, tail };
-    return g;
+    return CompanionAssets.types.includes(type)
+      ? CompanionAssets.create(type)
+      : CharacterAssets.pet(type);
   }
   function flower(g, x, z, color) {
     cyl(g, "#6b926c", x, 0.32, z, 0.025, 0.5);
@@ -225,21 +168,9 @@
     ball(g, "#eacb74", x, 0.65, z, 0.055);
   }
   function tree(g, x, z, apple = false) {
-    const n = group(g, x, 0, z);
-    cyl(n, "#9c7657", 0, 1, 0, 0.2, 2);
-    ball(n, "#769c79", 0, 2.4, 0, 1.05, 1.2, 0.95);
-    ball(n, "#8bac80", -0.45, 2.9, 0.1, 0.7, 0.8, 0.7);
-    ball(n, "#94b88b", 0.55, 2.5, 0.2, 0.7, 0.75, 0.7);
-    if (apple)
-      for (let i = 0; i < 6; i++)
-        ball(
-          n,
-          "#c97a66",
-          Math.sin(i * 2.3) * 0.7,
-          2.1 + (i % 3) * 0.4,
-          Math.cos(i * 2.3) * 0.75,
-          0.12,
-        );
+    const n = CharacterAssets.tree(apple);
+    n.position.set(x, 0, z);
+    if (g) g.add(n);
     return n;
   }
   function furniture(kind) {
@@ -269,11 +200,7 @@
       cyl(g, "#af8290", 0.15, 1.15, 0, 0.14, 0.3);
       flower(g, -0.2, 0, "#eac6a6");
     }
-    if (kind === "rug") {
-      cyl(g, "#d9b49b", 0, 0.025, 0, 2, 0.05, 1.5);
-      cyl(g, "#e7d4b4", 0, 0.06, 0, 1.78, 0.025, 1.3);
-      cyl(g, "#b68b7e", 0, 0.08, 0, 0.45, 0.02, 0.45);
-    }
+    if (kind === "rug") return SurfaceArt.rug();
     return g;
   }
   function item(kind) {
@@ -332,9 +259,15 @@
     return g;
   }
   function dispose(g) {
+    const skeletons = new Set();
     const sharedG = new Set(Object.values(geos)),
       sharedM = new Set(mats.values());
     g.traverse((o) => {
+      if (o.skeleton && !skeletons.has(o.skeleton)) {
+        skeletons.add(o.skeleton);
+        o.skeleton.dispose();
+      }
+      if (o.isReflector || o.isWater) o.dispose();
       if (
         o.geometry &&
         !o.geometry.userData.characterShared &&
