@@ -10,3 +10,4 @@ node_modules/
 android/.build/
 android/*.keystore
 *.apk
+dist/
