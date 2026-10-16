@@ -88,6 +88,52 @@
         });
     return pending;
   }
+  function articulateLimb(limb, cut, label) {
+    const T = root.THREE,
+      upper = new T.Bone(),
+      lower = new T.Bone(),
+      meshes = limb.children.filter((child) => child.isMesh);
+    upper.name = label + " upper";
+    lower.name = label + " joint";
+    lower.position.y = cut;
+    upper.add(lower);
+    limb.add(upper);
+    const skeleton = new T.Skeleton([upper, lower]),
+      skinned = [];
+    for (const source of meshes) {
+      const geometry = source.geometry.clone(),
+        position = geometry.getAttribute("position"),
+        indices = new Uint16Array(position.count * 4),
+        weights = new Float32Array(position.count * 4),
+        blend = Math.max(0.08, Math.abs(cut) * 0.18);
+      geometry.userData.characterShared = false;
+      for (let i = 0; i < position.count; i++) {
+        const lowerWeight = T.MathUtils.clamp(
+          (cut + blend - position.getY(i)) / (blend * 2),
+          0,
+          1,
+        );
+        indices[i * 4] = 0;
+        indices[i * 4 + 1] = 1;
+        weights[i * 4] = 1 - lowerWeight;
+        weights[i * 4 + 1] = lowerWeight;
+      }
+      geometry.setAttribute("skinIndex", new T.Uint16BufferAttribute(indices, 4));
+      geometry.setAttribute("skinWeight", new T.Float32BufferAttribute(weights, 4));
+      const mesh = new T.SkinnedMesh(geometry, source.material);
+      mesh.name = source.name;
+      mesh.castShadow = source.castShadow;
+      mesh.receiveShadow = source.receiveShadow;
+      mesh.frustumCulled = false;
+      limb.remove(source);
+      limb.add(mesh);
+      skinned.push(mesh);
+    }
+    limb.updateMatrixWorld(true);
+    skeleton.calculateInverses();
+    for (const mesh of skinned) mesh.bind(skeleton, mesh.matrixWorld);
+    return { upper: limb, joint: lower, skeleton, cut };
+  }
   function instantiate(model, look = {}) {
     if (!library)
       throw Error("Character assets must be loaded before creating the world");
@@ -198,6 +244,20 @@
       group.updateMatrixWorld(true);
       upper.forEach((o) => torso.attach(o));
     }
+    const armRig =
+        model === "girl"
+          ? [
+              articulateLimb(nodes.armL, -0.43, "left elbow"),
+              articulateLimb(nodes.armR, -0.43, "right elbow"),
+            ]
+          : [],
+      legRig =
+        model === "girl"
+          ? [
+              articulateLimb(nodes.legL, -0.35, "left knee"),
+              articulateLimb(nodes.legR, -0.35, "right knee"),
+            ]
+          : [];
     const rig = [];
     if (["dog", "cat", "rabbit", "fox"].includes(model))
       for (const leg of [nodes.legL, nodes.legR, nodes.backL, nodes.backR])
@@ -221,6 +281,8 @@
       hoverPet: ["cube-bee", "cube-fish", "cube-parrot"].includes(model),
       torso,
       rig,
+      armRig,
+      legRig,
       ankles: rig.map((r) => r.ankle),
       head: nodes.head,
       tail: nodes.tail,

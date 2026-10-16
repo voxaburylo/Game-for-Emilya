@@ -51,7 +51,7 @@
     }
     return edges;
   }
-  function build(rects) {
+  function build(rects, options = {}) {
     const T = root.THREE,
       A = root.Art,
       g = new T.Group(),
@@ -101,12 +101,98 @@
     );
     topGeometry.setIndex(topIndices);
     topGeometry.computeVertexNormals();
-    const top = new T.Mesh(
-      topGeometry,
-      new T.MeshStandardMaterial({ color: "#70aa3e", roughness: 1 }),
-    );
+    const grassMaterial = new T.MeshStandardMaterial({
+        color: "#70aa3e",
+        roughness: 1,
+      }),
+      hash = (n) => {
+        const value = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+        return value - Math.floor(value);
+      };
+    // Large, quiet colour variation keeps the ground organic without a tiled
+    // texture or another downloaded asset.
+    grassMaterial.onBeforeCompile = (shader) => {
+      shader.vertexShader = "varying vec2 islandGrassP;\n" + shader.vertexShader;
+      shader.vertexShader = shader.vertexShader.replace(
+        "#include <begin_vertex>",
+        "#include <begin_vertex>\nislandGrassP=position.xz;",
+      );
+      shader.fragmentShader = "varying vec2 islandGrassP;\n" + shader.fragmentShader;
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <color_fragment>",
+        `#include <color_fragment>
+        float broad=sin(islandGrassP.x*.16+sin(islandGrassP.y*.11)*1.7)*.5+.5;
+        float crossing=sin(islandGrassP.y*.21-islandGrassP.x*.07)*.5+.5;
+        float grain=sin(dot(islandGrassP,vec2(2.31,1.73)))*.5+.5;
+        vec3 shade=mix(vec3(.82,.94,.72),vec3(1.08,1.03,.78),broad*.62+crossing*.38);
+        diffuseColor.rgb*=shade*(.97+grain*.045);`,
+      );
+    };
+    grassMaterial.customProgramCacheKey = () => "emilia-organic-grass-v1";
+    const top = new T.Mesh(topGeometry, grassMaterial);
     top.receiveShadow = true;
     g.add(top);
+    // A single instanced draw adds sparse real blades. Density is capped, so a
+    // six-times larger city remains cheap on phones and older tablets.
+    const tuftGeometry = new T.BufferGeometry();
+    tuftGeometry.setAttribute(
+      "position",
+      new T.Float32BufferAttribute(
+        [
+          -0.035, 0, 0, 0.035, 0, 0, 0, 0.13, 0,
+          0, 0, -0.035, 0, 0, 0.035, 0, 0.11, 0,
+          -0.025, 0, -0.025, 0.025, 0, 0.025, 0, 0.15, 0,
+        ],
+        3,
+      ),
+    );
+    tuftGeometry.computeVertexNormals();
+    const requested = rects.reduce(
+        (sum, rect) => sum + Math.max(2, Math.floor((rect.w * rect.h) / 24)),
+        0,
+      ),
+      tuftLimit = options.lowPower ? 220 : 520,
+      points = [];
+    for (let r = 0; r < rects.length && points.length < tuftLimit; r++) {
+      const rect = rects[r],
+        count = Math.max(2, Math.floor((rect.w * rect.h) / 24));
+      for (let i = 0; i < count && points.length < tuftLimit; i++) {
+        const seed = r * 977 + i * 37 + 19,
+          x = rect.x + (hash(seed) - 0.5) * Math.max(0, rect.w - 1),
+          z = rect.z + (hash(seed + 11) - 0.5) * Math.max(0, rect.h - 1);
+        if (!options.blocked?.(x, z))
+          points.push({ x, z, scale: 0.7 + hash(seed + 23) * 0.75, seed });
+      }
+    }
+    if (points.length) {
+      const tufts = new T.InstancedMesh(
+          tuftGeometry,
+          new T.MeshStandardMaterial({
+            color: "#4f9139",
+            roughness: 1,
+            side: T.DoubleSide,
+            vertexColors: true,
+          }),
+          points.length,
+        ),
+        helper = new T.Object3D(),
+        tuftColors = ["#5f9e43", "#70ad4c", "#7ab554", "#629f42"];
+      points.forEach((point, i) => {
+        helper.position.set(point.x, 0.063, point.z);
+        helper.rotation.y = hash(point.seed + 31) * Math.PI;
+        helper.scale.set(point.scale, point.scale, point.scale);
+        helper.updateMatrix();
+        tufts.setMatrixAt(i, helper.matrix);
+        tufts.setColorAt(i, new T.Color(tuftColors[i % tuftColors.length]));
+      });
+      tufts.name = "Sparse instanced grass tufts";
+      tufts.frustumCulled = true;
+      tufts.receiveShadow = false;
+      tufts.castShadow = false;
+      g.add(tufts);
+    }
+    g.userData.grassCount = points.length;
+    g.userData.grassRequested = requested;
     const noise = (x, z) =>
       Math.sin(x * 1.73 + z * 0.43) * 0.55 +
       Math.sin(z * 1.13 - x * 0.37) * 0.45;

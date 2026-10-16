@@ -69,21 +69,24 @@
   function pose(pet, b, state, time, dt, reduced) {
     const d = pet.userData,
       type = d.characterModel,
-      blend = reduced ? 1 : 1 - Math.exp(-dt * 10);
+      blend = reduced ? 1 : 1 - Math.exp(-dt * 10),
+      gaitScale = reduced ? 0.42 : 1;
     if (d.staticPet) {
       for (let i = 0; i < 4; i++) {
         const r = d.rig[i],
           phase = b.distance * 10 + (i % 2 ? Math.PI : 0),
           neutral = 0;
         let target =
-          state === "walk" && !reduced
-            ? neutral + Math.sin(phase) * 0.38
+          state === "walk"
+            ? neutral + Math.sin(phase) * 0.52 * gaitScale
             : neutral;
         if (state === "sit") target = i < 2 ? -.08 : .32;
         if (state === "lie") target = i < 2 ? .42 : -.2;
         if (state === "stretch" && i < 2) target = .35;
         const lift =
-          state === "walk" && !reduced ? Math.max(0, Math.cos(phase)) * 0.055 : 0;
+          state === "walk"
+            ? Math.max(0, Math.cos(phase)) * 0.09 * gaitScale
+            : 0;
         r.hip.position.y += (r.rest.y + lift - r.hip.position.y) * blend;
         r.hip.rotation.x += (target - r.hip.rotation.x) * blend;
         r.knee.rotation.x = -r.hip.rotation.x * .35;
@@ -117,7 +120,7 @@
       }
       if (state === "stamp" && i === 3 && !reduced)
         footTarget.y += Math.max(0, Math.sin(time * 19)) * 0.09;
-      if (state === "walk" && !reduced) {
+      if (state === "walk") {
         const offsets =
           type === "rabbit"
             ? [0, 0, Math.PI, Math.PI]
@@ -125,9 +128,12 @@
               ? [0, Math.PI, Math.PI * 0.5, Math.PI * 1.5]
               : [0, Math.PI, Math.PI, 0];
         const phase = b.distance * (type === "rabbit" ? 13 : 10) + offsets[i];
-        footTarget.z += Math.sin(phase) * (type === "rabbit" ? 0.2 : 0.23);
+        footTarget.z +=
+          Math.sin(phase) * (type === "rabbit" ? 0.25 : 0.3) * gaitScale;
         footTarget.y +=
-          Math.max(0, Math.cos(phase)) * (type === "rabbit" ? 0.11 : 0.1);
+          Math.max(0, Math.cos(phase)) *
+          (type === "rabbit" ? 0.14 : 0.135) *
+          gaitScale;
       }
       r.foot.lerp(footTarget, blend);
       const y = r.foot.y - leg.position.y,

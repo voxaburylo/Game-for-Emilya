@@ -1,5 +1,5 @@
 "use strict";
-const CACHE = "emilia-living-v5-23-clean-learning-menu";
+const CACHE = "emilia-living-v5-29-demolition-tool";
 const ASSETS = [
   "park.css",
   "park-catalog.js",
@@ -7,6 +7,7 @@ const ASSETS = [
   "garden-paths.js",
   "./",
   "index.html",
+  "licenses.html",
   "compatibility.js",
   "town.css",
   "core.js",
@@ -263,6 +264,8 @@ const ASSETS = [
   "models/ui/path-wood.png",
   "models/thumbs/build-swing.png",
   "models/thumbs/build-tree.png",
+  "models/thumbs/house-two-story.svg",
+  "models/thumbs/house-tower.svg",
   "models/thumbs/cat-0.png",
   "models/thumbs/cube-beaver.png",
   "models/thumbs/cube-bee.png",

@@ -120,10 +120,17 @@ button svg {
   width: 100%;
   height: 100%;
 }
+#wealth {
+  position: fixed;
+  top: calc(18px + env(safe-area-inset-top, 0px));
+  left: calc(20px + env(safe-area-inset-left, 0px));
+  z-index: 10;
+  pointer-events: none;
+}
 #hud {
   position: fixed;
   top: calc(22px + env(safe-area-inset-top, 0px));
-  left: calc(26px + env(safe-area-inset-left, 0px));
+  left: calc(142px + env(safe-area-inset-left, 0px));
   right: calc(26px + env(safe-area-inset-right, 0px));
   display: flex;
   align-items: center;
@@ -316,11 +323,32 @@ button svg {
 .scene-bar {
   position: fixed;
   top: 25px;
-  left: 25px;
+  left: 142px;
   display: flex;
   gap: 14px;
   align-items: center;
   z-index: 6;
+}
+.demolish-mode {
+  position: fixed;
+  left: 50%;
+  bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 7;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px 10px 12px;
+  border: 2px solid #fff4df;
+  border-radius: 24px;
+  background: #754c44ed;
+  color: #fff9eb;
+  box-shadow: var(--shadow);
+  pointer-events: none;
+}
+.demolish-mode .demolish-object {
+  width: 54px;
+  height: 54px;
 }
 .scene-bar .scene-caption {
   background: #fff9eedb;
@@ -1002,6 +1030,24 @@ p {
 .credits a {
   color: inherit;
 }
+.legal-link {
+  position: fixed;
+  right: 14px;
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  color: #49695f;
+  font-size: 11px;
+  opacity: 0.72;
+}
+.volume-setting {
+  gap: 16px;
+}
+.volume-setting span {
+  min-width: 92px;
+}
+.volume-setting input {
+  flex: 1;
+  accent-color: #477b6a;
+}
 .alphabet {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -1364,7 +1410,7 @@ a {
   }
   #hud {
     top: 18px;
-    left: 20px;
+    left: 132px;
     right: 20px;
   }
   .side-panel {
@@ -1415,7 +1461,7 @@ a {
 @media (max-width: 700px), (orientation: portrait) and (max-width: 1000px) {
   #hud {
     top: calc(12px + env(safe-area-inset-top, 0px));
-    left: calc(12px + env(safe-area-inset-left, 0px));
+    left: calc(105px + env(safe-area-inset-left, 0px));
     right: calc(12px + env(safe-area-inset-right, 0px));
   }
   .brand b {
@@ -1439,6 +1485,11 @@ a {
     min-height: 48px;
     padding: 8px 12px;
     font-size: 18px;
+  }
+  #wealth {
+    top: calc(10px + env(safe-area-inset-top, 0px));
+    left: calc(10px + env(safe-area-inset-left, 0px));
+    min-height: 48px;
   }
   .wallet .ico {
     width: 23px;
@@ -1508,8 +1559,9 @@ a {
     padding: 8px 12px;
   }
   .scene-bar {
-    left: 15px;
-    top: 15px;
+    left: 12px;
+    right: 12px;
+    top: calc(70px + env(safe-area-inset-top, 0px));
     gap: 10px;
   }
   .scene-bar .scene-caption {
@@ -1588,7 +1640,8 @@ a {
     grid-template-columns: repeat(4, 1fr);
   }
   .side-panel.build-panel {
-    height: 41%;
+    height: 54%;
+    max-height: 500px;
   }
   .side-panel.land-panel {
     height: 46%;
@@ -1828,6 +1881,14 @@ a {
   }
   .slots {
     gap: 10px;
+  }
+}
+@media (max-width: 430px) {
+  #hud {
+    left: auto;
+  }
+  #hud .brand {
+    display: none;
   }
 }
 @media (max-height: 650px) and (min-width: 701px) {

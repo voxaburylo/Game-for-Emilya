@@ -3,10 +3,23 @@
   "use strict";
   const TOTAL = 12,
     PER_GEM = 4,
-    DURATIONS = { fruit: 4, balloon: 4.2 },
-    STAGGER = 0.28;
-  const chooseMode = (random = Math.random) =>
-    random() < 0.5 ? "balloon" : "fruit";
+    DURATIONS = { fruit: 2.5, balloon: 2.8 },
+    STAGGER = 0.16;
+  const modeBag = [];
+  // Shuffle a two-item bag so both rewards appear regularly without asking
+  // a child to choose or allowing a long run of just one mode.
+  function chooseMode(random = Math.random) {
+    if (!modeBag.length)
+      modeBag.push(
+        ...(random() < 0.5
+          ? ["balloon", "fruit"]
+          : ["fruit", "balloon"]),
+      );
+    return modeBag.shift();
+  }
+  function resetModes() {
+    modeBag.length = 0;
+  }
   function create() {
     return { popped: [], credited: 0, closed: false };
   }
@@ -16,7 +29,6 @@
       !Number.isInteger(id) ||
       id < 0 ||
       id >= TOTAL ||
-      Math.floor(id / 4) !== Math.floor(game.popped.length / 4) ||
       game.popped.includes(id)
     )
       return null;
@@ -66,17 +78,17 @@
       "lemon",
       "peach",
     ];
-  // Normalised flight path: fruits rise and fall; balloons only rise.
-  // Each missed target loops, so slow hands do not lose their reward.
+  // Normalised one-pass flight: fruits rise and fall; balloons only rise.
+  // A miss simply means a smaller bonus and never stalls the celebration.
   function flight(mode, age, slot, width, height, size, calm = false) {
     const duration = DURATIONS[mode] * (calm ? 1.35 : 1);
     const lanes = width < 420 ? 2 : 4;
     const local =
       age - (slot % lanes) * STAGGER - Math.floor(slot / lanes) * 0.4;
     if (local < 0) return { x: 0, y: height + size, angle: 0 };
-    const phase = local % (duration + 0.25);
-    if (phase > duration) return { x: 0, y: height + size, angle: 0 };
-    const t = phase / duration;
+    if (local > duration)
+      return { x: 0, y: height + size, angle: 0 };
+    const t = local / duration;
     const x = (((slot % lanes) + 0.5) * width) / lanes - size / 2;
     const bottom = height + size * 0.1,
       top = Math.min(135, height * 0.22);
@@ -114,7 +126,8 @@
       changing = false;
     let raf = 0,
       last = 0,
-      age = 0;
+      age = 0,
+      waveIndex = 0;
     const timers = new Set();
     const later = (fn, delay) => {
       const timer = setTimeout(() => {
@@ -142,7 +155,7 @@
     function wave() {
       changing = false;
       age = 0;
-      const start = Math.floor(game.popped.length / 4) * 4;
+      const start = waveIndex * 4;
       rack.innerHTML = Array.from(
         { length: 4 },
         (_, i) =>
@@ -155,13 +168,38 @@
         }
       });
     }
+    function advanceWave(keyboard = false) {
+      if (disposed || changing || game.closed) return;
+      changing = true;
+      pointer = null;
+      previous = null;
+      if (waveIndex >= TOTAL / 4 - 1) {
+        if (game.popped.length === TOTAL) {
+          counter.textContent = "Усе зібрано! +3 кристали";
+          host.querySelector("#party-title").textContent = "Оце так свято!";
+        } else {
+          counter.textContent = `${game.popped.length} / ${TOTAL}`;
+          host.querySelector("#party-title").textContent = "Чудова спроба!";
+        }
+        later(end, reduced ? 220 : 550);
+        return;
+      }
+      waveIndex += 1;
+      later(
+        () => {
+          wave();
+          if (keyboard) rack.querySelector("button")?.focus();
+        },
+        reduced ? 90 : 180,
+      );
+    }
     function frame(time) {
       if (disposed) return;
       const dt = last ? Math.min(0.05, (time - last) / 1000) : 0;
       last = time;
-      // Pause in background and while keyboard users focus a moving target.
+      // Pause only in the background. Every visible wave has a finite pass.
       const keyboard = rack.contains(document.activeElement);
-      if (!document.hidden && !keyboard) age += dt;
+      if (!document.hidden) age += dt;
       const w = field.clientWidth,
         h = field.clientHeight,
         size = Math.max(72, Math.min(150, (w - 20) / (w < 420 ? 2 : 4)));
@@ -176,6 +214,10 @@
         button.style.width = size + "px";
         button.style.transform = `translate(${p.x}px,${p.y}px) rotate(${p.angle}deg)`;
       });
+      const lanes = w < 420 ? 2 : 4,
+        lastDelay = (3 % lanes) * STAGGER + Math.floor(3 / lanes) * 0.4,
+        waveLife = DURATIONS[mode] * (reduced ? 1.35 : 1) + lastDelay + 0.18;
+      if (age >= waveLife) advanceWave(keyboard);
       raf = requestAnimationFrame(frame);
     }
     function end() {
@@ -213,24 +255,11 @@
         .forEach((g) =>
           g.classList.toggle("earned", Number(g.dataset.gem) < game.credited),
         );
-      if (result.count % 4 === 0) {
-        changing = true;
-        // A new wave requires a fresh gesture, so a held finger cannot farm it.
-        pointer = null;
-        previous = null;
-        if (result.complete) {
-          counter.textContent = "Усе зібрано! +3 кристали";
-          host.querySelector("#party-title").textContent = "Оце так свято!";
-          later(end, reduced ? 350 : 1100);
-        } else
-          later(
-            () => {
-              wave();
-              if (keyboard) rack.querySelector("button")?.focus();
-            },
-            reduced ? 120 : 240,
-          );
-      } else if (keyboard) rack.querySelector("button:not(:disabled)")?.focus();
+      const waveCleared = [...rack.querySelectorAll("button")].every(
+        (target) => target.disabled,
+      );
+      if (result.complete || waveCleared) advanceWave(keyboard);
+      else if (keyboard) rack.querySelector("button:not(:disabled)")?.focus();
     }
     function hit(a, b) {
       rack.querySelectorAll("button:not(:disabled)").forEach((button) => {
@@ -307,6 +336,7 @@
     DURATIONS,
     create,
     chooseMode,
+    resetModes,
     pop,
     credit,
     intersects,

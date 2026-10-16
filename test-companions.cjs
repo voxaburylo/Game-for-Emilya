@@ -59,10 +59,19 @@ for (const type of CompanionAssets.types) {
     PetBehavior.update(pet, { time: 32, dt: 1 / 60 }).state,
     "walk",
   );
+  const feed = PetBehavior.update(pet, {
+    time: 33,
+    dt: 1 / 60,
+    action: "feed",
+  });
+  assert.equal(
+    feed.state,
+    type === "chicken" ? "peck" : type === "zombie" ? "eat" : "sniff",
+  );
   const box = new THREE.Box3().setFromObject(pet, true);
   assert(box.min.y > -0.1 && box.max.y < 2.2);
   assert(CompanionAssets.thumb(type).includes("<svg"));
 }
 console.log(
-  "PASS collectible friends: affordable purchase, insufficient funds, repeat protection, legacy/import validation, saved ownership and seven distinct companions",
+  "PASS collectible friends: purchases, save validation, species movement and zombie roast-chicken feeding",
 );

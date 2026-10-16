@@ -251,6 +251,7 @@
     wave: "вітається",
     scratch: "чухає потилицю",
     dance: "кумедно танцює",
+    eat: "їсть курячу ніжку",
   };
   function animate(
     pet,
@@ -275,7 +276,8 @@
         t -= len;
       }
     }
-    if (state === "feed") state = type === "chicken" ? "peck" : "sniff";
+    if (state === "feed")
+      state = type === "chicken" ? "peck" : type === "zombie" ? "eat" : "sniff";
     if (state === "stroke") state = type === "zombie" ? "wave" : "look";
     const blend = reduced ? 1 : 1 - Math.exp(-dt * 7),
       w = reduced ? 0 : Math.sin(time * 2),
@@ -283,6 +285,8 @@
     const hx =
       state === "peck"
         ? 0.7 + Math.max(0, Math.sin(time * 7)) * 0.3
+        : state === "eat"
+          ? 0.42 + Math.max(0, Math.sin(time * 6)) * 0.16
         : state === "sniff"
           ? 0.3
           : state === "scratch"
@@ -307,17 +311,23 @@
       desired.y -= 0.45;
       desired.z += 0.35;
     }
+    if (type === "zombie" && state === "eat") {
+      desired.y -= 0.16;
+      desired.z += 0.1;
+    }
     d.head.position.lerp(desired, blend);
+    const gaitScale = reduced ? 0.42 : 1;
     d.legs.forEach((l, i) => {
       const legWave = Math.sin(gait + i * Math.PI),
         lift =
-          moving && !reduced
+          moving
             ? Math.max(0, Math.cos(gait + i * Math.PI)) *
-              (type === "turtle" ? 0.025 : 0.065)
+              (type === "turtle" ? 0.035 : 0.085) *
+              gaitScale
             : 0;
       const angle =
-        moving && !reduced
-          ? legWave * (type === "turtle" ? 0.24 : 0.4)
+        moving
+          ? legWave * (type === "turtle" ? 0.32 : 0.52) * gaitScale
           : state === "dance" && !reduced
             ? Math.sin(time * 5 + i * Math.PI) * 0.26
             : 0;
@@ -335,6 +345,10 @@
             : side * 0.08;
       } else {
         x = moving ? -0.75 : 0;
+        if (state === "eat") {
+          x = -0.92 + (reduced ? 0 : Math.sin(time * 6 + i) * 0.08);
+          z = side * 0.22;
+        }
         if (state === "wave" && i === 1) {
           z = 1.8 + (reduced ? 0 : Math.sin(time * 5) * 0.3);
         }

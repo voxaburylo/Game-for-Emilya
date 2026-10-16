@@ -44,20 +44,73 @@ test("77 purchases fit their placement footprints and use all 96 valid models", 
     for (const part of model.parts)
       assert(usedParts.has(part.id), `${name} is not used by the catalog`);
 });
-test("classic shop uses real previews and does not sell the duplicate fountain", () => {
-  const visibleClassic = S.ITEMS.filter(
-    (item) => !item.hidden && (item.category || "classic") === "classic",
+test("four clear shop groups hide classic duplicates without breaking old saves", () => {
+  assert.deepEqual(
+    ParkCatalog.groups.map((group) => group.id),
+    ["garden", "park", "picnic", "home"],
   );
-  assert(!visibleClassic.some((item) => item.id === "fountain"));
-  for (const id of ["flowers", "bench", "tree", "swing", "house"]) {
-    const item = visibleClassic.find((entry) => entry.id === id);
-    assert(item?.thumb, id + " preview");
-    assert(fs.statSync(item.thumb).size > 1000, id + " preview file");
+  const visible = S.ITEMS.filter((item) =>
+    ParkCatalog.groups.some((group) => ParkCatalog.inGroup(item, group.id)),
+  );
+  for (const item of visible)
+    assert.equal(
+      ParkCatalog.groups.filter((group) => ParkCatalog.inGroup(item, group.id))
+        .length,
+      1,
+      item.id + " belongs to one shop group",
+    );
+  for (const id of ["flowers", "bench", "tree", "house", "fountain"])
+    assert(!visible.some((item) => item.id === id), id + " duplicate is hidden");
+  assert(visible.some((item) => item.id === "swing"));
+  for (const id of ["flowers", "bench", "tree", "house", "fountain"]) {
+    const old = S.fresh();
+    old.gems = 100;
+    assert(S.place(old, id, 4, 0), id + " remains loadable");
+    assert(S.valid(old));
   }
-  const old = S.fresh();
-  old.gems = 20;
-  assert(S.place(old, "fountain", 4, 0));
-  assert(S.valid(old));
+});
+test("fences and hedges drag in affordable 45 degree snapped lines", () => {
+  const stretch = C.items.filter((item) => item.stretch);
+  assert(stretch.some((item) => item.id === "hedge-short"));
+  assert(stretch.some((item) => item.id === "white-fence"));
+  assert(!C.items.find((item) => item.id === "corner-fence").stretch);
+  const s = S.fresh();
+  s.gems = 9;
+  const plan = S.linePlan(
+    s,
+    "white-fence",
+    { x: -12, z: 4 },
+    { x: 12, z: 4 },
+  );
+  assert.equal(plan.length, 3, "preview stops at the affordable length");
+  assert(plan.every((object) => object.rotation === 0));
+  const placed = S.placeLine(
+    s,
+    "white-fence",
+    { x: -12, z: 4 },
+    { x: 12, z: 4 },
+  );
+  assert.equal(placed.length, 3);
+  assert.equal(s.gems, 0);
+  assert(S.valid(s));
+  const diagonal = S.fresh();
+  diagonal.gems = 30;
+  const diagonalPlan = S.linePlan(
+    diagonal,
+    "hedge-short",
+    { x: -12, z: 3 },
+    { x: -4, z: 11 },
+  );
+  assert(diagonalPlan.length > 2);
+  assert(diagonalPlan.every((object) => object.rotation === 3.5));
+  const poor = S.fresh();
+  poor.gems = 2;
+  const before = JSON.stringify(poor);
+  assert.equal(
+    S.placeLine(poor, "white-fence", { x: 4, z: 4 }, { x: 14, z: 4 }),
+    false,
+  );
+  assert.equal(JSON.stringify(poor), before, "an unaffordable line does not mutate");
 });
 test("model reuse survives preview disposal and interaction", () => {
   let disposed = 0;

@@ -14,6 +14,7 @@
     back: "m14 5-7 7 7 7M7 12h14",
     check: "m4 12 5 5L20 6",
     close: "m6 6 12 12M6 18 18 6",
+    trash: "M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6m4-6v6",
     rotate: "M5 9a8 8 0 1 1 0 7M5 3v6h6",
     plus: "M12 4v16M4 12h16",
     minus: "M4 12h16",

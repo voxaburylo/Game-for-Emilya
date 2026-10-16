@@ -49,14 +49,36 @@ for (const api of ["roundRect", "closest", "allSettled", "flatMap", "fromEntries
   assert(compat.includes(api), `compatibility fallback ${api}`);
 
 const { FILES, CACHE } = require("./sw");
-for (const file of ["compatibility.js", "icon-192.png", "icon-512.png"])
+for (const file of [
+  "compatibility.js",
+  "licenses.html",
+  "icon-192.png",
+  "icon-512.png",
+  "models/thumbs/house-two-story.svg",
+  "models/thumbs/house-tower.svg",
+])
   assert(FILES.includes(file), `offline ${file}`);
-assert.equal(CACHE, "emilia-living-v5-23-clean-learning-menu");
+assert.equal(CACHE, "emilia-living-v5-29-demolition-tool");
 assert(app.includes(CACHE));
+assert(app.includes('objectButton("demolish"'), "workshop has a dedicated demolition tool");
+assert(!app.includes('btn("object-remove"'), "normal play has no delete toolbar");
+assert(!app.includes('objectButton("select"'), "move-building menu button was removed");
+assert(!app.includes('class="path-wallet"'), "balance is not duplicated in build rows");
+const parentMenu = app.slice(
+  app.indexOf("  function parentsHTML()"),
+  app.indexOf("  function escapeHTML"),
+);
+for (const extra of ["Результати за вправами", "Експорт", "Імпорт", "offline-state", "allLevels"])
+  assert(!parentMenu.includes(extra), `parents menu hides ${extra}`);
+assert(parentMenu.includes('id="volume-setting"'), "parents menu has volume control");
+assert(index.includes('id="wealth"'), "balance remains visible outside route panels");
+for (const action of ["zoom-in", "zoom-out", "camera", "interact", "jump"])
+  assert(!index.includes(`data-action="${action}"`), `floating ${action} control removed`);
 
 const state = read("town-state.js");
 assert(/version:\s*5/.test(state), "save remains version 5");
 for (const field of ["items", "conf", "placed"])
   assert(state.includes(field), `save preserves ${field}`);
+assert(state.includes("removedFixed"), "v5 save tracks demolished prebuilt houses");
 
 console.log("PASS: Android/PWA install assets, phone and tablet layout, learning menu, low-power renderer, compatibility fallbacks and v5 save contract.");

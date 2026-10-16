@@ -89,6 +89,7 @@
       this.scene.add(this.previewGroup);
       this.roadGroup = new T.Group();
       this.objectGroup = new T.Group();
+      this.selectionGroup = new T.Group();
       this.groundGroup = new T.Group();
       this.staticBatchGroup = new T.Group();
       this.batchedSources = [];
@@ -96,6 +97,7 @@
         this.groundGroup,
         this.roadGroup,
         this.objectGroup,
+        this.selectionGroup,
         this.staticBatchGroup,
       );
       this.fixedGroups = new Map();
@@ -174,11 +176,17 @@
         this.foodBowl = null;
       }
       this.petPath = [];
+      this.petPathMode = "idle";
+      this.petNext = 0;
+      this.petWanderNext = this.time + 1.2;
+      this.petWanderPhase =
+        [...String(type)].reduce((sum, letter) => sum + letter.charCodeAt(0), 0) *
+        0.17;
     }
     makeOutside() {
       this.atmosphere = WorldAtmosphere.build();
       this.outside.add(this.atmosphere.group);
-      for (const f of S.FIXED) {
+      for (const f of S.activeFixed(this.state)) {
         const g = this.house(
           f.x,
           f.z,
@@ -240,7 +248,7 @@
         const x = Math.sin(i * 12.17) * 16,
           z = Math.cos(i * 7.83) * 14;
         if (
-          S.FIXED.some((f) => Math.hypot(x - f.x, z - f.z) < 4) ||
+          S.activeFixed(this.state).some((f) => Math.hypot(x - f.x, z - f.z) < 4) ||
           Math.abs(x) < 2 ||
           Math.abs(z + 6) < 2 ||
           S.water(x, z) ||
@@ -298,6 +306,9 @@
     house(x, z, wall, roof, sign) {
       const g = A.group(null, x, 0, z);
       g.add(CharacterAssets.cottage(wall, roof));
+      // The cottage model has a light wall behind the animated door. Cover it
+      // with a deep interior so an open doorway reads as a room, not a panel.
+      A.box(g, "#18201f", 0, 1.16, 2.255, 1.12, 2.16, 0.055);
       const door = A.group(g, -0.61, 0.14, 2.27);
       A.box(door, "#527b72", 0.61, 1.15, 0, 1.22, 2.3, 0.13);
       A.box(door, "#a7c4bd", 0.61, 1.65, 0.08, 0.8, 0.7, 0.03);
@@ -337,6 +348,99 @@
       g.add(sprite);
       return g;
     }
+    twoStoryHouse(x, z) {
+      const g = A.group(null, x, 0, z),
+        wall = "#e3c59f",
+        timber = "#704f3f",
+        roof = "#765069";
+      A.box(g, "#b79a75", 0, 0.2, 0, 5.25, 0.4, 4.35);
+      A.box(g, wall, 0, 1.75, 0, 4.9, 3.1, 4.05);
+      A.box(g, "#ead7b9", 0, 4.15, 0, 4.7, 1.7, 3.9);
+      for (const xx of [-2.17, 0, 2.17])
+        A.box(g, timber, xx, 3.05, 2.04, 0.16, 5.5, 0.15);
+      A.box(g, timber, 0, 3.05, 2.05, 4.5, 0.18, 0.16);
+      const roofMesh = new T.Mesh(
+        new T.ConeGeometry(3.75, 2.4, 4),
+        A.mat(roof),
+      );
+      roofMesh.position.y = 6.2;
+      roofMesh.rotation.y = Math.PI / 4;
+      roofMesh.scale.z = 0.86;
+      roofMesh.castShadow = roofMesh.receiveShadow = true;
+      g.add(roofMesh);
+      const window = (xx, yy) => {
+        A.box(g, "#2f4a52", xx, yy, 2.08, 1.05, 1.25, 0.08);
+        A.box(g, "#b8d8d4", xx, yy, 2.135, 0.75, 0.94, 0.035);
+        A.box(g, "#fff3d2", xx, yy, 2.16, 0.08, 0.96, 0.025);
+        A.box(g, "#fff3d2", xx, yy, 2.16, 0.77, 0.08, 0.025);
+      };
+      [-1.55, 1.55].forEach((xx) => window(xx, 4.12));
+      window(-1.55, 1.85);
+      A.box(g, "#342b2d", 0.75, 1.23, 2.075, 1.16, 2.28, 0.06);
+      const door = A.group(g, 0.17, 0.16, 2.14);
+      A.box(door, "#46716b", 0.58, 1.12, 0, 1.16, 2.24, 0.14);
+      A.box(door, "#9fc5bd", 0.58, 1.55, 0.08, 0.72, 0.62, 0.035);
+      A.ball(door, "#e2bd72", 0.96, 0.96, 0.1, 0.06);
+      g.userData.door = door;
+      A.box(g, "#866148", 0, 3.3, 2.48, 3.1, 0.18, 0.18);
+      for (const xx of [-1.35, -0.68, 0, 0.68, 1.35])
+        A.box(g, timber, xx, 3.78, 2.48, 0.11, 0.95, 0.11);
+      A.box(g, timber, 0, 4.2, 2.48, 3.05, 0.12, 0.12);
+      A.box(g, "#c8ad85", 0, 0.12, 2.8, 2.15, 0.2, 1.15);
+      return g;
+    }
+    towerHouse(x, z) {
+      const g = A.group(null, x, 0, z),
+        stone = "#d2c5ad",
+        blue = "#4f7188",
+        roof = "#a44f47";
+      A.box(g, "#ad9576", -0.55, 0.18, 0, 4.15, 0.36, 4.15);
+      A.box(g, stone, -0.62, 2.15, 0, 3.95, 3.95, 3.9);
+      const tower = new T.Mesh(
+        new T.CylinderGeometry(1.23, 1.38, 6.1, 10),
+        A.mat("#cdb792"),
+      );
+      tower.position.set(1.55, 3.1, 0.25);
+      tower.castShadow = tower.receiveShadow = true;
+      g.add(tower);
+      const mainRoof = new T.Mesh(
+        new T.ConeGeometry(3.1, 2.15, 4),
+        A.mat(blue),
+      );
+      mainRoof.position.set(-0.62, 5.23, 0);
+      mainRoof.rotation.y = Math.PI / 4;
+      mainRoof.scale.z = 0.86;
+      mainRoof.castShadow = mainRoof.receiveShadow = true;
+      g.add(mainRoof);
+      const towerRoof = new T.Mesh(
+        new T.ConeGeometry(1.62, 2.35, 10),
+        A.mat(roof),
+      );
+      towerRoof.position.set(1.55, 7.15, 0.25);
+      towerRoof.castShadow = towerRoof.receiveShadow = true;
+      g.add(towerRoof);
+      const window = (xx, yy, zz = 2.0, narrow = false) => {
+        A.box(g, "#344a53", xx, yy, zz, narrow ? 0.65 : 0.95, 1.15, 0.09);
+        A.box(g, "#9bc7d1", xx, yy, zz + 0.06, narrow ? 0.43 : 0.7, 0.87, 0.035);
+        A.box(g, "#fff1ca", xx, yy, zz + 0.09, 0.06, 0.88, 0.025);
+      };
+      window(-1.4, 2.4);
+      window(0.05, 2.4);
+      window(1.55, 4.15, 1.49, true);
+      A.box(g, "#29292c", -0.68, 1.22, 2.0, 1.1, 2.25, 0.06);
+      const door = A.group(g, -1.23, 0.15, 2.07);
+      A.box(door, "#6b4950", 0.55, 1.12, 0, 1.1, 2.24, 0.14);
+      A.box(door, "#c89588", 0.55, 1.58, 0.08, 0.68, 0.58, 0.035);
+      A.ball(door, "#e2bd72", 0.9, 0.95, 0.1, 0.06);
+      g.userData.door = door;
+      A.box(g, "#c4a87d", -0.65, 0.11, 2.72, 1.9, 0.2, 1.05);
+      return g;
+    }
+    houseModel(kind, x, z) {
+      if (kind === "house-two-story") return this.twoStoryHouse(x, z);
+      if (kind === "house-tower") return this.towerHouse(x, z);
+      return this.house(x, z, "#e6ceaf", "#a9859c", "ДІМ");
+    }
     refreshTerrain() {
       this.restoreStatic();
       this.clear(this.groundGroup);
@@ -345,7 +449,18 @@
         ...S.LANDS.filter((l) => this.state.lands.includes(l.id)),
       ];
       if (window.IslandLandscape)
-        this.groundGroup.add(IslandLandscape.build(plots));
+        this.groundGroup.add(
+          IslandLandscape.build(plots, {
+            lowPower: this.lowPower,
+            blocked: (x, z) =>
+              S.water(x, z) ||
+              [...S.activeFixed(this.state), ...S.NATURAL, ...this.state.objects.map(S.footprint)].some(
+                (area) =>
+                  Math.abs(x - area.x) < area.w + 0.35 &&
+                  Math.abs(z - area.z) < area.h + 0.35,
+              ),
+          }),
+        );
       const land = (x, z, w, h) => {
         if (!window.IslandLandscape) {
           this.groundGroup.add(WorldAtmosphere.cliff(x, z, w, h));
@@ -410,16 +525,13 @@
       this.clear(this.objectGroup);
       this.animations = [];
       for (const o of this.state.objects) {
-        const g =
-          o.kind === "house"
-            ? this.house(o.x, o.z, "#e6ceaf", "#a9859c", "ДІМ")
-            : A.item(o.kind);
-        if (o.kind !== "house") g.position.set(o.x, 0, o.z);
+        const g = S.isHouse(o.kind) ? this.houseModel(o.kind, o.x, o.z) : A.item(o.kind);
+        if (!S.isHouse(o.kind)) g.position.set(o.x, 0, o.z);
         g.rotation.y = (o.rotation * Math.PI) / 2;
         g.userData.objectId = o.id;
         g.userData.action = { type: "object", id: o.id };
         g.userData.entrance =
-          o.kind === "house" ? S.entrance(o) : { x: o.x, z: o.z + 2 };
+          S.isHouse(o.kind) ? S.entrance(o) : { x: o.x, z: o.z + 2 };
         this.objectGroup.add(g);
         if (o.id === animateId) {
           const parts = g.children.map((child) => {
@@ -521,7 +633,7 @@
     }
     updateNav() {
       if (!this.nav) return;
-      const rects = [...S.FIXED, ...this.state.objects.map(S.footprint)];
+      const rects = [...S.activeFixed(this.state), ...this.state.objects.map(S.footprint)];
       const buckets = new Map();
       for (const r of rects)
         for (
@@ -570,6 +682,13 @@
             moved: false,
             rotate: e.button === 2 || e.shiftKey,
           };
+          if (this.editor?.type === "line" && !down.rotate) {
+            const p = this.groundPoint(e.clientX, e.clientY);
+            if (p) {
+              down.lineStarted = true;
+              this.emit({ type: "line-start", x: p.x, z: p.z });
+            }
+          }
         }
         if (points.size === 2) {
           const p = [...points.values()];
@@ -602,6 +721,17 @@
           return;
         }
         if (multi) return;
+        if (this.editor?.type === "line" && !down.rotate) {
+          const p = this.groundPoint(e.clientX, e.clientY);
+          if (p)
+            this.emit({
+              type: "line-move",
+              x: p.x,
+              z: p.z,
+            });
+          down.moved = true;
+          return;
+        }
         if (this.editor?.type === "road" && !down.rotate) {
           if (!down.roadStarted) {
             const start = this.groundPoint(down.x, down.y);
@@ -633,6 +763,15 @@
       });
       canvas.addEventListener("pointerup", (e) => {
         points.delete(e.pointerId);
+        if (
+          down?.lineStarted &&
+          this.editor?.type === "line" &&
+          !multi &&
+          !down.rotate
+        ) {
+          const p = this.groundPoint(e.clientX, e.clientY);
+          if (p) this.emit({ type: "line-end", x: p.x, z: p.z });
+        }
         if (down && !down.moved && !multi && !down.rotate && !this.paused) {
           if (this.editor?.type === "road") {
             const p = this.groundPoint(e.clientX, e.clientY);
@@ -701,6 +840,32 @@
       const p = this.groundPoint(x, y);
       if (this.editor) {
         if (this.editor.type === "land") return;
+        if (this.editor.type === "demolish") {
+          const hits = this.ray.intersectObjects(
+            [...this.fixedGroups.values(), ...this.objectGroup.children],
+            true,
+          );
+          for (const hit of hits) {
+            let object = hit.object;
+            while (
+              object &&
+              !object.userData.objectId &&
+              !object.userData.action?.id
+            )
+              object = object.parent;
+            const id = object?.userData.objectId || object?.userData.action?.id;
+            if (!id) continue;
+            if (id === "home") this.emit({ type: "demolish-protected" });
+            else
+              this.emit({
+                type: "demolish-object",
+                id,
+                fixed: this.fixedGroups.has(id),
+              });
+            return;
+          }
+          return;
+        }
         if (this.editor.type === "furniture") {
           if (p)
             this.emit({
@@ -751,12 +916,13 @@
         while (g && !g.userData.action) g = g.parent;
         if (g?.userData.action && !this.animations.some((a) => a.g === g)) {
           const a = g.userData.action;
+          const placed = this.state.objects.find((o) => o.id === a.id);
           if (this.view === "street" && ["enter", "object"].includes(a.type)) {
             const e = g.userData.entrance;
             this.navigate(e.x, e.z, () => {
               if (
                 a.type === "enter" ||
-                this.state.objects.find((o) => o.id === a.id)?.kind === "house"
+                S.isHouse(this.state.objects.find((o) => o.id === a.id)?.kind)
               ) {
                 this.openDoor(g, () => this.emit({ type: "enter", id: a.id }));
               } else this.emit(a);
@@ -767,7 +933,13 @@
           return;
         }
       }
-      if (p) this.navigate(p.x, p.z);
+      if (p) {
+        if (this.selectedObjectId) {
+          this.selectObject(null);
+          this.emit({ type: "object-unselected" });
+        }
+        this.navigate(p.x, p.z);
+      }
     }
     openDoor(g, fn) {
       this.stop();
@@ -775,6 +947,26 @@
         g.userData.door.rotation.y = -Math.PI / 2;
         this.doorPending = { at: this.time + 0.4, fn };
       } else fn();
+    }
+    enterObject(id) {
+      const object = this.state.objects.find(
+          (entry) => entry.id === id && S.isHouse(entry.kind),
+        ),
+        fixed = S.activeFixed(this.state).find(
+          (entry) => entry.id === id && entry.id !== "home",
+        ),
+        group = object
+          ? this.objectGroup.children.find(
+              (entry) => entry.userData.objectId === id,
+            )
+          : this.fixedGroups.get(id);
+      if ((!object && !fixed) || !group || this.animations.some((a) => a.g === group))
+        return false;
+      const entrance = group.userData.entrance || S.entrance(object || fixed);
+      this.navigate(entrance.x, entrance.z, () =>
+        this.openDoor(group, () => this.emit({ type: "enter", id })),
+      );
+      return true;
     }
     nearestInteraction() {
       if (this.paused || this.editor) return;
@@ -801,7 +993,7 @@
         const a = best.userData.action;
         if (
           a.type === "enter" ||
-          this.state.objects.find((o) => o.id === a.id)?.kind === "house"
+          S.isHouse(this.state.objects.find((o) => o.id === a.id)?.kind)
         )
           this.openDoor(best, () => this.emit({ type: "enter", id: a.id }));
         else this.emit(a);
@@ -1148,7 +1340,9 @@
         const exit = A.group(this.room, 4.4, 0, 4);
         A.box(exit, "#648a7e", 0, 0.08, 0, 1.7, 0.08, 0.7);
         exit.userData.action = { type: "exit" };
-        const stand = A.group(this.room, 0.8, 0, -3.7);
+        // Keep the learning display and cubes in separate bays. Their previous
+        // footprints overlapped, which caused clipped faces and depth flicker.
+        const stand = A.group(this.room, 2.7, 0, -3.72);
         A.box(stand, "#ae916e", 0, 1, 0, 2.3, 1.6, 0.7);
         A.box(stand, "#f9eed7", 0, 2, 0, 2.1, 1.1, 0.15);
         this.addText(
@@ -1165,18 +1359,18 @@
           const blocks =
             this.roomId === "letters" ? ["А", "О", "У"] : ["МА", "МО", "МУ"];
           blocks.forEach((text, i) => {
-            const block = A.group(this.room, -2 + i * 1.35, 0, -3.7);
+            const block = A.group(this.room, -3.75 + i * 1.28, 0, -3.68);
             A.box(
               block,
               ["#d9aa9f", "#b1c5a0", "#c5b5ce"][i],
               0,
               1.1,
               0,
-              1.05,
+              0.94,
               1.1,
-              0.7,
+              0.58,
             );
-            this.addText(block, text, 0, 1.12, 0.4, 0.9, 0.65);
+            this.addText(block, text, 0, 1.12, 0.335, 0.82, 0.6);
             block.userData.action = { type: "learn" };
           });
         }
@@ -1188,7 +1382,7 @@
       const target = new T.WebGLRenderTarget(640, 560),
         camera = new T.PerspectiveCamera(59, 640 / 560, 0.1, 180);
       const home =
-        S.FIXED.find((f) => f.id === this.roomId) ||
+        S.activeFixed(this.state).find((f) => f.id === this.roomId) ||
         this.state.objects.find((f) => f.id === this.roomId) ||
         S.FIXED[0];
       camera.position.set(home.x - 1.65, 2.1, home.z + 2.65);
@@ -1322,6 +1516,21 @@
         this.clear(this.petProp);
         this.ballProp = null;
         if (action === "feed") {
+          if (this.pet?.userData.characterModel === "zombie") {
+            const drumstick = new T.Group();
+            // Friendly voxel-style roast chicken leg for the garden zombie.
+            A.box(drumstick, "#b65e2e", 0, 0.24, 0.12, 0.46, 0.34, 0.55);
+            A.box(drumstick, "#d9823c", -0.13, 0.39, 0.14, 0.25, 0.12, 0.36);
+            A.box(drumstick, "#8d4528", 0.16, 0.2, 0.11, 0.18, 0.19, 0.43);
+            A.box(drumstick, "#f2dfb2", 0, 0.2, -0.3, 0.13, 0.13, 0.35);
+            A.box(drumstick, "#fff0c8", -0.09, 0.2, -0.5, 0.16, 0.16, 0.16);
+            A.box(drumstick, "#fff0c8", 0.09, 0.2, -0.5, 0.16, 0.16, 0.16);
+            drumstick.position.set(0, 0, 1.48);
+            drumstick.rotation.y = -0.35;
+            drumstick.userData.foodType = "roast-chicken";
+            this.petProp.add(drumstick);
+            this.foodBowl = drumstick;
+          } else {
           const bowl = new T.Group(),
             shell = new T.Mesh(
               new T.CylinderGeometry(0.5, 0.38, 0.24, 28, 1, true),
@@ -1354,6 +1563,7 @@
           bowl.position.set(0, 0, 1.55);
           this.petProp.add(bowl);
           this.foodBowl = bowl;
+          }
         }
         if (action === "ball") {
           this.ballProp = A.ball(this.petProp, "#daa95f", 0, 0.25, 1.5, 0.22);
@@ -1368,15 +1578,34 @@
       this.clear(this.previewGroup);
       this.ghost = null;
     }
+    selectObject(id = null) {
+      this.selectedObjectId = id;
+      this.clear(this.selectionGroup);
+      const object =
+        this.state.objects.find((entry) => entry.id === id) ||
+        S.activeFixed(this.state).find((entry) => entry.id === id);
+      if (!object) return;
+      const footprint = object.kind && S.ITEMS.some((item) => item.id === object.kind)
+          ? S.footprint(object)
+          : object,
+        radius = Math.max(0.75, Math.hypot(footprint.w, footprint.h) * 0.72),
+        ring = new T.Mesh(
+          new T.TorusGeometry(radius, 0.07, 8, 36),
+          A.mat("#fff0a8").clone(),
+        );
+      ring.material.emissive.set("#d7a940");
+      ring.material.emissiveIntensity = 0.35;
+      ring.position.set(object.x, 0.12, object.z);
+      ring.rotation.x = Math.PI / 2;
+      ring.userData.selectionRing = true;
+      this.selectionGroup.add(ring);
+    }
     preview(kind, x, z, rotation, valid) {
       if (this.ghost) {
         A.dispose(this.ghost);
         this.previewGroup.remove(this.ghost);
       }
-      const g =
-        kind === "house"
-          ? this.house(0, 0, "#dfc4a0", "#ab8490", "ДІМ")
-          : A.item(kind);
+      const g = S.isHouse(kind) ? this.houseModel(kind, 0, 0) : A.item(kind);
       g.position.set(x, 0.1, z);
       g.rotation.y = (rotation * Math.PI) / 2;
       g.traverse((o) => {
@@ -1396,6 +1625,42 @@
       mark.material = mark.material.clone();
       mark.material.transparent = true;
       mark.material.opacity = 0.4;
+    }
+    removeFixedBuilding(id) {
+      const group = this.fixedGroups.get(id);
+      if (!group || id === "home") return false;
+      this.restoreStatic();
+      this.outside.remove(group);
+      A.dispose(group);
+      this.fixedGroups.delete(id);
+      this.selectObject(null);
+      this.refreshTerrain();
+      this.refreshRoads();
+      return true;
+    }
+    previewLine(objects) {
+      if (this.ghost) {
+        A.dispose(this.ghost);
+        this.previewGroup.remove(this.ghost);
+      }
+      const group = new T.Group();
+      for (const draft of objects) {
+        const object = A.item(draft.kind);
+        object.position.set(draft.x, 0.1, draft.z);
+        object.rotation.y = (draft.rotation * Math.PI) / 2;
+        object.traverse((part) => {
+          if (!part.isMesh && !part.isSprite) return;
+          part.material = part.material.clone();
+          part.material.userData = {};
+          part.material.transparent = true;
+          part.material.opacity = 0.58;
+          if (part.material.color) part.material.color.lerp(new T.Color("#b8efad"), 0.32);
+          part.castShadow = false;
+        });
+        group.add(object);
+      }
+      this.previewGroup.add(group);
+      this.ghost = group;
     }
     previewRoad(cells, material, border = "none") {
       if (this.ghost) {
@@ -1542,18 +1807,30 @@
           : this.surfaceHeight(this.hero.position) -
             (this.view === "room" ? this.heroSole : 0) +
             this.jumpY;
-        this.hero.userData.legs.forEach(
-          (m, i) =>
-            (m.rotation.x = this.sitting
-              ? -Math.PI / 2
+        this.hero.userData.legs.forEach((m, i) => {
+          const step = Math.sin(this.time * 11 + i * Math.PI);
+          const idleBend =
+            !moving && !this.reduced
+              ? 0.07 + Math.max(0, Math.sin(this.time * 0.72 + i * Math.PI)) * 0.16
+              : 0.04;
+          m.rotation.x = this.sitting
+            ? -Math.PI / 2
+            : moving
+              ? step * 0.58
+              : 0;
+          const knee = this.hero.userData.legRig?.[i]?.joint;
+          if (knee)
+            knee.rotation.x = this.sitting
+              ? Math.PI / 2
               : moving
-                ? Math.sin(this.time * 11 + i * Math.PI) * 0.45
-                : 0),
-        );
+                ? 0.12 + Math.max(0, -step) * 0.98
+                : idleBend;
+        });
         this.hero.userData.arms.forEach((m, i) => {
           const idle = !moving && !this.reduced;
+          const step = -Math.sin(this.time * 11 + i * Math.PI);
           m.rotation.x = moving
-            ? -Math.sin(this.time * 11 + i * Math.PI) * 0.35
+            ? step * 0.35
             : idle
               ? Math.sin(this.time * 1.3 + i * 1.4) * 0.045
               : 0;
@@ -1568,6 +1845,15 @@
           m.rotation.y = idle ? Math.sin(this.time * 0.8 + i) * 0.025 : 0;
           if (this.jumpY > 0.05)
             m.rotation.z += (i ? 1 : -1) * Math.min(0.65, this.jumpY * 0.6);
+          const elbow = this.hero.userData.armRig?.[i]?.joint;
+          if (elbow)
+            elbow.rotation.x = this.sitting
+              ? 0.55
+              : moving
+                ? 0.18 + Math.max(0, step) * 0.68
+                : idle
+                  ? 0.2 + Math.sin(this.time * 0.9 + i) * 0.07
+                  : 0.12;
         });
         if (this.view === "wardrobe") {
           this.hero.position.y = 0.13 - this.heroSole;
@@ -1624,13 +1910,41 @@
             d = Math.hypot(
               p.x - this.pet.position.x,
               p.z - this.pet.position.z,
-            );
-          if (d > 2) {
-            const nav = this.view === "street" ? this.nav : this.roomNav;
-            if (!this.petPath?.length || this.time > (this.petNext || 0)) {
+            ),
+            nav = this.view === "street" ? this.nav : this.roomNav,
+            shouldFollow = d > 4.4;
+          if (shouldFollow) {
+            if (
+              this.petPathMode !== "follow" ||
+              !this.petPath?.length ||
+              this.time > (this.petNext || 0)
+            ) {
               this.petPath = nav.path(this.pet.position, p);
-              this.petNext = this.time + 0.7;
+              this.petPathMode = "follow";
+              this.petNext = this.time + 0.55;
             }
+          } else if (this.petPathMode === "follow" && d < 2.2) {
+            this.petPath = [];
+            this.petPathMode = "idle";
+            this.petWanderNext = this.time + 1.3;
+          } else if (
+            !this.petPath?.length &&
+            this.time >= (this.petWanderNext || 0)
+          ) {
+            const angle = this.petWanderPhase + this.time * 0.63,
+              radius = this.view === "room" ? 1.25 : 2.15,
+              desired = nav.nearest(
+                p.x + Math.cos(angle) * radius,
+                p.z + Math.sin(angle) * radius,
+              );
+            this.petPath = desired
+              ? nav.path(this.pet.position, desired)
+              : [];
+            this.petPathMode = "wander";
+            this.petWanderNext =
+              this.time + 4.2 + (Math.sin(angle * 2.3) + 1) * 1.1;
+          }
+          if (this.petPath?.length) {
             const goal = this.petPath[0];
             if (goal) {
               const dx = goal.x - this.pet.position.x,
@@ -1638,24 +1952,18 @@
                 len = Math.hypot(dx, dz);
               if (len < 0.15) this.petPath.shift();
               else {
-                // Keep imported pets moving continuously. The previous
-                // on/off stride changed their velocity every few frames,
-                // which made their whole body jerk at each turn.
                 const oldX = this.pet.position.x,
-                  oldZ = this.pet.position.z;
-                const next = nav.move(
-                  this.pet.position,
-                  (dx / len) * Math.min(dt * 6.5, len),
-                  (dz / len) * Math.min(dt * 6.5, len),
-                );
+                  oldZ = this.pet.position.z,
+                  speed = this.petPathMode === "follow" ? 4.7 : 1.45,
+                  next = nav.move(
+                    this.pet.position,
+                    (dx / len) * Math.min(dt * speed, len),
+                    (dz / len) * Math.min(dt * speed, len),
+                  );
                 this.pet.position.x = next.x;
                 this.pet.position.z = next.z;
                 const movedX = next.x - oldX,
                   movedZ = next.z - oldZ;
-                // Face the direction the navigator actually accepted. Grid
-                // corrections can differ from the next waypoint direction;
-                // steering toward the rejected direction made pets flick
-                // left and right at corners.
                 if (Math.hypot(movedX, movedZ) > 0.00005) {
                   const angle =
                       Math.atan2(movedX, movedZ) +
@@ -1668,7 +1976,9 @@
                 }
               }
             }
-          } else this.petPath = [];
+            if (!this.petPath.length && this.petPathMode === "wander")
+              this.petPathMode = "idle";
+          }
         }
         const distance = Math.hypot(
           this.pet.position.x - previousX,

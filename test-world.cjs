@@ -160,9 +160,17 @@ for (const p of TownState.PETS) {
   let previousYaw = w.pet.rotation.y,
     previousY = w.pet.position.y,
     maxTurnStep = 0,
-    maxHeightStep = 0;
+    maxHeightStep = 0,
+    sawWalk = false,
+    minLeg = Infinity,
+    maxLeg = -Infinity;
   for (let frame = 1; frame < 180; frame++) {
     tick(1);
+    sawWalk ||= w.pet.userData.behavior.name === "walk";
+    for (const leg of w.pet.userData.rig?.map((part) => part.hip) || w.pet.userData.legs) {
+      minLeg = Math.min(minLeg, leg.rotation.x);
+      maxLeg = Math.max(maxLeg, leg.rotation.x);
+    }
     maxTurnStep = Math.max(
       maxTurnStep,
       Math.abs(
@@ -182,28 +190,43 @@ for (const p of TownState.PETS) {
   assert(maxTurnStep < 0.19, `${p} turns without snapping`);
   assert(maxHeightStep < 0.025, `${p} stays vertically stable`);
   assert(
-    Math.hypot(w.pet.position.x, w.pet.position.z - 5) <= 2.1,
+    Math.hypot(w.pet.position.x, w.pet.position.z - 5) <= 4.4,
     `${p} follows the girl`,
   );
-  assert.notEqual(
-    w.pet.userData.behavior.name,
-    "walk",
-    `${p} stops its gait after arriving`,
-  );
+  assert(sawWalk, `${p} enters a real walking state`);
+  assert(maxLeg - minLeg > 0.06, `${p} visibly moves its legs while walking`);
 }
 console.log(
-  `PASS ${TownState.PETS.length} pets, reactions, smooth turning, stable height and real following`,
+  `PASS ${TownState.PETS.length} pets, reactions, smooth turning, visible gait and natural following`,
 );
 w.setView("street");
 w.paused = false;
 w.pet.position.copy(w.hero.position).add(new THREE.Vector3(1, 0, 0));
 w.petPath = [{ x: w.hero.position.x, z: w.hero.position.z }];
+w.petPathMode = "follow";
 tick(1);
 assert.equal(w.petPath.length, 0, "clear stale follow path near girl");
 assert.notEqual(
   w.pet.userData.behavior.name,
   "walk",
   "stationary pet must not run in place",
+);
+const wanderStart = w.pet.position.clone();
+w.petPath = [];
+w.petPathMode = "idle";
+w.petWanderNext = w.time;
+tick(150);
+assert(
+  Math.hypot(w.pet.position.x - wanderStart.x, w.pet.position.z - wanderStart.z) >
+    0.35,
+  "a nearby pet chooses its own short walk",
+);
+assert(
+  Math.hypot(
+    w.pet.position.x - w.hero.position.x,
+    w.pet.position.z - w.hero.position.z,
+  ) < 4.4,
+  "independent walk stays near the girl",
 );
 const street = w.hero.position.clone();
 w.setView("room", "home");
@@ -222,6 +245,16 @@ tick(180);
 assert(Math.hypot(w.hero.position.x, w.hero.position.z - 2) < 0.2);
 w.toggleLamp();
 assert.equal(s.rooms.home.lamp, false);
+w.setView("room", "studio");
+const learningDisplays = w.room.children.filter(
+    (group) => group.userData.action?.type === "learn",
+  ),
+  learningBounds = learningDisplays.map((group) => new THREE.Box3().setFromObject(group));
+assert.equal(learningDisplays.length, 4, "one display and three syllable cubes");
+for (let i = 0; i < learningBounds.length; i++)
+  for (let j = i + 1; j < learningBounds.length; j++)
+    assert(!learningBounds[i].intersectsBox(learningBounds[j]), "learning props do not overlap");
+w.setView("room", "home");
 w.rotate(50);
 assert(w.yaw <= 0.55);
 w.setView("street");
@@ -237,16 +270,73 @@ w.refreshObjects(o.id);
 assert.equal(w.animations.length, 1);
 const group = w.objectGroup.children.find((g) => g.userData.objectId === o.id);
 assert.deepEqual(group.userData.entrance, TownState.entrance(o));
+assert(
+  group.children.some(
+    (child) => child.isMesh && child.material?.color?.getHexString() === "18201f",
+  ),
+  "an open door reveals a dark interior",
+);
 tick(70);
 assert(w.animations.length);
 tick(100);
 assert.equal(w.animations.length, 0);
+const intersectObjects = w.ray.intersectObjects;
+w.ray.intersectObjects = () => [{ object: group }];
+w.tap(0, 0);
+assert(w.arrive, "a built house immediately starts an entrance walk");
+assert.equal(w.selectedObjectId, undefined, "normal play does not select a house for deletion");
+tick(360);
+assert(events.some((event) => event.type === "enter" && event.id === o.id));
+w.ray.intersectObjects = intersectObjects;
 assert(events.some((e) => e.type === "built"));
 assert(group.children.every((g) => g.visible || g.userData.renderBatched));
 assert.equal(s.gems, 90);
+for (const kind of ["house-two-story", "house-tower"]) {
+  const model = w.houseModel(kind, 0, 0),
+    bounds = new THREE.Box3().setFromObject(model),
+    size = bounds.getSize(new THREE.Vector3());
+  assert(model.userData.door, `${kind} has an opening door`);
+  assert(size.y > 6, `${kind} is visibly multi-storey`);
+  assert(size.x > 3.5 && size.z > 3.5, `${kind} has a full house silhouette`);
+  Art.dispose(model);
+}
 console.log(
-  "PASS staged construction, rotated entrance, completion and single payment",
+  "PASS staged construction, direct house entry, two multi-storey variants, rotated entrance, completion and single payment",
 );
+const fixedGroup = w.fixedGroups.get("letters"),
+  gemsBeforeFixedRemoval = s.gems;
+w.ray.intersectObjects = () => [{ object: fixedGroup }];
+w.tap(0, 0);
+assert(w.arrive, "learning house starts an entrance walk in normal play");
+tick(420);
+assert(events.some((event) => event.type === "enter" && event.id === "letters"));
+w.setEditor({ type: "demolish" });
+w.tap(0, 0);
+assert.deepEqual(events.at(-1), {
+  type: "demolish-object",
+  id: "letters",
+  fixed: true,
+});
+assert(!TownState.removeFixed(s, "home"));
+assert(TownState.removeFixed(s, "letters"));
+assert.equal(s.gems, gemsBeforeFixedRemoval, "prebuilt house gives no refund");
+assert(w.removeFixedBuilding("letters"));
+assert(!w.fixedGroups.has("letters"));
+assert(w.fixedGroups.has("home"));
+w.ray.intersectObjects = () => [{ object: w.fixedGroups.get("home") }];
+w.tap(0, 0);
+assert.equal(events.at(-1).type, "demolish-protected");
+w.setEditor(null);
+w.ray.intersectObjects = intersectObjects;
+console.log("PASS dedicated demolition tool removes learning houses without refund and protects main home");
+w.setView("pets");
+w.setPet("zombie");
+w.petReact("feed");
+assert.equal(w.foodBowl.userData.foodType, "roast-chicken");
+assert.equal(w.pet.userData.characterModel, "zombie");
+w.setPet(s.pet);
+w.setView("street");
+console.log("PASS zombie receives a voxel roast-chicken leg instead of dog food");
 for (const land of TownState.LANDS) TownState.expand(s, land.id);
 w.refreshTerrain();
 assert(!w.nav.blocked(18, 0));
@@ -322,6 +412,23 @@ listeners.pointermove(pointer(1, 150, 120));
 listeners.pointerup(pointer(1, 150, 120));
 assert(events.some((e) => e.type === "road-start"));
 assert(events.some((e) => e.type === "road-move"));
+w.setEditor({ type: "line" });
+events.length = 0;
+listeners.pointerdown(pointer(1, 100, 100));
+listeners.pointermove(pointer(1, 180, 140));
+listeners.pointerup(pointer(1, 180, 140));
+assert.deepEqual(
+  events.map((event) => event.type),
+  ["line-start", "line-move", "line-end"],
+);
+const fencePreview = TownState.linePlan(
+  s,
+  "white-fence",
+  { x: 40, z: 40 },
+  { x: 48, z: 48 },
+);
+w.previewLine(fencePreview);
+assert.equal(w.ghost.children.length, fencePreview.length);
 w.setEditor(null);
 w.homeCamera();
 assert.equal(w.cameraAnchor, null);
@@ -329,7 +436,7 @@ assert.equal(w.zoom, 13);
 w.tap = tap;
 w.groundPoint = point;
 console.log(
-  "PASS one-finger pan, two-finger orbit/zoom, road gesture isolation and camera return",
+  "PASS one-finger pan, two-finger orbit/zoom, road and fence gestures, line preview and camera return",
 );
 
 const pickedA = Art.box(w.objectGroup, "#629372", 50, 1, 0, 1, 2, 1),

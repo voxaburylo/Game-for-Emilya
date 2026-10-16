@@ -77,6 +77,19 @@ for (const mesh of cubePack.meshes) {
 }
 const girl = assets.girl({ dress: 0, shoes: 0, hair: 0, color: 0 }),
   dog = assets.dog();
+assert.equal(girl.userData.armRig.length, 2);
+assert.equal(girl.userData.legRig.length, 2);
+for (const limb of [...girl.userData.armRig, ...girl.userData.legRig]) {
+  assert(limb.joint.isBone, "elbows and knees use real articulated joints");
+  let skinned = 0;
+  limb.upper.traverse((part) => {
+    if (!part.isSkinnedMesh) return;
+    skinned++;
+    const weights = part.geometry.getAttribute("skinWeight");
+    assert(weights && weights.count === part.geometry.getAttribute("position").count);
+  });
+  assert(skinned, "each articulated limb has skinned geometry");
+}
 for (const model of [
   girl,
   dog,
@@ -129,7 +142,9 @@ let sharedDisposals = 0,
   ownedDisposals = 0;
 girl.traverse((o) => {
   if (!o.isMesh) return;
-  o.geometry.addEventListener("dispose", () => sharedDisposals++);
+  o.geometry.addEventListener("dispose", () =>
+    o.geometry.userData.characterShared ? sharedDisposals++ : ownedDisposals++,
+  );
   o.material.addEventListener("dispose", () =>
     o.material.userData.characterShared ? sharedDisposals++ : ownedDisposals++,
   );

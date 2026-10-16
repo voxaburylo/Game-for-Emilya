@@ -6,6 +6,26 @@ const S = require("./town-state.js");
 require("./art.js");
 const I = require("./island-landscape.js");
 require("./atmosphere.js");
+const demolition = S.fresh(),
+  startingGems = demolition.gems;
+assert.equal(S.activeFixed(demolition).length, 3);
+assert(!S.removeFixed(demolition, "home"), "main home cannot be demolished");
+assert(S.removeFixed(demolition, "letters"));
+assert.equal(demolition.gems, startingGems, "prebuilt house gives no refund");
+assert.deepEqual(demolition.removedFixed, ["letters"]);
+assert.equal(S.activeFixed(demolition).length, 2);
+assert(S.valid(demolition));
+const oldV5 = S.fresh();
+delete oldV5.removedFixed;
+const normalizedV5 = S.migrate(oldV5);
+assert.deepEqual(normalizedV5.removedFixed, []);
+for (const field of ["items", "conf", "placed"])
+  assert.deepEqual(normalizedV5[field], oldV5[field], `v5 keeps ${field}`);
+const homes = S.fresh();
+homes.gems = 100;
+assert(S.place(homes, "house-two-story", -6, 5));
+assert(S.place(homes, "house-tower", 4, 4));
+assert.equal(homes.objects.filter((o) => S.isHouse(o.kind)).length, 2);
 const s = S.fresh();
 s.gems = 100000;
 assert.equal(S.availableLands(s).length, 4);
@@ -35,6 +55,10 @@ for (const [a, b] of edges)
   );
 for (const rects of [[plots[0]], plots.slice(0, 2), plots]) {
   const g = I.build(rects);
+  assert(g.userData.grassCount > 0);
+  assert(g.userData.grassCount <= 520, "grass density stays bounded as city grows");
+  assert(g.children.some((child) => child.isInstancedMesh));
+  assert.equal(typeof g.children[0].material.onBeforeCompile, "function");
   g.traverse((o) => {
     if (o.geometry) {
       assert([...o.geometry.attributes.position.array].every(Number.isFinite));

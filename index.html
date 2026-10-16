@@ -27,15 +27,15 @@
         <p>Ще мить</p>
       </div>
     </div>
+    <div id="wealth" class="wallet" aria-label="Кристали">
+      <img class="gem-object" src="models/ui/gem.png" alt="Кристали"><span id="gems">0</span>
+    </div>
     <header id="hud">
       <div class="brand">
         <div class="brand-mark" data-icon="home"></div>
         <div><b>Острів Емілії</b><small>МІСЦЕ ДЛЯ ВІДКРИТТІВ</small></div>
       </div>
       <div class="row hud-right">
-        <div class="wallet">
-          <img class="gem-object" src="models/ui/gem.png" alt="Кристали"><span id="gems">0</span>
-        </div>
         <button
           id="sound-button"
           class="round"
@@ -66,40 +66,6 @@
     <div id="controls">
       <div id="joystick" role="group" aria-label="Рух персонажа">
         <div id="stick"></div>
-      </div>
-      <div class="camera-tools">
-        <button
-          class="round small"
-          data-action="zoom-in"
-          aria-label="Наблизити"
-          data-icon="plus"
-        ></button
-        ><button
-          class="round small"
-          data-action="zoom-out"
-          aria-label="Віддалити"
-          data-icon="minus"
-        ></button
-        ><button
-          class="round small"
-          data-action="camera"
-          aria-label="До дівчинки"
-          data-icon="focus"
-        ></button>
-      </div>
-      <div class="action-tools">
-        <button
-          class="round"
-          data-action="interact"
-          aria-label="Взаємодіяти"
-          data-icon="hand"
-        ></button
-        ><button
-          class="round"
-          data-action="jump"
-          aria-label="Підстрибнути"
-          data-icon="jump"
-        ></button>
       </div>
       <div id="location" class="location-pill"></div>
     </div>

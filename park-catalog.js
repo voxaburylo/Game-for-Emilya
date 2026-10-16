@@ -1,14 +1,59 @@
 (function (root) {
   "use strict";
   const groups = [
-    { id: "garden", name: "Сад", thumb: "models/park/thumbs/park-tree-large.png" },
-    { id: "park", name: "Парк", thumb: "models/park/thumbs/tier-fountain.png" },
-    { id: "picnic", name: "Пікнік", thumb: "models/park/thumbs/picnic-red.png" },
-    { id: "food", name: "Смаколики", thumb: "models/park/thumbs/picnic-grapes-bowl.png" },
-    { id: "fences", name: "Огорожі", thumb: "models/park/thumbs/garden-gate.png" },
-    { id: "home", name: "Дім і двір", thumb: "models/park/thumbs/home-house.png" },
-    { id: "classic", name: "Ігри", thumb: "models/thumbs/build-swing.png" },
+    {
+      id: "garden",
+      name: "Сад",
+      thumb: "models/park/thumbs/park-tree-large.png",
+      categories: ["garden"],
+    },
+    {
+      id: "park",
+      name: "Парк",
+      thumb: "models/park/thumbs/tier-fountain.png",
+      categories: ["park", "classic"],
+    },
+    {
+      id: "picnic",
+      name: "Пікнік",
+      thumb: "models/park/thumbs/picnic-red.png",
+      categories: ["picnic", "food"],
+    },
+    {
+      id: "home",
+      name: "Двір",
+      thumb: "models/park/thumbs/home-house.png",
+      categories: ["home", "fences"],
+    },
   ];
+  // The first hand-built objects remain valid in old v5 saves. The imported
+  // catalog supersedes their duplicate flowers, tree, bench and house cards;
+  // only the swing adds a distinct play object to the current shop.
+  const classicGroups = {
+    flowers: "garden",
+    bench: "park",
+    tree: "garden",
+    swing: "park",
+    house: "home",
+    fountain: "park",
+  };
+  function groupFor(item) {
+    if (!item) return "garden";
+    const category = item.category || "classic";
+    if (category === "classic") return classicGroups[item.id] || "park";
+    return (
+      groups.find((group) => group.categories.includes(category))?.id ||
+      "garden"
+    );
+  }
+  function inGroup(item, groupId) {
+    if (!item || item.hidden) return false;
+    const category = item.category || "classic";
+    if (category === "classic") return item.id === "swing" && groupId === "park";
+    return !!groups
+      .find((group) => group.id === groupId)
+      ?.categories.includes(category);
+  }
   const rows = [
     ["rose-bed", "Білі квіти", 2, 1, 1, "garden", "flower_A", 1.2],
     ["daisy-bed", "Блакитні квіти", 2, 1, 1, "garden", "flower_B", 1.2],
@@ -277,7 +322,7 @@
     ["home-letter", "Лист", 1, 0.5, 0.5, "home", "home_letter", 0.18],
     ["home-package", "Посилка", 3, 0.7, 0.7, "home", "home_package", 0.75],
     ["home-tree", "Дерево біля дому", 6, 1.4, 1.4, "garden", "home_tree", 4],
-    ["home-tree-large", "Велике дворове дерево", 8, 1.8, 1.8, "garden", "home_tree_large", 5.3],
+    ["home-tree-large", "Велике дерево", 8, 1.8, 1.8, "garden", "home_tree_large", 5.3],
     [
       "picnic-apple-snack",
       "Яблучна тарілочка",
@@ -433,6 +478,10 @@
       model,
       height,
       action,
+      // Straight fences and hedges can be painted as one snapped line.
+      stretch:
+        (/^hedge-(short|long)$/.test(id) || category === "fences") &&
+        !/(corner|post|gate)/.test(id),
       thumb: "models/park/thumbs/" + id + ".png",
     }),
   );
@@ -522,7 +571,7 @@
         .map((b) => b.id);
     return out.sort((a, b) => a.depth - b.depth || a.z - b.z || a.x - b.x);
   }
-  const api = { groups, items, lands, bounds, districts };
+  const api = { groups, items, lands, bounds, districts, groupFor, inGroup };
   root.ParkCatalog = api;
   if (typeof module !== "undefined") module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);

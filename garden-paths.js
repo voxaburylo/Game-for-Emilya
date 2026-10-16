@@ -84,7 +84,7 @@
         z = p.z + Math.sin(a) * r;
       if (!S.inside(s, x, z, 0.08) || S.water(x, z)) return false;
     }
-    return ![...S.FIXED, ...S.NATURAL, ...s.objects.map(S.footprint)].some(
+    return ![...S.activeFixed(s), ...S.NATURAL, ...s.objects.map(S.footprint)].some(
       (b) => S.overlaps({ x: p.x, z: p.z, w: r, h: r }, b),
     );
   }

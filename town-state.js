@@ -50,6 +50,24 @@
       h: 2,
       thumb: "models/park/thumbs/home-house.png",
     },
+    {
+      id: "house-two-story",
+      name: "Двоповерховий дім",
+      cost: 20,
+      w: 3,
+      h: 3,
+      thumb: "models/thumbs/house-two-story.svg",
+      category: "home",
+    },
+    {
+      id: "house-tower",
+      name: "Дім із вежею",
+      cost: 24,
+      w: 3,
+      h: 3,
+      thumb: "models/thumbs/house-tower.svg",
+      category: "home",
+    },
     ...Park.items,
   ];
   const LANDS = [
@@ -134,6 +152,16 @@
     { id: "letters", kind: "letters", x: 0, z: -11, w: 2.8, h: 2.5 },
     { id: "studio", kind: "studio", x: 12, z: -9, w: 2.8, h: 2.5 },
   ];
+  const REMOVABLE_FIXED = ["letters", "studio"];
+  function activeFixed(s) {
+    const removed = new Set(s?.removedFixed || []);
+    return FIXED.filter((building) =>
+      building.id === "home" ? true : !removed.has(building.id),
+    );
+  }
+  function isHouse(kind) {
+    return ["house", "house-two-story", "house-tower"].includes(kind);
+  }
   const FAMILIES = ["М", "С", "Н", "Л", "Р", "Т"].map((c) =>
     [..."АОУІИ"].map((v) => c + v),
   );
@@ -280,11 +308,13 @@
       pet: "cat",
       ownedPets: [],
       lands: [],
+      removedFixed: [],
       objects: [],
       roads: baseRoads(),
       rooms: {},
       sound: true,
       voice: true,
+      volume: 0.8,
       allLevels: false,
       seen: {},
       nextId: 1,
@@ -297,15 +327,11 @@
     };
   }
   function migrate(old) {
-    // Shiba was removed because its downloaded mesh was sculpted in a seated
-    // pose and could not produce a convincing walk. Preserve the rest of an
-    // existing v5 save and select the free cat instead.
-    if (
-      old &&
-      old.version === 5 &&
-      (old.pet === "shiba" || old.ownedPets?.includes("shiba"))
-    ) {
+    // Normalize additive v5 fields without changing the save version. Shiba
+    // was retired because its seated source mesh could not walk convincingly.
+    if (old && old.version === 5) {
       const cleaned = JSON.parse(JSON.stringify(old));
+      if (!Array.isArray(cleaned.removedFixed)) cleaned.removedFixed = [];
       if (cleaned.pet === "shiba") cleaned.pet = "cat";
       cleaned.ownedPets = (cleaned.ownedPets || []).filter(
         (pet) => pet !== "shiba",
@@ -321,6 +347,7 @@
       s.items = {};
       s.conf = {};
       s.placed = false;
+      s.removedFixed = [];
       for (const [l, n] of Object.entries(s.letterScores))
         if (n > 0 && /^[А-ЯҐЄІЇЬ]$/.test(l))
           s.items["L:" + l] = {
@@ -382,12 +409,17 @@
     return s;
   }
   const integer = (n) => Number.isInteger(n) && n >= 0 && n <= 1e7;
+  const validRotation = (n) =>
+    Number.isFinite(n) && n >= 0 && n < 4 && Number.isInteger(n * 2);
   const ITEM_KEY = /^[LSW]:[А-ЯҐЄІЇЬ]{1,8}$/,
     CONF_KEY = /^[А-ЯҐЄІЇЬ]{1,2}\|[А-ЯҐЄІЇЬ]{1,2}$/;
   function valid(s) {
     if (!s || s.version !== 5 || !validBody(s) || !Paths.valid(s.paths))
       return false;
     if (
+      !Array.isArray(s.removedFixed) ||
+      new Set(s.removedFixed).size !== s.removedFixed.length ||
+      s.removedFixed.some((id) => !REMOVABLE_FIXED.includes(id)) ||
       typeof s.placed !== "boolean" ||
       !s.items ||
       typeof s.items !== "object" ||
@@ -420,7 +452,9 @@
       !integer(s.gems) ||
       !integer(s.runs) ||
       !integer(s.independent) ||
-      !integer(s.nextId)
+      !integer(s.nextId) ||
+      (s.volume !== undefined &&
+        (!Number.isFinite(s.volume) || s.volume < 0 || s.volume > 1))
     )
       return false;
     if (
@@ -466,7 +500,7 @@
           !Number.isFinite(o.z) ||
           Math.abs(o.x) > BOUNDS.x ||
           Math.abs(o.z) > BOUNDS.z ||
-          ![0, 1, 2, 3].includes(o.rotation) ||
+          !validRotation(o.rotation) ||
           !integer(o.paid),
       )
     )
@@ -549,13 +583,16 @@
   }
   function footprint(o) {
     const i = ITEMS.find((v) => v.id === o.kind),
-      w = o.kind === "house" ? 2.8 : i.w * 0.94,
-      h = o.kind === "house" ? 2.5 : i.h * 0.94;
+      w = isHouse(o.kind) ? Math.max(2.8, i.w * 0.94) : i.w * 0.94,
+      h = isHouse(o.kind) ? Math.max(2.5, i.h * 0.94) : i.h * 0.94,
+      angle = (o.rotation * Math.PI) / 2,
+      c = Math.abs(Math.cos(angle)),
+      s = Math.abs(Math.sin(angle));
     return {
       x: o.x,
       z: o.z,
-      w: o.rotation % 2 ? h : w,
-      h: o.rotation % 2 ? w : h,
+      w: w * c + h * s,
+      h: w * s + h * c,
     };
   }
   function entrance(o) {
@@ -583,7 +620,7 @@
           return "Тут немає вільної землі";
     if (
       [
-        ...FIXED,
+        ...activeFixed(s),
         ...NATURAL,
         ...s.objects.filter((v) => v.id !== ignore).map(footprint),
       ].some((b) => overlaps(f, b, 0.2))
@@ -591,8 +628,8 @@
       return "Потрібно трохи більше місця";
     if (
       [
-        ...FIXED,
-        ...s.objects.filter((v) => v.kind === "house" && v.id !== ignore),
+        ...activeFixed(s),
+        ...s.objects.filter((v) => isHouse(v.kind) && v.id !== ignore),
       ].some((b) => overlaps(f, entrance({ ...b, kind: "house" })))
     )
       return "Залишимо вхід вільним";
@@ -600,11 +637,11 @@
       return "Тут доріжка. Обери місце поруч або прибери її гумкою";
     const entry = entrance(o);
     if (
-      o.kind === "house" &&
+      isHouse(o.kind) &&
       (!inside(s, entry.x, entry.z, 0.7) ||
         water(entry.x, entry.z) ||
         [
-          ...FIXED,
+          ...activeFixed(s),
           ...s.objects.filter((v) => v.id !== ignore).map(footprint),
         ].some((b) => overlaps(entry, b)))
     )
@@ -615,7 +652,7 @@
     if (
       !Number.isFinite(x) ||
       !Number.isFinite(z) ||
-      ![0, 1, 2, 3].includes(rotation) ||
+      !validRotation(rotation) ||
       (id && !s.objects.some((o) => o.id === id))
     )
       return false;
@@ -645,11 +682,77 @@
     }
     return o;
   }
+  function linePlan(s, kind, start, end, rotation = 0) {
+    const item = ITEMS.find((i) => i.id === kind);
+    if (
+      !item?.stretch ||
+      !start ||
+      !end ||
+      !Number.isFinite(start.x) ||
+      !Number.isFinite(start.z) ||
+      !Number.isFinite(end.x) ||
+      !Number.isFinite(end.z) ||
+      !validRotation(rotation)
+    )
+      return [];
+    const dx = end.x - start.x,
+      dz = end.z - start.z,
+      distance = Math.hypot(dx, dz),
+      direction = distance > 0.2 ? Math.round(Math.atan2(dz, dx) / (Math.PI / 4)) : null,
+      angle = direction === null ? (-rotation * Math.PI) / 2 : direction * (Math.PI / 4),
+      snappedRotation =
+        direction === null ? rotation : ((-direction * 0.5) % 4 + 4) % 4,
+      spacing = Math.max(0.65, item.w * 1.72),
+      wanted = distance > 0.2 ? Math.floor(distance / spacing) + 1 : 1,
+      affordable = Math.floor(s.gems / item.cost),
+      available = Math.max(0, MAX_OBJECTS - s.objects.length),
+      count = Math.min(wanted, affordable, available),
+      plan = [];
+    for (let i = 0; i < count; i++) {
+      const o = {
+        id: `line-${i}`,
+        kind,
+        x: Math.round((start.x + Math.cos(angle) * spacing * i) * 20) / 20,
+        z: Math.round((start.z + Math.sin(angle) * spacing * i) * 20) / 20,
+        rotation: snappedRotation,
+        paid: item.cost,
+      };
+      if (placement(s, o)) break;
+      plan.push(o);
+    }
+    return plan;
+  }
+  function placeLine(s, kind, start, end, rotation = 0) {
+    const plan = linePlan(s, kind, start, end, rotation);
+    if (!plan.length) return false;
+    const placed = plan.map((draft) => ({
+      ...draft,
+      id: "b" + s.nextId++,
+    }));
+    const total = placed.reduce((sum, o) => sum + o.paid, 0);
+    s.gems -= total;
+    s.objects.push(...placed);
+    for (const o of placed) {
+      const f = footprint(o);
+      for (const k of Object.keys(s.roads)) {
+        const [a, b] = k.split(",").map(Number);
+        if (overlaps(f, { x: a * 2, z: b * 2, w: 0.8, h: 0.8 }))
+          delete s.roads[k];
+      }
+    }
+    return placed;
+  }
   function remove(s, id) {
     const i = s.objects.findIndex((o) => o.id === id);
     if (i < 0) return false;
     s.gems += s.objects[i].paid;
     s.objects.splice(i, 1);
+    delete s.rooms[id];
+    return true;
+  }
+  function removeFixed(s, id) {
+    if (!REMOVABLE_FIXED.includes(id) || s.removedFixed.includes(id)) return false;
+    s.removedFixed.push(id);
     delete s.rooms[id];
     return true;
   }
@@ -672,7 +775,7 @@
       [-0.8, 0, 0.8].every((dx) =>
         [-0.8, 0, 0.8].every((dz) => !water(x * 2 + dx, z * 2 + dz)),
       ) &&
-      ![...FIXED, ...NATURAL, ...s.objects.map(footprint)].some((b) =>
+      ![...activeFixed(s), ...NATURAL, ...s.objects.map(footprint)].some((b) =>
         overlaps({ x: x * 2, z: z * 2, w: 0.7, h: 0.7 }, b),
       )
     );
@@ -763,6 +866,9 @@
     availableLands,
     landArea,
     FIXED,
+    REMOVABLE_FIXED,
+    activeFixed,
+    isHouse,
     NATURAL,
     FAMILIES,
     SYLLABLE_TRAINS,
@@ -782,7 +888,10 @@
     entrance,
     placement,
     place,
+    linePlan,
+    placeLine,
     remove,
+    removeFixed,
     expand,
     roadOK,
     road,

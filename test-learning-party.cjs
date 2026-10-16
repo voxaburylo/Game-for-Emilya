@@ -3,23 +3,17 @@ const fs = require("node:fs");
 global.Core = require("./core.js");
 const S = require("./town-state.js"),
   P = require("./learning-party.js");
-assert.equal(
-  P.chooseMode(() => 0),
-  "balloon",
+P.resetModes();
+assert.deepEqual(
+  [P.chooseMode(() => 0), P.chooseMode(() => 0)],
+  ["balloon", "fruit"],
 );
-assert.equal(
-  P.chooseMode(() => 0.49),
-  "balloon",
+P.resetModes();
+assert.deepEqual(
+  [P.chooseMode(() => 0.9), P.chooseMode(() => 0.9)],
+  ["fruit", "balloon"],
 );
-assert.equal(
-  P.chooseMode(() => 0.5),
-  "fruit",
-);
-assert.equal(
-  P.chooseMode(() => 0.999),
-  "fruit",
-);
-// Reward accounting: touch duplication, invalid IDs, future waves, partial exit.
+// Reward accounting: touch duplication, invalid IDs, missed targets, partial exit.
 const s = S.fresh(),
   initial = s.gems,
   run = { mode: "letters" };
@@ -30,7 +24,7 @@ const learning = JSON.stringify([s.items, s.conf, s.placed]);
 assert(S.reward(s, run));
 assert(!S.reward(s, run));
 const game = P.create();
-for (const id of [-1, 12, 1.2, NaN, undefined, 8])
+for (const id of [-1, 12, 1.2, NaN, undefined])
   assert.equal(P.credit(s, game, id), null);
 for (let id = 0; id < 12; id++) {
   const before = s.gems,
@@ -51,6 +45,9 @@ partial.closed = true;
 assert.equal(P.credit(s, partial, 5), null);
 assert.equal(partial.credited, 1);
 assert.equal(s.gems, initial + 7);
+const missed = P.create();
+assert(P.credit(s, missed, 0));
+assert(P.credit(s, missed, 4), "a missed target must not block later waves");
 // Trajectories: balloons strictly rise, fruit has both upward and falling legs.
 for (const width of [260, 360, 600, 760])
   for (const mode of ["fruit", "balloon"]) {
@@ -72,15 +69,18 @@ for (const width of [260, 360, 600, 760])
     assert(rising && visible);
     assert.equal(falling, mode === "fruit");
     for (let slot = 0; slot < 4; slot++) {
-      let appearances = 0;
+      let appearances = 0,
+        wasVisible = false;
       for (let age = 0; age < 40; age += 0.1) {
         const p = P.flight(mode, age, slot, width, 390, 100);
-        if (p.y > 0 && p.y < 290) appearances++;
+        const nowVisible = p.y > 0 && p.y < 290;
+        if (nowVisible && !wasVisible) appearances++;
+        wasVisible = nowVisible;
       }
-      assert(appearances > 10, "missed target must return");
+      assert.equal(appearances, 1, "each target must cross the screen once");
     }
   }
-assert(P.DURATIONS.balloon <= 4.2, "balloons cross the screen quickly");
+assert(P.DURATIONS.balloon <= 2.8, "balloons cross the screen quickly");
 // A quick swipe cannot skip a fruit just because pointer events were sparse.
 const rect = { left: 100, top: 100, width: 100, height: 100 };
 assert(P.intersects({ x: 20, y: 143 }, { x: 300, y: 143 }, rect));
@@ -109,5 +109,5 @@ for (const name of P.fruitAssets) {
 assert(P.fruit(0).includes("models/party-fruit/apple.png"));
 assert(FILES.includes("models/party-fruit/CREDITS.txt"));
 console.log(
-  "PASS party: bounded/idempotent rewards, partial exit, v5 learning preservation, flying and falling trajectories, returning targets, swipe collision and offline assets.",
+  "PASS party: alternating random rewards, bounded/idempotent scoring, missed targets, v5 learning preservation, single-pass trajectories, swipe collision and offline assets.",
 );

@@ -1,12 +1,12 @@
 .park-tabs {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 5px;
-  overflow-x: auto;
   margin: 14px 0;
   padding-bottom: 7px;
 }
 .park-tabs button {
-  flex: 0 0 62px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -75,6 +75,24 @@
 .park-price .ico {
   width: 19px;
   height: 19px;
+}
+.park-catalog .choice.object-only {
+  min-height: 132px;
+  padding: 10px 8px 34px;
+  position: relative;
+}
+.park-catalog .choice.object-only > img,
+.park-catalog .choice.object-only > svg {
+  width: 100%;
+  height: 88px;
+  object-fit: contain;
+}
+.park-catalog .choice.object-only .park-price {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  white-space: nowrap;
 }
 .gem-object {
   width: 25px;
@@ -274,9 +292,14 @@
 }
 .build-panel .park-catalog {
   flex: 1 1 auto;
-  min-height: 100px;
+  min-height: 0;
   max-height: none;
   grid-template-columns: repeat(2, 1fr);
+}
+.build-panel .actions,
+.build-panel .build-tools,
+.build-panel .park-tabs {
+  flex-shrink: 0;
 }
 .build-panel .note {
   margin: 0;

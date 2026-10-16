@@ -32,7 +32,9 @@
   let disposeParty = null;
   let buildCategory = "garden",
     pathBorder = "stone",
-    lastGardenPath = null;
+    lastGardenPath = null,
+    lineStart = null,
+    lineEnd = null;
   try {
     const raw = localStorage.getItem(KEY),
       legacy = localStorage.getItem(OLD);
@@ -57,9 +59,11 @@
   } catch (e) {
     saveBlocked = true;
   }
+  if (!Number.isFinite(state.volume)) state.volume = 0.8;
   const audio = new HumanAudio($("voice"), (text) => {
     if ($("audio-status")) $("audio-status").textContent = text;
   });
+  $("voice").volume = state.volume;
   try {
     await CharacterAssets.load();
     await ParkAssets.load();
@@ -191,7 +195,7 @@
         osc.type = type;
         osc.frequency.value = f;
         gain.gain.setValueAtTime(0, start);
-        gain.gain.linearRampToValueAtTime(0.16, start + 0.02);
+        gain.gain.linearRampToValueAtTime(0.16 * state.volume, start + 0.02);
         gain.gain.exponentialRampToValueAtTime(0.001, end);
         osc.connect(gain).connect(sfxCtx.destination);
         osc.start(start);
@@ -234,13 +238,16 @@
     $("hint").textContent = "";
   }
   function bar(title) {
-    return `<div class="scene-bar">${btn("back", "back", "Назад")}<div class="scene-caption"><div class="eyebrow">ОСТРІВ ЕМІЛІЇ</div><h2>${title}</h2></div>${["build", "roads", "land", "select"].includes(route) ? btn("zoom-in", "plus", "Наблизити", "round small") + btn("zoom-out", "minus", "Віддалити", "round small") : ""}</div>`;
+    return `<div class="scene-bar">${btn("back", "back", "Назад")}<div class="scene-caption"><div class="eyebrow">ОСТРІВ ЕМІЛІЇ</div><h2>${title}</h2></div></div>`;
   }
   function modal(title, body, compact = false) {
     return `<div class="cover"><section class="modal ${compact ? "compact" : ""}"><div class="modal-head">${btn("back", "back", "Назад")}<h2>${title}</h2></div>${body}</section></div>`;
   }
   function open(view) {
     resetAudio();
+    if (view !== "street") {
+      world.selectObject?.(null);
+    }
     if (view === "learn") learnSection = null;
     if (
       [
@@ -249,6 +256,7 @@
         "learn",
         "parents",
         "build",
+        "demolish",
         "land",
         "roads",
         "album",
@@ -263,10 +271,10 @@
       "wardrobe",
       "pets",
       "build",
+      "demolish",
       "land",
       "roads",
       "furniture",
-      "select",
     ].includes(view);
     if (view === "street") world.setView("street");
     if (view === "room") world.setView("room", world.roomId);
@@ -280,7 +288,7 @@
       world.setView("pets");
       world.setPet(draft);
     }
-    if (["build", "land", "roads", "select"].includes(view)) {
+    if (["build", "demolish", "land", "roads"].includes(view)) {
       if (world.view !== "street") world.setView("street");
       world.setEditor({
         type: view === "build" ? "objects" : view === "roads" ? "road" : view,
@@ -292,9 +300,12 @@
           z: Math.round((world.editFocus.z - 4) / 2) * 2,
           rotation: 0,
         };
+        lineStart = null;
+        lineEnd = null;
         buildCategory = "garden";
         preview();
       }
+      if (view === "demolish") world.setEditor({ type: "demolish" });
       if (view === "roads") {
         roadStart = null;
         roadCells = [];
@@ -338,9 +349,9 @@
         "wardrobe",
         "pets",
         "build",
+        "demolish",
         "land",
         "roads",
-        "select",
         "furniture",
       ].includes(route)
     ) {
@@ -362,7 +373,7 @@
       recentLetters = learningProgress.opened.slice(-7),
       journey = `<div class="learning-journey" aria-label="Відкрито ${learningProgress.opened.length} з ${learningProgress.total} літер і ${learningProgress.syllables.opened.length} з ${learningProgress.syllables.total} складів"><div class="journey-top"><b>Твоя абетка</b><span>${learningProgress.opened.length} / ${learningProgress.total}</span></div><div class="journey-track"><i style="width:${(learningProgress.opened.length / learningProgress.total) * 100}%"></i></div><div class="journey-letters">${recentLetters.map((l) => `<span>${l}</span>`).join("")}${learningProgress.next ? `<span class="next-letter">?</span>` : ""}</div><div class="journey-stats"><span><b>${learningProgress.syllables.opened.length} / ${learningProgress.syllables.total}</b><small>складів</small></span><span><b>${learningProgress.trains}</b><small>різних потягів</small></span></div></div>`;
     if (route === "welcome")
-      html = `<div class="cover"><section class="welcome"><div class="emblem">${icon("home")}</div><div class="eyebrow">МАЛЕНЬКІ ВІДКРИТТЯ ЩОДНЯ</div><h1>Острів Емілії</h1><p>Твій дім. Твої друзі. Твої перші слова.</p><div class="how"><span>${icon("hand")}Торкнись</span><span>${icon("ear")}Послухай</span><span>${icon("build")}Створи</span></div>${btn("start", "play", "Грати", "primary")}<button class="quiet" data-action="parents">Для батьків</button>${saveBlocked ? '<p class="note">Збереження потребує перевірки. Оригінал не змінено — відкрийте меню батьків.</p>' : ""}</section></div>`;
+      html = `<div class="cover"><section class="welcome"><div class="emblem">${icon("home")}</div><div class="eyebrow">МАЛЕНЬКІ ВІДКРИТТЯ ЩОДНЯ</div><h1>Острів Емілії</h1><p>Твій дім. Твої друзі. Твої перші слова.</p><div class="how"><span>${icon("hand")}Торкнись</span><span>${icon("ear")}Послухай</span><span>${icon("build")}Створи</span></div>${btn("start", "play", "Грати", "primary")}<button class="quiet" data-action="parents">Для батьків</button>${saveBlocked ? '<p class="note">Збереження потребує перевірки. Оригінал не змінено — відкрийте меню батьків.</p>' : ""}</section><a class="legal-link" href="licenses.html" target="_blank" rel="noopener">Ліцензії</a></div>`;
     document.body.classList.toggle("in-room", route === "room");
     if (route === "room")
       html = `<div class="scene-actions">${[
@@ -403,7 +414,7 @@
     if (route === "pets")
       html =
         bar("Маленький друг") +
-        `<section class="side-panel pet-panel"><div class="row"><h3>${names[draft]}</h3><span class="wallet">${gemImage()}${state.gems}</span></div><div class="choice-grid">${S.PETS.map((p, i) => `<button class="choice ${draft === p ? "active" : ""}" data-action="pet-choice" data-value="${p}" aria-label="${names[p]}">${A.thumb("pet", i)}<span>${names[p]}</span>${S.ownsPet(state, p) ? "" : `<small class="pet-price">${gemImage()}${S.PET_PRICES[p]}</small>`}</button>`).join("")}</div><div class="row">${btn("rotate-left", "rotate", "Повернути ліворуч")}${btn("rotate-right", "rotate", "Повернути праворуч")}</div><div class="actions">${btn("back", "close", "Скасувати", "secondary")}${S.ownsPet(state, draft) ? btn("apply-pet", "check", "Готово", "primary") : btn("buy-pet", "gem", `${S.PET_PRICES[draft]} · Відкрити`, "primary")}</div></section><div class="scene-actions pet-actions">${[
+        `<section class="side-panel pet-panel"><div class="row"><h3>${names[draft]}</h3></div><div class="choice-grid">${S.PETS.map((p, i) => `<button class="choice ${draft === p ? "active" : ""}" data-action="pet-choice" data-value="${p}" aria-label="${names[p]}">${A.thumb("pet", i)}<span>${names[p]}</span>${S.ownsPet(state, p) ? "" : `<small class="pet-price">${gemImage()}${S.PET_PRICES[p]}</small>`}</button>`).join("")}</div><div class="row">${btn("rotate-left", "rotate", "Повернути ліворуч")}${btn("rotate-right", "rotate", "Повернути праворуч")}</div><div class="actions">${btn("back", "close", "Скасувати", "secondary")}${S.ownsPet(state, draft) ? btn("apply-pet", "check", "Готово", "primary") : btn("buy-pet", "gem", `${S.PET_PRICES[draft]} · Відкрити`, "primary")}</div></section><div class="scene-actions pet-actions">${[
           ["stroke", "hand", "Погладити"],
           ["feed", "food", "Погодувати"],
           ["ball", "ball", "М’ячик"],
@@ -415,27 +426,23 @@
           .join("")}</div>`;
     if (route === "build")
       html =
-        bar(edit.id ? "Переставити" : "Майстерня") +
-        `<section class="side-panel build-panel"><div class="row build-tools">${objectButton("roads", "models/ui/path-stone.png", "Доріжки")}${objectButton("land", "models/ui/land.png", "Нова земля")}${objectButton("select", "models/park/thumbs/home-house.png", "Переставити")}<span class="wallet">${gemImage()}${state.gems}</span></div><div class="park-tabs" role="group" aria-label="Види прикрас">${ParkCatalog.groups.map((c) => `<button class="${buildCategory === c.id ? "active" : ""}" data-action="build-category" data-value="${c.id}" aria-label="${c.name}">${objectImage(c.thumb, "category-thumb")}<span>${c.name}</span></button>`).join("")}</div><div class="choice-grid park-catalog">${S.ITEMS.filter(
-          (i) =>
-            (!i.hidden && (i.category || "classic") === buildCategory) ||
-            (i.id === edit.kind && edit.id),
+        bar("Майстерня") +
+        `<section class="side-panel build-panel"><div class="row build-tools">${objectButton("roads", "models/ui/path-stone.png", "Доріжки")}${objectButton("land", "models/ui/land.png", "Нова земля")}${objectButton("demolish", "models/park/thumbs/park-trashcan.png", "Розібрати")}</div><div class="park-tabs" role="group" aria-label="Види прикрас">${ParkCatalog.groups.map((c) => `<button class="${buildCategory === c.id ? "active" : ""}" data-action="build-category" data-value="${c.id}" aria-label="${c.name}">${objectImage(c.thumb, "category-thumb")}<span>${c.name}</span></button>`).join("")}</div><div class="choice-grid park-catalog">${S.ITEMS.filter(
+          (i) => ParkCatalog.inGroup(i, buildCategory),
         )
           .map(
             (i) =>
-              `<button class="choice ${edit.kind === i.id ? "active" : ""}" data-action="build-kind" data-value="${i.id}" aria-label="${i.name}, ${crystals(i.cost)}" ${edit.id ? "disabled" : ""}>${i.thumb ? `<img src="${i.thumb}" alt="" width="112" height="96" />` : icon(i.id === "house" ? "home" : i.id)}<span>${i.name}</span><b class="park-price">${gemImage()}${i.cost}</b></button>`,
+              `<button class="choice object-only ${edit.kind === i.id ? "active" : ""}" data-action="build-kind" data-value="${i.id}" aria-label="${i.name}, ${crystals(i.cost)}">${i.thumb ? `<img src="${i.thumb}" alt="" width="112" height="96" />` : icon(i.id === "house" ? "home" : i.id)}<b class="park-price">${gemImage()}${i.cost}</b></button>`,
           )
           .join(
             "",
-          )}</div><p class="note" id="placement-note"></p><div class="actions">${btn("build-rotate", "rotate", "Повернути", "secondary")}${btn("build-apply", "check", edit.id ? "Готово" : "Будувати", "primary")}</div>${edit.id ? btn("remove-ask", "close", "Прибрати", "secondary danger") : ""}</section>`;
-    if (route === "select")
-      html =
-        bar("Торкнись споруди") +
-        `<div class="scene-actions">${btn("build", "build", "Нова споруда", "primary")}</div>`;
+          )}</div><p class="note" id="placement-note"></p><div class="actions">${btn("build-rotate", "rotate", S.ITEMS.find((item) => item.id === edit.kind)?.stretch ? "Поворот 45°" : "Повернути", "secondary")}${S.ITEMS.find((item) => item.id === edit.kind)?.stretch ? "" : btn("build-apply", "check", "Будувати", "primary")}</div></section>`;
+    if (route === "demolish")
+      html = `${bar("Розібрати")}<div class="demolish-mode" aria-live="polite">${objectImage("models/park/thumbs/park-trashcan.png", "demolish-object")}<b>Торкнись споруди</b></div>`;
     if (route === "land")
       html =
         bar("Більше місця") +
-        `<section class="side-panel land-panel"><div class="row"><h3>Розширюй своє місто</h3><span class="wallet">${gemImage()}${state.gems}</span></div><p class="note">Відкрито ${state.lands.length} із ${S.LANDS.length} ділянок.</p><div class="land-list" style="display:grid;gap:10px">${
+        `<section class="side-panel land-panel"><div class="row"><h3>Розширюй своє місто</h3></div><p class="note">Відкрито ${state.lands.length} із ${S.LANDS.length} ділянок.</p><div class="land-list" style="display:grid;gap:10px">${
           S.availableLands(state)
             .map(
               (l) =>
@@ -469,7 +476,7 @@
           )
           .join(
             "",
-          )}</div><p class="path-quote" id="path-quote"></p><div class="actions">${btn("road-apply", "check", "Побудувати", "primary")}${btn("path-undo", "undo", "Скасувати останню доріжку", "secondary", lastGardenPath === null ? "disabled" : "")}</div><div class="path-wallet">${gemImage()} ${state.gems}</div></section>`;
+          )}</div><p class="path-quote" id="path-quote"></p><div class="actions">${btn("road-apply", "check", "Побудувати", "primary")}${btn("path-undo", "undo", "Скасувати останню доріжку", "secondary", lastGardenPath === null ? "disabled" : "")}</div></section>`;
     if (route === "furniture")
       html =
         bar("Облаштуй кімнату") +
@@ -585,6 +592,22 @@
   }
   function preview() {
     if (!edit) return;
+    const item = S.ITEMS.find((entry) => entry.id === edit.kind);
+    if (item?.stretch) {
+      world.setEditor({ type: "line" });
+      const start = lineStart || { x: edit.x, z: edit.z },
+        end = lineEnd || start,
+        plan = S.linePlan(state, edit.kind, start, end, edit.rotation);
+      world.previewLine(plan);
+      if ($("placement-note"))
+        $("placement-note").textContent = plan.length
+          ? `${plan.length} шт. · ${crystals(plan.length * item.cost)}`
+          : state.gems < item.cost
+            ? "Не вистачає кристалів"
+            : "Обери вільне місце";
+      return;
+    }
+    if (world.editor?.type !== "objects") world.setEditor({ type: "objects" });
     const error = S.placement(state, edit, edit.id);
     world.preview(edit.kind, edit.x, edit.z, edit.rotation, !error);
     if ($("placement-note")) $("placement-note").textContent = error || "";
@@ -1004,10 +1027,9 @@
       hinted = entries.reduce((a, [, v]) => a + v.hinted, 0);
     return modal(
       "Для батьків",
-      `${saveBlocked ? "<p>Пошкоджене збереження залишене без змін. Експортуйте його перед імпортом або скиданням.</p>" : ""}<div class="stats"><div><b>${state.runs}</b><small>завершених ігор</small></div><div><b>${solo}</b><small>без підказок</small></div><div><b>${hinted}</b><small>з допомогою</small></div></div>${[
+      `${saveBlocked ? "<p>Збереження пошкоджене. Можна безпечно почати заново.</p>" : ""}<div class="stats"><div><b>${state.runs}</b><small>ігор</small></div><div><b>${solo}</b><small>самостійно</small></div><div><b>${hinted}</b><small>з допомогою</small></div></div>${[
         ["sound", "Звуки"],
-        ["voice", "Готові голосові записи"],
-        ["allLevels", "Відкрити всі літери та склади"],
+        ["voice", "Голос учительки"],
       ]
         .map(
           ([k, t]) =>
@@ -1015,7 +1037,7 @@
         )
         .join(
           "",
-        )}<h3 style="margin-top:18px">Літери</h3><div class="alphabet letter-status">${L.ORDER.map((l) => `<span class="${L.status(state, "L:" + l)}">${l}</span>`).join("")}</div><p class="note">Світла — ще не зустрічалась; жовта — знайомиться; зелена — впізнає на слух; темно-зелена — впізнає в різні дні (вивчено). Зіставлення й складання за зразком лише знайомлять із літерою, а вивченою її робить тільки впізнавання на слух. Це ігровий прогрес, а не оцінка навички читання.</p><div class="parent-actions">${btn("replace", "undo", "Перевірити знання знову", "secondary")}${btn("export", "save", "Експорт", "secondary")}<label class="secondary">Імпорт<input id="import-save" type="file" accept="application/json,.json"></label>${btn("reset-ask", "undo", "Почати заново", "secondary danger")}</div><details><summary>Результати за вправами</summary><div class="score-row"><b>Вправа</b><b>Сама</b><b>З допом.</b></div>${entries.map(([k, v]) => `<div class="score-row"><span>${escapeHTML((modes[k.split(":")[0]]?.[0] || k.split(":")[0]) + ": " + k.split(":").slice(1).join(":"))}</span><span>${v.solo}</span><span>${v.hinted}</span></div>`).join("") || '<p class="note">Ще немає завершених завдань.</p>'}</details><p class="note" id="offline-state" style="margin-top:18px">${offlineReady ? "Офлайн-пакет готовий: гра та всі записи доступні без мережі." : "Офлайн-пакет готується. Для встановлення потрібен localhost або HTTPS."}</p><p class="credits" style="margin-top:20px">Літери, склади й підказки — синтезований жіночий голос «Тетяна» (Apache 2.0). Слова — живий жіночий голос Галі Раптової, Shtooka (CC BY 2.0 France). Запасні записи літер — Tabrus (CC BY-SA 4.0). Усі записи дозволяють комерційне використання з указанням авторів. <a href="audio/voice/CREDITS.txt" target="_blank" rel="noopener">Голос учительки</a> · <a href="audio/speech/CREDITS.txt" target="_blank" rel="noopener">Слова</a> · <a href="audio/CREDITS.txt" target="_blank" rel="noopener">Літери Tabrus</a>.<br>3D-моделі фруктів — CC BY 4.0, дозволені для комерційного використання з атрибуцією: <a href="models/party-fruit/CREDITS.txt" target="_blank" rel="noopener">автори моделей</a>.</p>`,
+        )}<label class="setting volume-setting"><span>Гучність</span><input id="volume-setting" type="range" min="0" max="1" step="0.1" value="${state.volume}" aria-label="Гучність"></label><div class="parent-actions">${btn("reset-ask", "undo", "Почати заново", "secondary danger")}</div>`,
     );
   }
   function escapeHTML(t) {
@@ -1069,13 +1091,64 @@
       edit.z = e.z;
       preview();
     }
-    if (e.type === "edit-object") {
-      edit = { ...state.objects.find((o) => o.id === e.id) };
-      buildCategory =
-        S.ITEMS.find((i) => i.id === edit.kind)?.category || "classic";
-      route = "build";
-      world.setEditor({ type: "objects" });
-      render();
+    if (e.type === "line-start") {
+      lineStart = {
+        x: Math.round(e.x * 2) / 2,
+        z: Math.round(e.z * 2) / 2,
+      };
+      lineEnd = { ...lineStart };
+      preview();
+    }
+    if (e.type === "line-move" && lineStart) {
+      lineEnd = { x: e.x, z: e.z };
+      preview();
+    }
+    if (e.type === "line-end" && lineStart) {
+      lineEnd = { x: e.x, z: e.z };
+      const item = S.ITEMS.find((entry) => entry.id === edit.kind),
+        placed = S.placeLine(
+          state,
+          edit.kind,
+          lineStart,
+          lineEnd,
+          edit.rotation,
+        );
+      lineStart = null;
+      lineEnd = null;
+      if (!placed) {
+        preview();
+        toast(
+          state.gems < (item?.cost || Infinity)
+            ? "Потрібно ще трохи кристалів"
+            : "Тут огорожа не поміститься",
+        );
+        return;
+      }
+      save();
+      world.refreshObjects(placed.at(-1).id);
+      preview();
+      toast(`Побудовано: ${placed.length}`);
+    }
+    if (e.type === "demolish-protected") {
+      toast("Це дім Емілії — він залишається");
+      return;
+    }
+    if (e.type === "demolish-object") {
+      if (e.fixed) {
+        if (!S.removeFixed(state, e.id)) return;
+        save();
+        world.removeFixedBuilding(e.id);
+        toast("Споруду прибрано");
+      } else {
+        const object = state.objects.find((entry) => entry.id === e.id),
+          refund = object?.paid || 0;
+        if (!object || !S.remove(state, e.id)) return;
+        save();
+        world.getUp?.();
+        world.refreshObjects();
+        toast(`Повернуто ${crystals(refund)}`);
+      }
+      return;
     }
     if (e.type === "object") {
       const o = state.objects.find((o) => o.id === e.id);
@@ -1210,9 +1283,9 @@
         "pets",
         "learn",
         "build",
+        "demolish",
         "land",
         "roads",
-        "select",
         "album",
       ].includes(act)
     ) {
@@ -1302,16 +1375,23 @@
     }
     if (act === "build-kind") {
       edit.kind = v;
+      lineStart = null;
+      lineEnd = null;
       render();
     }
     if (act === "build-category" && !edit.id) {
       buildCategory = v;
-      const first = S.ITEMS.find((i) => (i.category || "classic") === v);
+      const first = S.ITEMS.find((i) => ParkCatalog.inGroup(i, v));
       if (first) edit.kind = first.id;
+      lineStart = null;
+      lineEnd = null;
       render();
     }
     if (act === "build-rotate") {
-      edit.rotation = (edit.rotation + 1) % 4;
+      const item = S.ITEMS.find((entry) => entry.id === edit.kind);
+      edit.rotation = (edit.rotation + (item?.stretch ? 0.5 : 1)) % 4;
+      lineStart = null;
+      lineEnd = null;
       preview();
     }
     if (act === "build-apply") {
@@ -1339,18 +1419,6 @@
         "beforeend",
         '<div class="progress-build" id="build-progress">Будуємо…<i></i></div>',
       );
-    }
-    if (act === "remove-ask")
-      confirmUI(
-        "Прибрати споруду?",
-        "remove-confirm",
-        "Кристали повернуться. Кімната цього будиночка також буде прибрана.",
-      );
-    if (act === "remove-confirm") {
-      S.remove(state, edit.id);
-      save();
-      world.refreshObjects();
-      open("select");
     }
     if (act === "land-choice") {
       draft = v;
@@ -1489,7 +1557,7 @@
       confirmUI(
         "Почати заново?",
         "reset-confirm",
-        "Зникнуть споруди, одяг і навчальний прогрес. Спочатку можна зберегти їх кнопкою «Експорт».",
+        "Зникнуть споруди, одяг і навчальний прогрес.",
       );
     if (act === "replace") {
       state.placed = false;
@@ -1511,6 +1579,11 @@
       state[e.target.dataset.setting] = e.target.checked;
       save();
       audio.stop();
+    }
+    if (e.target.id === "volume-setting") {
+      state.volume = Math.max(0, Math.min(1, Number(e.target.value)));
+      $("voice").volume = state.volume;
+      save();
     }
     if (e.target.id === "import-save") {
       const file = e.target.files[0];
@@ -1567,7 +1640,7 @@
         const check = async () => {
           if (reg.active?.state === "activated") {
             const cache = await caches.open(
-              "emilia-living-v5-23-clean-learning-menu",
+              "emilia-living-v5-29-demolition-tool",
             );
             offlineReady = (
               await Promise.all(
