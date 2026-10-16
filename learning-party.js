@@ -1,0 +1,311 @@
+// A small, finite celebration. Motor speed never changes the learning record.
+(function (root) {
+  "use strict";
+  const TOTAL = 12,
+    PER_GEM = 4;
+  const chooseMode = (random = Math.random) =>
+    random() < 0.5 ? "balloon" : "fruit";
+  function create() {
+    return { popped: [], credited: 0, closed: false };
+  }
+  function pop(game, id) {
+    if (
+      game.closed ||
+      !Number.isInteger(id) ||
+      id < 0 ||
+      id >= TOTAL ||
+      Math.floor(id / 4) !== Math.floor(game.popped.length / 4) ||
+      game.popped.includes(id)
+    )
+      return null;
+    game.popped.push(id);
+    const earned = Math.floor(game.popped.length / PER_GEM),
+      gems = earned - game.credited;
+    game.credited = earned;
+    return {
+      gems,
+      count: game.popped.length,
+      complete: game.popped.length === TOTAL,
+    };
+  }
+  function credit(state, game, id) {
+    const result = pop(game, id);
+    if (result) state.gems += result.gems;
+    return result;
+  }
+  // Segment hit testing also catches balloons between sparse touch events.
+  function intersects(a, b, rect) {
+    const cx = rect.left + rect.width / 2,
+      cy = rect.top + rect.height * 0.43;
+    const dx = b.x - a.x,
+      dy = b.y - a.y;
+    const t = Math.max(
+      0,
+      Math.min(
+        1,
+        ((cx - a.x) * dx + (cy - a.y) * dy) / (dx * dx + dy * dy || 1),
+      ),
+    );
+    return (
+      Math.hypot(a.x + t * dx - cx, a.y + t * dy - cy) <
+      Math.min(rect.width * 0.48, rect.height * 0.39)
+    );
+  }
+  const colors = ["#ef6583", "#efae38", "#46b6b5", "#8c79d8"];
+  // Normalised flight path: fruits rise and fall; balloons only rise.
+  // Each missed target loops, so slow hands do not lose their reward.
+  function flight(mode, age, slot, width, height, size, calm = false) {
+    const duration = (mode === "fruit" ? 5.8 : 7.2) * (calm ? 1.5 : 1);
+    const lanes = width < 420 ? 2 : 4;
+    const local =
+      age - (slot % lanes) * 0.55 - Math.floor(slot / lanes) * (duration + 0.6);
+    if (local < 0) return { x: 0, y: height + size, angle: 0 };
+    const phase = local % (lanes === 2 ? 2 * (duration + 0.6) : duration);
+    if (phase > duration) return { x: 0, y: height + size, angle: 0 };
+    const t = phase / duration;
+    const x = (((slot % lanes) + 0.5) * width) / lanes - size / 2;
+    const bottom = height + size * 0.1,
+      top = Math.min(135, height * 0.22);
+    return {
+      x: Math.max(
+        2,
+        Math.min(
+          width - size - 2,
+          x + Math.sin(t * Math.PI * 2 + slot) * Math.min(14, width * 0.02),
+        ),
+      ),
+      y:
+        mode === "fruit"
+          ? bottom - (bottom - top) * 4 * t * (1 - t)
+          : bottom - t * (bottom + size * 1.4),
+      angle:
+        mode === "fruit" ? -35 + t * 100 : Math.sin(t * Math.PI * 2 + slot) * 7,
+    };
+  }
+  function fruit(id, split = false) {
+    const bodies = [
+      '<path d="M59 31C27 7 5 41 18 75Q30 106 58 91Q87 107 103 72C115 38 87 11 59 31Z" fill="#ef5967"/><path d="M58 29Q53 9 66 6" stroke="#6b593b" stroke-width="5" fill="none"/><path d="M63 23Q72 3 91 14Q83 33 63 23" fill="#55a76b"/>',
+      '<circle cx="60" cy="60" r="43" fill="#f4a32f"/><path d="M55 18Q70-2 87 13Q79 27 55 18" fill="#438f56"/><path d="M25 56Q27 34 45 29" stroke="#ffe5a4" stroke-width="6" stroke-linecap="round" fill="none"/>',
+      '<circle cx="60" cy="59" r="45" fill="#438965"/><path d="M33 23Q12 60 34 97M60 15Q44 61 60 104M84 22Q72 57 87 95" stroke="#9fca70" stroke-width="9" fill="none"/>',
+      '<path d="M60 28C20 4 5 44 22 72L60 104L99 71C118 39 87 3 60 28Z" fill="#e85c57"/><path d="M35 22L51 25L60 9L68 25L89 20L75 37L62 32L46 39Z" fill="#559955"/><g fill="#ffe7a1"><ellipse cx="36" cy="51" rx="3" ry="5"/><ellipse cx="65" cy="49" rx="3" ry="5"/><ellipse cx="84" cy="57" rx="3" ry="5"/><ellipse cx="51" cy="71" rx="3" ry="5"/><ellipse cx="68" cy="83" rx="3" ry="5"/></g>',
+    ];
+    return `<svg viewBox="0 0 120 120" aria-hidden="true">${bodies[id % 4]}${id % 4 !== 1 ? '<path d="M30 44Q32 34 42 32" stroke="#fff" opacity=".5" stroke-width="6" stroke-linecap="round" fill="none"/>' : ""}${split ? '<path d="M15 75L105 35" stroke="#fff0b4" stroke-width="8"/>' : ""}</svg>`;
+  }
+  function balloon(id) {
+    const c = colors[id % 4],
+      g = "party-shine-" + id;
+    return `<svg viewBox="0 0 120 158" aria-hidden="true"><defs><radialGradient id="${g}" cx="32%" cy="25%" r="80%"><stop stop-color="#fff" stop-opacity=".65"/><stop offset=".38" stop-color="#fff" stop-opacity=".08"/><stop offset="1" stop-color="#3b3159" stop-opacity=".2"/></radialGradient></defs><path d="M60 110Q46 124 60 136T58 156" fill="none" stroke="#697e9080" stroke-width="2"/><path d="m60 100-7 14q7 4 14 0Z" fill="${c}"/><ellipse cx="60" cy="56" rx="49" ry="53" fill="${c}"/><ellipse cx="60" cy="56" rx="49" ry="53" fill="url(#${g})"/><ellipse cx="38" cy="28" rx="9" ry="17" transform="rotate(35 38 28)" fill="#fff" opacity=".6"/><path d="m60 43 4 9 10 1-7 7 2 10-9-5-9 5 2-10-7-7 10-1Z" fill="#fff" opacity=".9"/></svg>`;
+  }
+  function mount(host, game, options) {
+    const { icon, onPop, onEnd, reduced = false, mode = "balloon" } = options;
+    const isFruit = mode === "fruit";
+    let disposed = false,
+      pointer = null,
+      previous = null,
+      changing = false;
+    let raf = 0,
+      last = 0,
+      age = 0;
+    const timers = new Set();
+    const later = (fn, delay) => {
+      const timer = setTimeout(() => {
+        timers.delete(timer);
+        if (!disposed) fn();
+      }, delay);
+      timers.add(timer);
+    };
+    host.innerHTML = `<section class="party ${reduced ? "party-calm" : ""}" aria-labelledby="party-title"><header class="party-head"><div><span class="party-eyebrow">ЗАНЯТТЯ ЗАВЕРШЕНО</span><h2 id="party-title">Свято відкриттів!</h2><p>Лускай кульки — збирай кристали</p></div><div class="party-base">${icon("gem")}<b>+3</b><small>за заняття</small></div></header><div class="party-meter" aria-label="Бонусні кристали">${[0, 1, 2].map((i) => `<div class="party-gem" data-gem="${i}">${icon("gem")}<span>${[0, 1, 2, 3].map((j) => `<i data-pip="${i * 4 + j}"></i>`).join("")}</span></div>`).join("")}</div><div class="party-field" role="group" aria-label="Кульки. Торкайся або проводь пальцем."><div class="party-cloud cloud-one"></div><div class="party-cloud cloud-two"></div><div class="party-balloons"></div><div class="party-demo" aria-hidden="true">${icon("hand")}<span>Торкнись!</span></div><div class="party-sparks" aria-hidden="true"></div></div><footer class="party-footer"><span class="party-count" role="status" aria-live="polite">0 / 12</span><button type="button" class="secondary party-finish">${icon("check")}Готово</button></footer></section>`;
+    if (isFruit) {
+      host.querySelector("#party-title").textContent = "Фруктовий феєрверк!";
+      host.querySelector(".party-head p").textContent =
+        "Проведи пальцем через фрукти";
+      host.querySelector(".party-demo span").textContent = "Проведи пальцем!";
+      host
+        .querySelector(".party-field")
+        .setAttribute("aria-label", "Фрукти. Проведи пальцем або торкнись.");
+      host.querySelector(".party").classList.add("party-fruit");
+    }
+    const field = host.querySelector(".party-field"),
+      rack = host.querySelector(".party-balloons"),
+      sparks = host.querySelector(".party-sparks"),
+      counter = host.querySelector(".party-count"),
+      demo = host.querySelector(".party-demo"),
+      finish = host.querySelector(".party-finish");
+    function wave() {
+      changing = false;
+      age = 0;
+      const start = Math.floor(game.popped.length / 4) * 4;
+      rack.innerHTML = Array.from(
+        { length: 4 },
+        (_, i) =>
+          `<button type="button" class="party-balloon" data-balloon="${start + i}" aria-label="${isFruit ? "Розрізати фрукт" : "Луснути кульку"} ${start + i + 1}">${isFruit ? fruit(start + i) : balloon(start + i)}</button>`,
+      ).join("");
+      rack.querySelectorAll("button").forEach((button) => {
+        if (game.popped.includes(Number(button.dataset.balloon))) {
+          button.disabled = true;
+          button.classList.add("popped");
+        }
+      });
+    }
+    function frame(time) {
+      if (disposed) return;
+      const dt = last ? Math.min(0.05, (time - last) / 1000) : 0;
+      last = time;
+      // Pause in background and while keyboard users focus a moving target.
+      const keyboard = rack.contains(document.activeElement);
+      if (!document.hidden && !keyboard) age += dt;
+      const w = field.clientWidth,
+        h = field.clientHeight,
+        size = Math.max(72, Math.min(150, (w - 20) / (w < 420 ? 2 : 4)));
+      rack.querySelectorAll("button").forEach((button, i) => {
+        const p = flight(mode, age, i, w, h, size, reduced);
+        if (keyboard) {
+          const lanes = w < 420 ? 2 : 4;
+          p.x = (((i % lanes) + 0.5) * w) / lanes - size / 2;
+          p.y = ((Math.floor(i / lanes) + 0.5) * h) / (4 / lanes) - size / 2;
+          p.angle = 0;
+        }
+        button.style.width = size + "px";
+        button.style.transform = `translate(${p.x}px,${p.y}px) rotate(${p.angle}deg)`;
+      });
+      raf = requestAnimationFrame(frame);
+    }
+    function end() {
+      if (disposed || game.closed) return;
+      game.closed = true;
+      onEnd();
+    }
+    function burst(button) {
+      const r = button.getBoundingClientRect(),
+        f = field.getBoundingClientRect();
+      const burst = document.createElement("div");
+      burst.className = "party-burst";
+      burst.style.left = r.left + r.width / 2 - f.left + "px";
+      burst.style.top = r.top + r.height * 0.43 - f.top + "px";
+      burst.innerHTML = `${isFruit ? `<span class="fruit-half half-left">${fruit(Number(button.dataset.balloon), true)}</span><span class="fruit-half half-right">${fruit(Number(button.dataset.balloon), true)}</span>` : "<b>★</b>"}${Array.from({ length: 8 }, (_, i) => `<i style="--dx:${Math.cos((i * Math.PI) / 4) * 65}px;--dy:${Math.sin((i * Math.PI) / 4) * 65}px;--color:${colors[i % 4]}"></i>`).join("")}`;
+      sparks.append(burst);
+      later(() => burst.remove(), 650);
+    }
+    function activate(button, keyboard = false) {
+      if (!button || disposed || changing || button.disabled) return;
+      const result = onPop(Number(button.dataset.balloon));
+      if (!result) return;
+      button.disabled = true;
+      button.classList.add("popped");
+      demo.hidden = true;
+      burst(button);
+      counter.textContent = `${result.count} / ${TOTAL}`;
+      host
+        .querySelectorAll("[data-pip]")
+        .forEach((p) =>
+          p.classList.toggle("filled", Number(p.dataset.pip) < result.count),
+        );
+      host
+        .querySelectorAll("[data-gem]")
+        .forEach((g) =>
+          g.classList.toggle("earned", Number(g.dataset.gem) < game.credited),
+        );
+      if (result.count % 4 === 0) {
+        changing = true;
+        // A new wave requires a fresh gesture, so a held finger cannot farm it.
+        pointer = null;
+        previous = null;
+        if (result.complete) {
+          counter.textContent = "Усе зібрано! +3 кристали";
+          host.querySelector("#party-title").textContent = "Оце так свято!";
+          later(end, reduced ? 350 : 1100);
+        } else
+          later(
+            () => {
+              wave();
+              if (keyboard) rack.querySelector("button")?.focus();
+            },
+            reduced ? 150 : 480,
+          );
+      } else if (keyboard) rack.querySelector("button:not(:disabled)")?.focus();
+    }
+    function hit(a, b) {
+      rack.querySelectorAll("button:not(:disabled)").forEach((button) => {
+        if (intersects(a, b, button.getBoundingClientRect())) activate(button);
+      });
+    }
+    function down(e) {
+      if (
+        pointer !== null ||
+        changing ||
+        (e.pointerType === "mouse" && e.button !== 0)
+      )
+        return;
+      e.preventDefault();
+      pointer = e.pointerId;
+      previous = { x: e.clientX, y: e.clientY };
+      field.setPointerCapture?.(e.pointerId);
+      const button = e.target.closest("[data-balloon]");
+      if (button) activate(button);
+      else hit(previous, previous);
+    }
+    function move(e) {
+      if (pointer !== e.pointerId || !previous) return;
+      const point = { x: e.clientX, y: e.clientY };
+      if (isFruit && !reduced) {
+        const r = field.getBoundingClientRect(),
+          line = document.createElement("i");
+        line.className = "party-slice";
+        line.style.cssText = `left:${previous.x - r.left}px;top:${previous.y - r.top}px;width:${Math.hypot(point.x - previous.x, point.y - previous.y)}px;transform:rotate(${Math.atan2(point.y - previous.y, point.x - previous.x)}rad)`;
+        sparks.append(line);
+        later(() => line.remove(), 180);
+      }
+      hit(previous, point);
+      previous = point;
+    }
+    function up(e) {
+      if (pointer === e.pointerId) {
+        pointer = null;
+        previous = null;
+      }
+    }
+    function click(e) {
+      // Native keyboard / assistive clicks have detail=0. Pointer clicks were handled on down.
+      if (e.detail === 0) activate(e.target.closest("[data-balloon]"), true);
+    }
+    field.addEventListener("pointerdown", down);
+    field.addEventListener("pointermove", move);
+    field.addEventListener("pointerup", up);
+    field.addEventListener("pointercancel", up);
+    field.addEventListener("lostpointercapture", up);
+    field.addEventListener("click", click);
+    finish.addEventListener("click", end);
+    wave();
+    raf = requestAnimationFrame(frame);
+    return () => {
+      disposed = true;
+      pointer = null;
+      previous = null;
+      cancelAnimationFrame(raf);
+      timers.forEach(clearTimeout);
+      timers.clear();
+      field.removeEventListener("pointerdown", down);
+      field.removeEventListener("pointermove", move);
+      field.removeEventListener("pointerup", up);
+      field.removeEventListener("pointercancel", up);
+      field.removeEventListener("lostpointercapture", up);
+      field.removeEventListener("click", click);
+      finish.removeEventListener("click", end);
+    };
+  }
+  const api = {
+    TOTAL,
+    PER_GEM,
+    create,
+    chooseMode,
+    pop,
+    credit,
+    intersects,
+    flight,
+    balloon,
+    fruit,
+    mount,
+  };
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  root.LearningParty = api;
+})(typeof window !== "undefined" ? window : globalThis);

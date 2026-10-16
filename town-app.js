@@ -23,6 +23,7 @@
     gateAnswer = 0,
     toastTimer,
     offlineReady = false;
+  let disposeParty = null;
   try {
     const raw = localStorage.getItem(KEY),
       legacy = localStorage.getItem(OLD);
@@ -253,6 +254,8 @@
     render();
   }
   function render() {
+    disposeParty?.();
+    disposeParty = null;
     hud();
     let html = "";
     if (route === "welcome")
@@ -363,8 +366,12 @@
           )}<button class="menu-card" data-action="album">${icon("book")}<b>Моя абетка</b><small>Усі 33 літери</small></button></div><div class="families">${S.FAMILIES.map((f, i) => `<button data-action="family" data-value="${i}" class="${family === i ? "active" : ""}" ${L.familyOpen(state, i) ? "" : "disabled"}>${f[0]}</button>`).join("")}</div><p class="note parent-note">Кнопка «Грати» сама добирає завдання. Перша гра коротко перевіряє, які літери дитина вже знає. Нова літера з’являється, коли попередні впізнано на слух, а літера вважається вивченою після впізнавання в різні дні. Ряд складів відкривається, коли знайомі його літери. У меню батьків можна відкрити все.</p>`,
       );
     if (route === "lesson") html = lessonHTML();
-    if (route === "reward")
-      html = `<div class="cover"><section class="modal reward"><div class="big-gem">${icon("gem")}</div><h2>У тебе вийшло!</h2><p>Ще три кристали для твого острова.</p>${btn("again", "play", "Ще пограти", "primary")}${btn("reward-home", "home", "На острів", "secondary")}</section></div>`;
+    if (route === "reward") {
+      if (!run.party.closed)
+        html = '<div class="cover" id="learning-party"></div>';
+      else
+        html = `<div class="cover"><section class="modal reward"><div class="big-gem">${icon("check")}</div><h2>У тебе вийшло!</h2><div class="reward-discoveries" aria-label="Сьогодні грали з">${[...new Set(run.discoveries || [])].slice(0,5).map(t=>`<span>${t}</span>`).join("")}</div><div class="reward-total">${icon("gem")} +${3 + run.party.credited}</div><p>3 за заняття${run.party.credited ? ` + ${run.party.credited} за свято` : ""}. Можна повертатися до друзів!</p>${btn("reward-home", "home", "На острів", "primary")}${btn("again", "play", "Ще пограти", "secondary")}</section></div>`;
+    }
     if (route === "gate")
       html = modal(
         "Для дорослих",
@@ -378,6 +385,27 @@
         `<div class="alphabet">${[..."АБВГҐДЕЄЖЗИІЇЙКЛМНОПРСТУФХЦЧШЩЬЮЯ"].map((l) => `<button data-action="letter-audio" data-value="${l}" class="${{ mastered: "learned", known: "learning", learning: "learning" }[L.status(state, "L:" + l)] || ""}">${l}</button>`).join("")}</div><div class="letter-detail" id="letter-detail">Торкнись літери, щоб послухати.</div><div class="audio-status" id="audio-status"></div>`,
       );
     $("ui").innerHTML = html;
+    if ($("learning-party")) {
+      const current = run;
+      disposeParty = LearningParty.mount($("learning-party"), run.party, {
+        icon, mode: run.partyMode,
+        reduced: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+        onPop(id) {
+          if (route !== "reward" || run !== current) return null;
+          const result = LearningParty.credit(state, current.party, id);
+          if (result) {
+            sfx([run.partyMode === "fruit" ? 520 : 700, 900 + result.count * 35], .07, "sine");
+            if (result.gems) { save(); hud(); }
+          }
+          return result;
+        },
+        onEnd() {
+          if (route !== "reward" || run !== current) return;
+          render();
+          document.querySelector('[data-action="reward-home"]')?.focus();
+        },
+      });
+    }
     if (route === "build") preview();
   }
   function preview() {
@@ -393,7 +421,7 @@
     resetAudio();
     route = "lesson";
     world.paused = true;
-    run = { mode, index: 0, total: 3, rewarded: false, previous: null, used: [] };
+    run = { mode, index: 0, total: 3, rewarded: false, previous: null, used: [], discoveries: [] };
     if (mode === "auto") {
       run.total = 5;
       // The very first guided game finds out which letters the child already knows.
@@ -476,7 +504,9 @@
     else if (intro) audio.play("phrase", intro);
   }
   function finishRun() {
-    S.reward(state, run);
+    if (!S.reward(state, run)) return;
+    run.party = LearningParty.create();
+    run.partyMode = LearningParty.chooseMode();
     if (run.place) state.placed = true;
     save();
     audio.stop();
@@ -523,7 +553,8 @@
         .map((v, i) => {
           const text = typeof v === "string" ? v : v.text,
             used = task.picked.includes(i) || task.matched.includes(i);
-          return `<button class="answer ${text.length > 1 ? "long" : ""} ${task.selected.includes(i) ? "selected" : ""} ${task.matched.includes(i) ? "matched" : ""} ${task.hintIndex === i ? "hint" : ""}" data-action="answer" data-value="${i}" ${task.done || used || (hearing && !task.heard) ? "disabled" : ""}>${text}</button>`;
+          const correct = task.done && !task.placement && (text === task.target || used);
+          return `<button class="answer ${correct ? "correct" : ""} ${text.length > 1 ? "long" : ""} ${task.selected.includes(i) ? "selected" : ""} ${task.matched.includes(i) ? "matched" : ""} ${task.hintIndex === i ? "hint" : ""}" data-action="answer" data-value="${i}" ${task.done || used || (hearing && !task.heard) ? "disabled" : ""}>${text}</button>`;
         })
         .join("");
     return `<div class="cover"><section class="lesson-shell"><div class="lesson-head">${btn("back", "back", "Назад")}<div><b>${modes[m][0]}</b><div class="dots">${run.place ? "" : Array.from({ length: run.total }, (_, i) => `<i class="${i < run.index ? "done" : i === run.index ? "current" : ""}"></i>`).join("")}</div></div><div class="spacer"></div>${btn("play-task", "sound", "Послухати ще раз")}${task.placement ? "" : btn("help", "hand", "Підказка")}</div><h3 class="lesson-title">${task.done && !task.placement ? "Чудово!" : hearing ? "Послухай і знайди" : m === "pairs" ? "Знайди дві однакові" : m === "blend" ? "З’єднай літери" : m === "words" ? "Збери слово зі складів" : m === "discover" ? "Торкнись і послухай" : "Знайди таку саму"}</h3><div class="lesson-board">${board}</div><div class="answers">${answers}</div><div class="audio-status" id="audio-status"></div><div class="lesson-feedback">${task.feedback || ""}</div>${(task.done && !task.placement) || m === "discover" ? btn("next", "check", "Далі", "primary lesson-next", m === "discover" && !task.heard ? "disabled" : "") : ""}</section></div>`;
@@ -562,8 +593,9 @@
   }
   function complete() {
     task.done = true;
+    run.discoveries.push(...(task.mode === "pairs" ? [...task.target] : [task.target]));
     task.feedback = task.hinted
-      ? "Разом вийшло! Наступного разу — самостійно."
+      ? "Разом вийшло!"
       : "У тебе вийшло!";
     chimeCorrect();
     S.skill(state, task.mode, task.target, task.hinted);
@@ -657,7 +689,7 @@
       ];
       if (task.options[i].text === expected) {
         task.picked.push(i);
-        if (task.picked.length === 2) {
+        if (task.picked.length === (m === "words" ? task.parts.length : [...task.target].length)) {
           complete();
           return;
         }
@@ -1090,6 +1122,7 @@
       if (task.placement) return;
       if (!task.done && !(task.mode === "discover" && task.heard)) return;
       if (task.mode === "discover") {
+        run.discoveries.push(task.target);
         S.skill(state, "discover", task.target, true);
         L.record(state, "discover", task.target, true);
         save();
@@ -1200,7 +1233,7 @@
       .then((reg) => {
         const check = async () => {
           if (reg.active?.state === "activated") {
-            const cache = await caches.open("emilia-living-v5-3");
+            const cache = await caches.open("emilia-living-v5-6-party");
             offlineReady = (
               await Promise.all(
                 [

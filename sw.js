@@ -1,5 +1,5 @@
 "use strict";
-const CACHE = "emilia-living-v5-3";
+const CACHE = "emilia-living-v5-6-party";
 const ASSETS = [
   "./",
   "index.html",
@@ -8,6 +8,8 @@ const ASSETS = [
   "navigation.js",
   "town-state.js",
   "learning.js",
+  "learning-party.js",
+  "learning-party.css",
   "art.js",
   "surface-art.js",
   "atmosphere.js",
