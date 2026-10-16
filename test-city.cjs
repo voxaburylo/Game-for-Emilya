@@ -56,7 +56,7 @@ for (const [a, b] of edges)
 for (const rects of [[plots[0]], plots.slice(0, 2), plots]) {
   const g = I.build(rects);
   assert(g.userData.grassCount > 0);
-  assert(g.userData.grassCount <= 520, "grass density stays bounded as city grows");
+  assert(g.userData.grassCount <= 360, "grass density stays bounded as city grows");
   assert(g.children.some((child) => child.isInstancedMesh));
   assert.equal(typeof g.children[0].material.onBeforeCompile, "function");
   g.traverse((o) => {

@@ -86,9 +86,22 @@
 
   var memory = Number(navigator.deviceMemory || 0);
   var cores = Number(navigator.hardwareConcurrency || 0);
+  var userAgent = String(navigator.userAgent || "");
+  var ios = /iPad|iPhone|iPod/.test(userAgent) ||
+    (navigator.platform === "MacIntel" && Number(navigator.maxTouchPoints || 0) > 1);
+  var mobileSafari = ios && /AppleWebKit/.test(userAgent) &&
+    !/CriOS|FxiOS|EdgiOS|OPiOS/.test(userAgent);
   var lowPower = (memory > 0 && memory <= 4) || (cores > 0 && cores <= 4);
+  var cssPixels = Math.max(1, Number(screen.width || 0) * Number(screen.height || 0));
+  // Safari often reports only a few CPU cores, which used to force the game
+  // down to a 1x canvas without antialiasing. Keep its scene budget modest,
+  // but render an iPhone canvas sharply at 2x. Large iPads use 1.5x.
+  var pixelRatioCap = mobileSafari ? (cssPixels > 700000 ? 1.5 : 2) : (lowPower ? 1.25 : 1.75);
   window.EmiliaCompatibility = {
     lowPower: lowPower,
+    mobileSafari: mobileSafari,
+    antialias: mobileSafari || !lowPower,
+    pixelRatioCap: pixelRatioCap,
     touch: "ontouchstart" in window || Number(navigator.maxTouchPoints || 0) > 0,
   };
   document.documentElement.classList.toggle("low-power", lowPower);

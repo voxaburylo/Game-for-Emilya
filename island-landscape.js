@@ -102,15 +102,16 @@
     topGeometry.setIndex(topIndices);
     topGeometry.computeVertexNormals();
     const grassMaterial = new T.MeshStandardMaterial({
-        color: "#70aa3e",
-        roughness: 1,
+        color: "#69a649",
+        roughness: 0.96,
       }),
       hash = (n) => {
         const value = Math.sin(n * 127.1 + 311.7) * 43758.5453;
         return value - Math.floor(value);
       };
-    // Large, quiet colour variation keeps the ground organic without a tiled
-    // texture or another downloaded asset.
+    // Broad overlapping colour fields read as real ground from a distance.
+    // There is deliberately no high-frequency grain: it crawled and sparkled
+    // when the camera moved on a phone screen.
     grassMaterial.onBeforeCompile = (shader) => {
       shader.vertexShader = "varying vec2 islandGrassP;\n" + shader.vertexShader;
       shader.vertexShader = shader.vertexShader.replace(
@@ -121,14 +122,15 @@
       shader.fragmentShader = shader.fragmentShader.replace(
         "#include <color_fragment>",
         `#include <color_fragment>
-        float broad=sin(islandGrassP.x*.16+sin(islandGrassP.y*.11)*1.7)*.5+.5;
-        float crossing=sin(islandGrassP.y*.21-islandGrassP.x*.07)*.5+.5;
-        float grain=sin(dot(islandGrassP,vec2(2.31,1.73)))*.5+.5;
-        vec3 shade=mix(vec3(.82,.94,.72),vec3(1.08,1.03,.78),broad*.62+crossing*.38);
-        diffuseColor.rgb*=shade*(.97+grain*.045);`,
+        float broad=sin(islandGrassP.x*.095+sin(islandGrassP.y*.071)*1.9)*.5+.5;
+        float crossing=sin(islandGrassP.y*.145-islandGrassP.x*.052)*.5+.5;
+        float meadow=sin((islandGrassP.x+islandGrassP.y)*.29+sin(islandGrassP.x*.08))* .5+.5;
+        float field=clamp(broad*.52+crossing*.31+meadow*.17,0.,1.);
+        vec3 shade=mix(vec3(.70,.87,.64),vec3(1.10,1.055,.79),field);
+        diffuseColor.rgb*=shade;`,
       );
     };
-    grassMaterial.customProgramCacheKey = () => "emilia-organic-grass-v1";
+    grassMaterial.customProgramCacheKey = () => "emilia-organic-grass-v2";
     const top = new T.Mesh(topGeometry, grassMaterial);
     top.receiveShadow = true;
     g.add(top);
@@ -139,44 +141,70 @@
       "position",
       new T.Float32BufferAttribute(
         [
-          -0.035, 0, 0, 0.035, 0, 0, 0, 0.13, 0,
-          0, 0, -0.035, 0, 0, 0.035, 0, 0.11, 0,
-          -0.025, 0, -0.025, 0.025, 0, 0.025, 0, 0.15, 0,
+          -0.06, 0, 0, 0.06, 0, 0, 0.012, 0.22, 0,
+          0, 0, -0.06, 0, 0, 0.06, -0.012, 0.2, 0.015,
+          -0.05, 0, -0.032, 0.05, 0, 0.032, -0.018, 0.26, 0.012,
+          -0.04, 0, 0.045, 0.04, 0, -0.045, 0.025, 0.17, -0.012,
         ],
         3,
       ),
     );
     tuftGeometry.computeVertexNormals();
     const requested = rects.reduce(
-        (sum, rect) => sum + Math.max(2, Math.floor((rect.w * rect.h) / 24)),
+        (sum, rect) => sum + Math.max(3, Math.floor((rect.w * rect.h) / 24)),
         0,
       ),
-      tuftLimit = options.lowPower ? 220 : 520,
+      tuftLimit = options.lowPower ? 180 : 360,
       points = [];
     for (let r = 0; r < rects.length && points.length < tuftLimit; r++) {
       const rect = rects[r],
-        count = Math.max(2, Math.floor((rect.w * rect.h) / 24));
+        count = Math.max(3, Math.floor((rect.w * rect.h) / 24));
       for (let i = 0; i < count && points.length < tuftLimit; i++) {
         const seed = r * 977 + i * 37 + 19,
           x = rect.x + (hash(seed) - 0.5) * Math.max(0, rect.w - 1),
           z = rect.z + (hash(seed + 11) - 0.5) * Math.max(0, rect.h - 1);
-        if (!options.blocked?.(x, z))
-          points.push({ x, z, scale: 0.7 + hash(seed + 23) * 0.75, seed });
+        const meadow =
+          Math.sin(x * 0.27 + Math.sin(z * 0.11)) +
+          Math.sin(z * 0.31 - x * 0.08);
+        if (!options.blocked?.(x, z) && meadow > -0.5)
+          points.push({ x, z, scale: 0.75 + hash(seed + 23) * 0.65, seed });
       }
     }
-    if (points.length) {
+    if (points.length && root.ParkAssets?.instances) {
+      const tufts = new T.Group(),
+        transforms = points.map((point) => ({
+          x: point.x,
+          y: 0.105,
+          z: point.z,
+          scale: point.scale,
+          height: 0.85 + hash(point.seed + 41) * 0.3,
+          rotation: hash(point.seed + 31) * Math.PI * 2,
+        }));
+      tufts.add(
+        root.ParkAssets.instances(
+          "grass_A",
+          transforms.filter((_, index) => index % 2 === 0),
+        ),
+        root.ParkAssets.instances(
+          "grass_B",
+          transforms.filter((_, index) => index % 2 === 1),
+        ),
+      );
+      tufts.name = "Tiny Treats instanced meadow grass";
+      g.add(tufts);
+    } else if (points.length) {
       const tufts = new T.InstancedMesh(
           tuftGeometry,
-          new T.MeshStandardMaterial({
-            color: "#4f9139",
-            roughness: 1,
+          new T.MeshBasicMaterial({
+            color: "#ffffff",
             side: T.DoubleSide,
             vertexColors: true,
+            toneMapped: false,
           }),
           points.length,
         ),
         helper = new T.Object3D(),
-        tuftColors = ["#5f9e43", "#70ad4c", "#7ab554", "#629f42"];
+        tuftColors = ["#4c8d3d", "#5b9b43", "#6ba74b", "#79b354", "#568f39"];
       points.forEach((point, i) => {
         helper.position.set(point.x, 0.063, point.z);
         helper.rotation.y = hash(point.seed + 31) * Math.PI;
@@ -185,7 +213,7 @@
         tufts.setMatrixAt(i, helper.matrix);
         tufts.setColorAt(i, new T.Color(tuftColors[i % tuftColors.length]));
       });
-      tufts.name = "Sparse instanced grass tufts";
+      tufts.name = "Fallback instanced grass tufts";
       tufts.frustumCulled = true;
       tufts.receiveShadow = false;
       tufts.castShadow = false;

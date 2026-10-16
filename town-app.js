@@ -1688,7 +1688,7 @@
         const check = async () => {
           if (reg.active?.state === "activated") {
             const cache = await caches.open(
-              "emilia-living-v5-31-complete-learning-library",
+              "emilia-living-v5-33-safari-grass-catalog",
             );
             offlineReady = (
               await Promise.all(

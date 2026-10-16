@@ -21,11 +21,12 @@ for m in data['materials']:
  else:bs.inputs['Base Color'].default_value=m['color']
  materials.append(mat)
 parts=[p for model in data['models'].values() for p in model['parts']]
+selection=next((a.split('=',1)[1] for a in sys.argv if a.startswith('--only=')),None)
+selections=set(selection.split(',')) if selection else None
 def arr(a,kind):return struct.unpack_from('<'+str(a['count'])+kind,binary,a['offset'])
 (DATA/'thumbs').mkdir(exist_ok=True)
 for job in jobs:
- selection=next((a.split('=',1)[1] for a in sys.argv if a.startswith('--only=')),None)
- if selection and job['id']!=selection:continue
+ if selections and job['id'] not in selections:continue
  objects=[]
  for record in job['parts']:
   p=parts[record['part']];pos=arr(p['position'],'f');uv=arr(p['uv'],'f');indices=arr(p['index'],'I');flat=record['matrix'];mat=Matrix([[flat[c*4+r] for c in range(4)] for r in range(4)])

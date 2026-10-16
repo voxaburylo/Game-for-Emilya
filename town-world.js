@@ -28,18 +28,24 @@
       this.petShowcaseStart = 0;
       this.jumpY = 0;
       this.jumpV = 0;
-      this.lowPower = !!window.EmiliaCompatibility?.lowPower;
+      const compatibility = window.EmiliaCompatibility || {};
+      this.lowPower = !!compatibility.lowPower;
+      this.mobileSafari = !!compatibility.mobileSafari;
       this.reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
       this.scene = new T.Scene();
       this.scene.background = new T.Color("#8ccde7");
       this.scene.fog = new T.Fog("#8ccde7", 180, 330);
       this.renderer = new T.WebGLRenderer({
-        antialias: !this.lowPower,
+        antialias: compatibility.antialias !== false,
         powerPreference: "high-performance",
+        alpha: false,
+        stencil: false,
       });
-      this.renderer.setPixelRatio(
-        Math.min(devicePixelRatio || 1, this.lowPower ? 1 : 1.5),
+      this.renderPixelRatio = Math.min(
+        devicePixelRatio || 1,
+        compatibility.pixelRatioCap || (this.lowPower ? 1.25 : 1.75),
       );
+      this.renderer.setPixelRatio(this.renderPixelRatio);
       this.renderer.shadowMap.enabled = !this.lowPower;
       this.renderer.shadowMap.type = this.lowPower
         ? T.BasicShadowMap
@@ -109,6 +115,23 @@
       this.refreshRoads();
       this.setLook(state.look);
       this.setPet(state.pet);
+      const anisotropy = Math.min(
+        8,
+        this.renderer.capabilities?.getMaxAnisotropy?.() || 1,
+      );
+      this.scene.traverse((node) => {
+        const materials = Array.isArray(node.material)
+          ? node.material
+          : node.material
+            ? [node.material]
+            : [];
+        for (const material of materials)
+          for (const key of ["map", "normalMap", "roughnessMap"])
+            if (material[key]) {
+              material[key].anisotropy = anisotropy;
+              material[key].needsUpdate = true;
+            }
+      });
       const spawn = this.nav.nearest(0, 5) || { x: 0, z: 0 };
       this.hero.position.set(spawn.x, 0, spawn.z);
       this.pet.position.set(spawn.x + 1.2, 0, spawn.z + 1);
@@ -119,11 +142,12 @@
       this.resize = () => {
         const w = container.clientWidth,
           h = container.clientHeight;
-        this.renderer.setSize(w, h);
+        this.renderer.setSize(Math.max(1, Math.round(w)), Math.max(1, Math.round(h)));
         this.aspect = w / h;
         this.updateProjection();
       };
       addEventListener("resize", this.resize);
+      window.visualViewport?.addEventListener("resize", this.resize);
       this.resize();
       this.bindInput();
       this.last = performance.now();
@@ -1731,7 +1755,7 @@
         this.last = now;
         return;
       }
-      if (this.lowPower && now - this.last < 30) return;
+      if (this.lowPower && !this.mobileSafari && now - this.last < 30) return;
       const elapsed = (now - this.last) / 1000;
       this.last = now;
       const dt = Math.min(0.08, elapsed);

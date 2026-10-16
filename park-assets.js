@@ -98,6 +98,35 @@
     }
     return g;
   }
+  function instances(name, transforms) {
+    const T = root.THREE,
+      group = new T.Group(),
+      source = library?.models[name];
+    if (!source || !transforms?.length) return group;
+    const helper = new T.Object3D();
+    for (const p of source.parts) {
+      const mesh = new T.InstancedMesh(
+        p.geometry,
+        materials[p.material],
+        transforms.length,
+      );
+      transforms.forEach((transform, index) => {
+        const scale = transform.scale || 1;
+        helper.position.set(transform.x, transform.y || 0, transform.z);
+        helper.rotation.set(0, transform.rotation || 0, 0);
+        helper.scale.set(scale, scale * (transform.height || 1), scale);
+        helper.updateMatrix();
+        mesh.setMatrixAt(index, helper.matrix);
+      });
+      mesh.instanceMatrix.setUsage(T.StaticDrawUsage);
+      mesh.castShadow = false;
+      mesh.receiveShadow = true;
+      mesh.userData.parkPart = p.id;
+      group.add(mesh);
+    }
+    group.name = "Instanced " + name;
+    return group;
+  }
   function fit(g, width, depth, height) {
     const T = root.THREE,
       b = new T.Box3().setFromObject(g),
@@ -262,7 +291,7 @@
         }
       });
   }
-  const api = { load, install, create, animate, react, parts, materials };
+  const api = { load, install, create, instances, animate, react, parts, materials };
   root.ParkAssets = api;
   if (typeof module !== "undefined") module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);

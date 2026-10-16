@@ -60,7 +60,7 @@
       w: 3,
       h: 3,
       thumb: "models/thumbs/house-two-story.svg",
-      category: "home",
+      category: "city",
     },
     {
       id: "house-tower",
@@ -69,7 +69,7 @@
       w: 3,
       h: 3,
       thumb: "models/thumbs/house-tower.svg",
-      category: "home",
+      category: "city",
     },
     ...Park.items,
   ];

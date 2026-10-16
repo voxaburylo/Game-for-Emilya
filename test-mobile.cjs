@@ -38,10 +38,11 @@ for (const mode of [
 ]) assert(app.includes(`"${mode}"`), `learning mode ${mode}`);
 
 const world = read("town-world.js");
-assert(world.includes("EmiliaCompatibility?.lowPower"));
+assert(world.includes("window.EmiliaCompatibility || {}"));
 assert(world.includes('addEventListener("webglcontextlost"'));
-assert(world.includes("this.lowPower ? 1 : 1.5"));
-assert(world.includes("this.lowPower && now - this.last < 30"));
+assert(world.includes("compatibility.pixelRatioCap"));
+assert(world.includes("this.lowPower && !this.mobileSafari"));
+assert(world.includes("getMaxAnisotropy"));
 
 const compat = read("compatibility.js");
 new Function(compat);
@@ -58,7 +59,7 @@ for (const file of [
   "models/thumbs/house-tower.svg",
 ])
   assert(FILES.includes(file), `offline ${file}`);
-assert.equal(CACHE, "emilia-living-v5-31-complete-learning-library");
+assert.equal(CACHE, "emilia-living-v5-33-safari-grass-catalog");
 assert(app.includes(CACHE));
 assert(app.includes('objectButton("demolish"'), "workshop has a dedicated demolition tool");
 assert(!app.includes('btn("object-remove"'), "normal play has no delete toolbar");

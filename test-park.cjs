@@ -20,8 +20,8 @@ function test(name, f) {
   count++;
   console.log("PASS " + name);
 }
-test("139 purchases fit their placement footprints and use all 175 valid models", () => {
-  assert.equal(C.items.length, 139);
+test("159 purchases fit their placement footprints and use all 175 valid models", () => {
+  assert.equal(C.items.length, 159);
   assert.equal(Object.keys(data.models).length, 175);
   const usedParts = new Set();
   for (const d of C.items) {
@@ -44,6 +44,35 @@ test("139 purchases fit their placement footprints and use all 175 valid models"
     for (const part of model.parts)
       assert(usedParts.has(part.id), `${name} is not used by the catalog`);
 });
+test("pack details are available as individual affordable decorations", () => {
+  for (const id of [
+    "picnic-apple",
+    "picnic-mug",
+    "picnic-teapot",
+    "picnic-sandwich",
+    "picnic-basket-round",
+    "picnic-blanket-blue",
+    "picnic-blanket-green",
+    "picnic-blanket-red",
+    "play-bucket-a",
+    "play-bucket-b",
+    "play-shovel-a",
+    "play-shovel-b",
+    "play-sandcastle-a",
+    "play-sandcastle-b",
+    "play-sandcastle-c",
+    "play-tire-blue",
+    "play-tire-pink",
+    "play-tire-yellow",
+    "play-tree-large",
+    "play-tree-small",
+  ]) {
+    const item = C.items.find((candidate) => candidate.id === id);
+    assert(item, id + " is purchasable");
+    assert(item.cost > 0 && item.cost <= 7, id + " has a child-sized price");
+    assert(!Array.isArray(item.model), id + " uses its own source model");
+  }
+});
 test("five clear shop groups hide classic duplicates without breaking old saves", () => {
   assert.deepEqual(
     ParkCatalog.groups.map((group) => group.id),
@@ -62,6 +91,12 @@ test("five clear shop groups hide classic duplicates without breaking old saves"
   for (const id of ["flowers", "bench", "tree", "house", "fountain"])
     assert(!visible.some((item) => item.id === id), id + " duplicate is hidden");
   assert(visible.some((item) => item.id === "swing"));
+  for (const id of ["home-house", "house-two-story", "house-tower"]) {
+    const building = S.ITEMS.find((item) => item.id === id);
+    assert(building, id + " exists");
+    assert(ParkCatalog.inGroup(building, "city"), id + " belongs to City");
+    assert(!ParkCatalog.inGroup(building, "home"), id + " is absent from Yard");
+  }
   for (const id of ["flowers", "bench", "tree", "house", "fountain"]) {
     const old = S.fresh();
     old.gems = 100;

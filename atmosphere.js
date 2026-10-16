@@ -251,56 +251,6 @@
       group.add(flag);
       flags.push(flag);
     }
-    const grassPos = [],
-      grassColor = [],
-      color = new T.Color();
-    for (let i = 0; i < 160; i++) {
-      const x = Math.sin(i * 12.17) * 17,
-        z = Math.cos(i * 7.83) * 15;
-      if (
-        Math.abs(x) < 2 ||
-        Math.abs(z + 6) < 1.6 ||
-        root.TownState.water(x, z) ||
-        root.TownState.FIXED.some((f) => Math.hypot(f.x - x, f.z - z) < 4)
-      )
-        continue;
-      for (let j = 0; j < 3; j++) {
-        const a = j * 2.1 + i,
-          dx = Math.cos(a) * 0.09,
-          dz = Math.sin(a) * 0.09,
-          h = 0.12 + (i % 4) * 0.045;
-        grassPos.push(
-          x - dx,
-          0.06,
-          z - dz,
-          x + dx,
-          0.06,
-          z + dz,
-          x + 0.08,
-          h,
-          z + 0.03,
-        );
-        color.set(i % 3 ? "#438f38" : "#75ae31");
-        for (let k = 0; k < 3; k++) grassColor.push(color.r, color.g, color.b);
-      }
-    }
-    const grassGeo = new T.BufferGeometry();
-    grassGeo.setAttribute(
-      "position",
-      new T.Float32BufferAttribute(grassPos, 3),
-    );
-    grassGeo.setAttribute("color", new T.Float32BufferAttribute(grassColor, 3));
-    grassGeo.computeVertexNormals();
-    group.add(
-      new T.Mesh(
-        grassGeo,
-        new T.MeshStandardMaterial({
-          vertexColors: true,
-          side: T.DoubleSide,
-          roughness: 1,
-        }),
-      ),
-    );
     return {
       group,
       clouds,
