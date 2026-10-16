@@ -79,11 +79,17 @@ test("planner: valid options, no repeats in a run, due reviews come back", () =>
   for (let i = 0; i < 5; i++) {
     run.index = i;
     const t = L.plan(s, run, D + 1, () => 0.9);
-    if (["blend", "words"].includes(t.mode))
+    if (t.mode === "blend")
       assert.equal(
         t.options.map((o) => o.text).sort().join(""),
-        [...(t.mode === "words" ? t.word.parts : [...t.target])].sort().join(""),
+        [...t.target].sort().join(""),
       );
+    if (t.mode === "words")
+      for (const part of t.word.parts)
+        assert(
+          t.options.filter((option) => option.text === part).length >=
+            t.word.parts.filter((value) => value === part).length,
+        );
     if (["letters", "hear", "hear-syllable"].includes(t.mode)) {
       assert.equal(new Set(t.options).size, 3);
       assert(t.options.includes(t.target));
@@ -118,7 +124,7 @@ test("confusions and look-alikes become distractors", () => {
   assert(S.valid(s));
 });
 
-test("syllable families open with known letters; words with heard syllables", () => {
+test("syllable families open with known letters; words follow introduced letters", () => {
   const s = S.fresh();
   assert(L.familyOpen(s, 0));
   assert(!L.familyReady(s, 0));
@@ -132,7 +138,7 @@ test("syllable families open with known letters; words with heard syllables", ()
   const t = L.plan(s, { index: 1, used: [] }, D);
   assert.equal(t.key, "S:МА");
   assert.equal(t.mode, "blend");
-  assert.deepEqual(L.readyWords(s), []);
+  assert.deepEqual(L.readyWords(s).map((w) => w.text), ["МАМА"]);
   L.record(s, "blend", "МА", true, D);
   assert.deepEqual(L.readyWords(s).map((w) => w.text), ["МАМА"]);
   assert.equal(L.plan(s, { index: 0, used: [] }, D).mode, "hear-syllable");
@@ -166,12 +172,13 @@ test("continued games prefer new letters and advance to another syllable family"
   assert(pair.keys.every((key) => !repeated.has(key)));
 });
 
-test("large syllable library is voiced, varied and has no duplicate trains", () => {
-  assert.equal(S.FAMILIES.flat().length, 30);
-  assert.equal(S.SYLLABLE_TRAINS.length, 180);
+test("complete syllable library is varied and has no duplicate trains", () => {
+  assert.equal(S.FAMILIES.length, 22);
+  assert.equal(S.FAMILIES.flat().length, 220);
+  assert.equal(S.SYLLABLE_TRAINS.length, 2420);
   assert.equal(
     new Set(S.SYLLABLE_TRAINS.map((parts) => parts.join("-"))).size,
-    180,
+    2420,
   );
   const voiced = new Set(S.FAMILIES.flat());
   assert(
@@ -180,6 +187,22 @@ test("large syllable library is voiced, varied and has no duplicate trains", () 
         [2, 3].includes(parts.length) && parts.every((part) => voiced.has(part)),
     ),
   );
+});
+
+test("word library is large, picture-led, unique and covers every Ukrainian letter", () => {
+  assert(S.WORDS.length >= 180, S.WORDS.length);
+  assert.equal(new Set(S.WORDS.map((word) => word.text)).size, S.WORDS.length);
+  for (const word of S.WORDS) {
+    assert.equal(word.parts.join(""), word.text, word.text);
+    assert(word.emoji, word.text);
+    assert(/^[А-ЯҐЄІЇЬ’']{1,16}$/.test(word.text), word.text);
+  }
+  const used = new Set(S.WORDS.flatMap((word) => [...word.text]));
+  for (const letter of require("./core.js").LETTERS)
+    assert(used.has(letter), "missing word for " + letter);
+  const all = S.fresh();
+  all.allLevels = true;
+  assert.equal(L.readyWords(all).length, S.WORDS.length);
 });
 
 test("sound-in-syllable and train tasks measure recall instead of copying", () => {

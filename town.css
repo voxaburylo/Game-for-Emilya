@@ -872,6 +872,16 @@ p {
   width: 80px;
   height: 80px;
 }
+.word-emoji {
+  width: 106px;
+  height: 106px;
+  margin: auto;
+  display: grid;
+  place-items: center;
+  font-size: 76px;
+  line-height: 1;
+  filter: drop-shadow(0 6px 5px rgba(76, 75, 61, 0.18));
+}
 .answers {
   display: flex;
   gap: 15px;

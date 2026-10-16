@@ -9,9 +9,9 @@
   const INTERVAL = [0, 0, 1, 2, 4, 7],
     MASTERED = 3,
     KNOWN = 2,
-    // Ь has no sound of its own; the album explains it instead of lessons.
-    ORDER = C.LETTERS.filter((l) => l !== "Ь"),
-    VOWELS = [..."АОУІИ"],
+    // Ь is learned visually; it has no separate sound recording.
+    ORDER = C.LETTERS.slice(),
+    VOWELS = [..."АОУІИЕЄЇЮЯ"],
     RECALL = ["hear", "hear-syllable", "sound-part", "train"],
     SIMILAR = [
       ["И", "І"], ["І", "Ї"], ["Е", "Є"], ["Ш", "Щ"], ["Б", "В"], ["П", "Н"],
@@ -59,7 +59,7 @@
       const it = item(s, key);
       it.seen++;
       it[solo ? "ok" : "miss"]++;
-      if (RECALL.includes(mode)) {
+      if (RECALL.includes(mode) || (mode === "letters" && target === "Ь")) {
         if (solo) promote(it, today);
         else {
           it.box = Math.max(0, it.box - 1);
@@ -143,8 +143,27 @@
     return syllable ? "S:" + syllable : null;
   }
   function readyWords(s) {
-    return S.WORDS.filter(
-      (w) => s.allLevels || w.parts.every((p) => box(s, "S:" + p) >= 1),
+    return S.WORDS.filter((w) =>
+      s.allLevels ||
+      [...w.text]
+        .filter((letter) => /[А-ЯҐЄІЇЬ]/.test(letter))
+        .every((letter) => box(s, "L:" + letter) >= 1),
+    );
+  }
+  function wordOptions(s, word) {
+    const knownLetters = new Set(activeLetters(s)),
+      pool = [
+        ...readyWords(s).flatMap((entry) => entry.parts),
+        ...S.FAMILIES.flat().filter((part) =>
+          [...part].every((letter) => knownLetters.has(letter)),
+        ),
+      ].filter((part) => !word.parts.includes(part)),
+      distractors = [...new Set(shuffle(pool))].slice(
+        0,
+        word.parts.length === 1 ? 2 : 1,
+      );
+    return shuffle(
+      [...word.parts, ...distractors].map((text, id) => ({ text, id })),
     );
   }
   const readySyllables = (s) =>
@@ -160,7 +179,9 @@
 
   // Answer options: the target plus confusions first, then look-alikes.
   function letterOptions(s, target, n = 3) {
-    const pool = activeLetters(s).filter((l) => l !== target),
+    const pool = activeLetters(s).filter(
+        (l) => l !== target && (target === "Ь" || l !== "Ь"),
+      ),
       confused = Object.entries(s.conf)
         .filter(([k]) => k.startsWith(target + "|"))
         .sort((a, b) => b[1] - a[1])
@@ -241,7 +262,7 @@
     const t = key.slice(2),
       b = box(s, key);
     if (key[0] === "L") {
-      const mode = b <= 0 ? "letters" : "hear";
+      const mode = b <= 0 || t === "Ь" ? "letters" : "hear";
       return { mode, target: t, options: letterOptions(s, t) };
     }
     if (key[0] === "S") {
@@ -252,13 +273,13 @@
     const w = S.WORDS.find((w) => w.text === t);
     return {
       mode: "words", target: t, word: w,
-      options: shuffle(w.parts.map((text, id) => ({ text, id }))),
+      options: wordOptions(s, w),
     };
   }
   // Next task in a guided ("Грати") session. run: { index, used: [], newDone, pairsDone, wordsDone }.
   function plan(s, run, today = day(), random = Math.random) {
     const used = new Set(run.used),
-      met = Object.keys(s.items).filter((k) => k[0] !== "W" && k !== "L:Ь" && !used.has(k)),
+      met = Object.keys(s.items).filter((k) => k[0] !== "W" && !used.has(k)),
       weak = met
         .filter((k) => s.items[k].box < KNOWN)
         .sort((a, b) => s.items[a].box - s.items[b].box || s.items[a].seen - s.items[b].seen),
@@ -311,7 +332,7 @@
     else {
       // Everything is mastered and nothing is due: practise the oldest review.
       const all = Object.keys(s.items)
-        .filter((k) => k[0] === "L" && k !== "L:Ь")
+        .filter((k) => k[0] === "L")
         .sort((a, b) => s.items[a].due - s.items[b].due);
       key = all.find((k) => !used.has(k)) || all[0] || "L:" + ORDER[0];
     }
@@ -385,7 +406,7 @@
   const api = {
     INTERVAL, MASTERED, KNOWN, ORDER,
     day, keyOf, record, confuse, box, status,
-    activeLetters, familyReady, familyOpen, nextFamily, readyWords, readySyllables,
+    activeLetters, familyReady, familyOpen, nextFamily, readyWords, wordOptions, readySyllables,
     readyTrains, progress, letterOptions, syllableOptions, soundPartTask,
     trainTask, plan, placementTask, placementResult,
   };

@@ -58,7 +58,7 @@ for (const file of [
   "models/thumbs/house-tower.svg",
 ])
   assert(FILES.includes(file), `offline ${file}`);
-assert.equal(CACHE, "emilia-living-v5-30-city-playground-learning");
+assert.equal(CACHE, "emilia-living-v5-31-complete-learning-library");
 assert(app.includes(CACHE));
 assert(app.includes('objectButton("demolish"'), "workshop has a dedicated demolition tool");
 assert(!app.includes('btn("object-remove"'), "normal play has no delete toolbar");

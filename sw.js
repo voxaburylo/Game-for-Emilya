@@ -1,5 +1,5 @@
 "use strict";
-const CACHE = "emilia-living-v5-30-city-playground-learning";
+const CACHE = "emilia-living-v5-31-complete-learning-library";
 const ASSETS = [
   "park.css",
   "park-catalog.js",
@@ -14,6 +14,7 @@ const ASSETS = [
   "navigation.js",
   "town-state.js",
   "learning.js",
+  "learning-content.js",
   "learning-party.js",
   "learning-party.css",
   "art.js",

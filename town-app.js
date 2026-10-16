@@ -625,7 +625,7 @@
       previous: null,
       // A continued game remembers recent material, so "Ще пограти" really
       // continues the learning path instead of replaying the same three cards.
-      used: [...new Set(carry)].slice(-36),
+      used: [...new Set(carry)].slice(-600),
       discoveries: [],
       newItems: [],
     };
@@ -649,14 +649,16 @@
   }
   // Free play: the child picked the exercise, the game picks the content.
   function freeTask(mode) {
-    const letters = L.activeLetters(state);
+    const letters = L.activeLetters(state),
+      audibleLetters = letters.filter((letter) => letter !== "Ь");
     if (mode === "sound-part")
       return L.soundPartTask(state, Math.random, run.used);
     if (mode === "train") return L.trainTask(state, run.used);
     if (["letters", "hear"].includes(mode)) {
-      const unused = letters.filter((l) => !run.used.includes("L:" + l)),
+      const pool = mode === "hear" ? audibleLetters : letters,
+        unused = pool.filter((l) => !run.used.includes("L:" + l)),
         target = Core.choose(
-          unused.length ? unused : letters,
+          unused.length ? unused : pool,
           state.letterScores,
           run.previous,
         );
@@ -695,7 +697,7 @@
         target: w.text,
         key: "W:" + w.text,
         word: w,
-        options: Core.shuffle(w.parts.map((text, id) => ({ text, id }))),
+        options: L.wordOptions(state, w),
       };
     }
     family = L.nextFamily(state, family, run.used);
@@ -756,7 +758,7 @@
     if (t.word) Object.assign(task, t.word, { target: t.word.text });
     if (t.key) run.used.push(t.key);
     if (t.keys) run.used.push(...t.keys);
-    run.used = [...new Set(run.used)].slice(-36);
+    run.used = [...new Set(run.used)].slice(-600);
     if (t.isNew) run.newDone = true;
     if (mode === "pairs") run.pairsDone = true;
     if (mode === "sound-part") run.soundDone = true;
@@ -788,7 +790,7 @@
     chimeCorrect();
     audio.play("phrase", "reward");
   }
-  function picture(kind) {
+  function picture(kind, emoji) {
     const paths = {
       mother:
         '<circle cx="50" cy="34" r="20" fill="#d7aa8b"/><path d="M26 35Q22 5 50 8Q79 7 76 40L67 29Q40 35 32 23L31 46" fill="#745d4b"/><path d="M17 94Q17 58 50 58Q83 58 83 94" fill="#b78291"/>',
@@ -806,6 +808,8 @@
       strong:
         '<path d="M23 75V43L35 25L49 34L40 47L45 61Q70 38 83 63L79 83H36Z" fill="#cfad8d"/>',
     };
+    if (!kind && emoji)
+      return `<div class="word-emoji" aria-hidden="true">${emoji}</div>`;
     return `<svg class="word-picture" viewBox="0 0 100 100" aria-hidden="true">${paths[kind] || paths.frame}</svg>`;
   }
   function lessonHTML() {
@@ -823,7 +827,7 @@
     else if (m === "discover")
       board = `<button class="letter-block syllable-card" data-action="play-task">${[...task.target].map((l) => "<span>" + l + "</span>").join("")}</button>`;
     else if (m === "blend" || m === "words") {
-      board = `${m === "words" ? picture(task.picture) : ""}<div><div class="syllable-display">${task.target}</div><div class="slots ${task.done ? "joined" : ""}">${(m === "words" ? task.parts : [...task.target]).map((v, i) => `<div class="slot ${task.picked.length > i ? "filled" : ""}">${task.picked.length > i ? v : "·"}</div>`).join("")}</div></div>`;
+      board = `${m === "words" ? picture(task.picture, task.emoji) : ""}<div><div class="syllable-display">${task.target}</div><div class="slots ${task.done ? "joined" : ""}">${(m === "words" ? task.parts : [...task.target]).map((v, i) => `<div class="slot ${task.picked.length > i ? "filled" : ""}">${task.picked.length > i ? v : "·"}</div>`).join("")}</div></div>`;
     } else
       board = `<button class="letter-block" data-action="play-task">${task.target}</button>`;
     if (m !== "discover")
@@ -840,6 +844,27 @@
         .join("");
     return `<div class="cover"><section class="lesson-shell"><div class="lesson-head">${btn("back", "back", "Назад")}<div><b>${modes[m][0]}</b><div class="dots">${run.place ? "" : Array.from({ length: run.total }, (_, i) => `<i class="${i < run.index ? "done" : i === run.index ? "current" : ""}"></i>`).join("")}</div></div><div class="spacer"></div><div class="lesson-total"><b>${L.progress(state).opened.length}</b><small>літер</small></div>${btn("play-task", "sound", "Послухати ще раз")}${task.placement ? "" : btn("help", "hand", "Підказка")}</div><h3 class="lesson-title">${task.isNew && !task.done ? (task.target.length > 1 ? "Новий склад!" : "Нова літера!") : task.done && !task.placement ? "Чудово!" : m === "train" ? "Послухай і склади потяг" : m === "sound-part" ? (task.role === "first" ? "Яка літера на початку?" : "Яка літера в кінці?") : hearing ? "Послухай і знайди" : m === "pairs" ? "Знайди дві однакові" : m === "blend" ? "З’єднай літери" : m === "words" ? "Збери слово зі складів" : m === "discover" ? "Торкнись і послухай" : "Знайди таку саму"}</h3><div class="lesson-board">${board}</div><div class="answers">${answers}</div><div class="audio-status" id="audio-status"></div><div class="lesson-feedback">${task.feedback || ""}</div>${((task.done && !task.placement && !finalAnswer) || m === "discover") ? btn("next", "check", "Далі", "primary lesson-next", m === "discover" && !task.heard ? "disabled" : "") : ""}</section></div>`;
   }
+  async function playLearningUnit(kind, value) {
+    if (audio.entry(kind, value)) return audio.play(kind, value);
+    let played = false;
+    for (const letter of [...value].filter((v) => /[А-ЯҐЄІЇ]/.test(v))) {
+      if (!audio.entry("letter", letter)) continue;
+      if (!(await audio.play("letter", letter))) return false;
+      played = true;
+      await new Promise((resolve) => setTimeout(resolve, 90));
+    }
+    return played;
+  }
+  async function playWord(word) {
+    if (audio.entry("word", word.text)) return audio.play("word", word.text);
+    let played = false;
+    for (const part of word.parts) {
+      if (!(await playLearningUnit("syllable", part))) continue;
+      played = true;
+      await new Promise((resolve) => setTimeout(resolve, 120));
+    }
+    return played;
+  }
   // intro: optional spoken prompt (voice-pack phrase key) said before the target.
   async function playTask(intro) {
     if (!task || route !== "lesson") return;
@@ -853,7 +878,7 @@
       document.querySelector(".slots")?.classList.add("reading");
       for (const part of task.parts) {
         if (task !== t || route !== "lesson") return;
-        ok = (await audio.play("syllable", part)) && ok;
+        ok = (await playLearningUnit("syllable", part)) && ok;
         await new Promise((resolve) => setTimeout(resolve, 150));
       }
       if (task === t && route === "lesson" && ok) {
@@ -873,7 +898,10 @@
           : task.audioTarget || task.target;
     document.querySelector(".syllable-card")?.classList.add("reading");
     document.querySelector(".slots")?.classList.add("reading");
-    const ok = await audio.play(kind, target);
+    const ok =
+      task.mode === "words"
+        ? await playWord(task)
+        : await playLearningUnit(kind, target);
     if (task !== t || route !== "lesson") return;
     if (ok) {
       task.heard = true;
@@ -923,7 +951,7 @@
         : "letter";
     await new Promise((r) => setTimeout(r, 380));
     if (task !== t || route !== "lesson") return;
-    const ok = await audio.play(kind, value);
+    const ok = await playLearningUnit(kind, value);
     if (!ok || task !== t) return;
     if (task.mode === "pairs") {
       if (hint) audio.play("phrase", "hint");
@@ -1660,7 +1688,7 @@
         const check = async () => {
           if (reg.active?.state === "activated") {
             const cache = await caches.open(
-              "emilia-living-v5-30-city-playground-learning",
+              "emilia-living-v5-31-complete-learning-library",
             );
             offlineReady = (
               await Promise.all(

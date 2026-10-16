@@ -165,18 +165,19 @@ test("per-house furniture and lamp survive serialization", () => {
   assert.equal(S.room(restored, "studio").lamp, true);
   assert.deepEqual(S.room(restored, "home").furniture.table, { x: 2, z: 1 });
 });
-test("every letter, 30 syllables, nine words and every lesson prompt has bundled audio", () => {
-  assert.equal(S.FAMILIES.flat().length, 30);
-  assert.equal(S.WORDS.length, 9);
+test("core voice pack and every lesson prompt has bundled audio", () => {
+  assert.equal(S.FAMILIES.flat().length, 220);
   const size = (f) => fs.statSync(path.join(__dirname, f)).size;
   for (const l of Core.LETTERS.filter((l) => l !== "Ь")) {
     assert(size("audio/" + l.codePointAt(0).toString(16) + ".mp3") > 100);
     assert(size(voice.letters[l].file) > 100, l);
   }
-  for (const s of S.FAMILIES.flat()) assert(size(voice.syllables[s].file) > 100, s);
-  for (const w of S.WORDS) {
-    assert(speech.words[w.text]?.ready, w.text);
-    assert(size(speech.words[w.text].file) > 100, w.text);
+  for (const [syllable, entry] of Object.entries(voice.syllables))
+    assert(size(entry.file) > 100, syllable);
+  for (const [word, entry] of Object.entries(speech.words)) {
+    assert(S.WORDS.some((item) => item.text === word), word);
+    assert(entry.ready, word);
+    assert(size(entry.file) > 100, word);
   }
   const prompts = [
     ...["letters", "hear", "pairs", "discover", "blend", "hear-syllable", "words"].map(

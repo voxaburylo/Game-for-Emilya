@@ -6,6 +6,9 @@
   const Paths =
     root.GardenPaths ||
     (typeof require !== "undefined" ? require("./garden-paths.js") : null);
+  const Content =
+    root.LearningContent ||
+    (typeof require !== "undefined" ? require("./learning-content.js") : null);
   const ITEMS = [
     {
       id: "flowers",
@@ -162,11 +165,9 @@
   function isHouse(kind) {
     return ["house", "house-two-story", "house-tower"].includes(kind);
   }
-  const FAMILIES = ["М", "С", "Н", "Л", "Р", "Т"].map((c) =>
-    [..."АОУІИ"].map((v) => c + v),
-  );
-  // Listening patterns made only from syllables with a complete voice file.
-  // They are shown as a little train, not presented as made-up words.
+  const FAMILIES = Content.FAMILIES;
+  // Reading patterns. They are shown as a little train, not presented as
+  // made-up words. Sound files are optional and do not limit this library.
   const SYLLABLE_TRAINS = [
     ...FAMILIES.flatMap((family) =>
       family.flatMap((first, i) =>
@@ -191,17 +192,7 @@
       ]),
     ),
   ];
-  const WORDS = [
-    { text: "МАМА", parts: ["МА", "МА"], picture: "mother" },
-    { text: "ТАТО", parts: ["ТА", "ТО"], picture: "father" },
-    { text: "РАМА", parts: ["РА", "МА"], picture: "frame" },
-    { text: "НОРА", parts: ["НО", "РА"], picture: "burrow" },
-    { text: "ЛІТО", parts: ["ЛІ", "ТО"], picture: "sun" },
-    { text: "РАНА", parts: ["РА", "НА"], picture: "wound" },
-    { text: "САЛО", parts: ["СА", "ЛО"], picture: "food" },
-    { text: "МИЛО", parts: ["МИ", "ЛО"], picture: "soap" },
-    { text: "СИЛА", parts: ["СИ", "ЛА"], picture: "strong" },
-  ];
+  const WORDS = Content.WORDS;
   const PETS = [
       "cat",
       "dog",
@@ -411,7 +402,7 @@
   const integer = (n) => Number.isInteger(n) && n >= 0 && n <= 1e7;
   const validRotation = (n) =>
     Number.isFinite(n) && n >= 0 && n < 4 && Number.isInteger(n * 2);
-  const ITEM_KEY = /^[LSW]:[А-ЯҐЄІЇЬ]{1,8}$/,
+  const ITEM_KEY = /^(?:[LS]:[А-ЯҐЄІЇЬ]{1,8}|W:[А-ЯҐЄІЇЬ’']{1,16})$/,
     CONF_KEY = /^[А-ЯҐЄІЇЬ]{1,2}\|[А-ЯҐЄІЇЬ]{1,2}$/;
   function valid(s) {
     if (!s || s.version !== 5 || !validBody(s) || !Paths.valid(s.paths))
@@ -424,7 +415,7 @@
       !s.items ||
       typeof s.items !== "object" ||
       Array.isArray(s.items) ||
-      Object.keys(s.items).length > 400 ||
+      Object.keys(s.items).length > 2000 ||
       !s.conf ||
       typeof s.conf !== "object" ||
       Array.isArray(s.conf) ||
