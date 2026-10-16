@@ -90,6 +90,14 @@ for (const file of ["learning-party.js", "learning-party.css"]) {
   assert(FILES.includes(file));
   assert(fs.readFileSync("index.html", "utf8").includes(file));
 }
+assert.equal(P.fruitAssets.length, 10);
+for (const name of P.fruitAssets) {
+  const file = `models/party-fruit/${name}.png`;
+  assert(FILES.includes(file), `${file} must work offline`);
+  assert(fs.statSync(file).size > 1000, `${file} must be a rendered asset`);
+}
+assert(P.fruit(0).includes("models/party-fruit/apple.png"));
+assert(FILES.includes("models/party-fruit/CREDITS.txt"));
 console.log(
   "PASS party: bounded/idempotent rewards, partial exit, v5 learning preservation, flying and falling trajectories, returning targets, swipe collision and offline assets.",
 );

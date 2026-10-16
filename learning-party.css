@@ -160,10 +160,12 @@
   transform-origin: 50% 80%;
   filter: drop-shadow(0 10px 6px #32617c20);
 }
-.party-balloon svg {
+.party-balloon svg,
+.party-balloon img {
   display: block;
   width: 100%;
   height: 100%;
+  object-fit: contain;
   pointer-events: none;
 }
 .party-balloon:focus-visible {
@@ -284,8 +286,24 @@
   top: -50px;
   left: -50px;
 }
-.fruit-half svg {
+.fruit-half svg,
+.fruit-half img {
   width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 7px 4px #08172155);
+}
+.fruit-splash {
+  position: absolute;
+  width: 78px;
+  height: 8px;
+  left: -39px;
+  top: -4px;
+  border-radius: 50%;
+  background: #fff0b4;
+  box-shadow: 0 0 12px #fff8d6;
+  transform: rotate(-22deg);
+  animation: fruit-juice 0.42s both;
 }
 .half-left {
   clip-path: polygon(0 0, 100% 0, 100% 30%, 0 80%);
@@ -384,6 +402,12 @@
   to {
     transform: translate(45px, 65px) rotate(45deg);
     opacity: 0;
+  }
+}
+@keyframes fruit-juice {
+  to {
+    opacity: 0;
+    transform: rotate(-22deg) scaleX(1.7);
   }
 }
 @keyframes party-swipe {

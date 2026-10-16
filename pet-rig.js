@@ -70,6 +70,20 @@
     const d = pet.userData,
       type = d.characterModel,
       blend = reduced ? 1 : 1 - Math.exp(-dt * 10);
+    if (type === "shiba") {
+      for (let i = 0; i < 4; i++) {
+        const r = d.rig[i],
+          phase = b.distance * 10 + (i % 2 ? Math.PI : 0);
+        let target = state === "walk" && !reduced ? Math.sin(phase) * .28 : 0;
+        if (state === "sit") target = i < 2 ? -.08 : .32;
+        if (state === "lie") target = i < 2 ? .42 : -.2;
+        if (state === "stretch" && i < 2) target = .35;
+        r.hip.rotation.x += (target - r.hip.rotation.x) * blend;
+        r.knee.rotation.x = -r.hip.rotation.x * .35;
+        r.ankle.rotation.x = -r.hip.rotation.x - r.knee.rotation.x;
+      }
+      return;
+    }
     rotation.setFromEuler(d.torso.rotation);
     for (let i = 0; i < 4; i++) {
       const r = d.rig[i],

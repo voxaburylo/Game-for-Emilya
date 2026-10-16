@@ -1,0 +1,9 @@
+Lowpoly Fruits & Vegetables
+Author: Loïc Norgeot (norgeotloic)
+Source: https://sketchfab.com/3d-models/lowpoly-fruits-vegetables-d3be8fed96eb48be88b47bbe8d2951e1
+License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+License text: https://creativecommons.org/licenses/by/4.0/
+
+The transparent fruit images in this folder are optimized rendered derivatives
+created for Bukvomisto from the credited models. The original downloaded archive
+is not included in the shipped game.

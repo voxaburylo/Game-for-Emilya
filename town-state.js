@@ -148,13 +148,23 @@
     { text: "МИЛО", parts: ["МИ", "ЛО"], picture: "soap" },
     { text: "СИЛА", parts: ["СИ", "ЛА"], picture: "strong" },
   ];
-  const PETS = ["cat", "dog", "rabbit", "fox", "turtle", "chicken", "zombie"],
+  const PETS = [
+      "cat",
+      "dog",
+      "rabbit",
+      "fox",
+      "shiba",
+      "turtle",
+      "chicken",
+      "zombie",
+    ],
     COLORS = ["#be7186", "#7b9ca3", "#d5aa62", "#88a38a", "#8977a6"];
   const PET_PRICES = {
     cat: 0,
     dog: 0,
     rabbit: 0,
     fox: 0,
+    shiba: 28,
     turtle: 12,
     chicken: 18,
     zombie: 24,

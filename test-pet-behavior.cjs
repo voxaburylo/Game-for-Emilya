@@ -12,7 +12,7 @@ assets.install(
   bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
 );
 require("./art.js");
-for (const type of ["dog", "cat", "rabbit", "fox"]) {
+for (const type of ["dog", "cat", "rabbit", "fox", "shiba"]) {
   const pet = assets.pet(type),
     states = new Set();
   let t = 0;
@@ -53,7 +53,7 @@ for (const type of ["dog", "cat", "rabbit", "fox"]) {
     const bounds = new THREE.Box3().setFromObject(pet, true);
     assert(
       Number.isFinite(bounds.min.y) && bounds.max.y - bounds.min.y < 3,
-      `${type}/${action}: finite articulated pose`,
+      `${type}/${action}: finite articulated pose ${bounds.min.y}..${bounds.max.y}`,
     );
     pet.position.y = 0.27 - bounds.min.y;
     pet.updateMatrixWorld(true);
@@ -107,7 +107,9 @@ for (const type of ["dog", "cat", "rabbit", "fox"]) {
       n.geometry.addEventListener("dispose", () => ownedDisposed++);
   });
   Art.dispose(pet);
-  assert(ownedDisposed >= 4, "owned skin geometry is released");
+  if (type === "shiba")
+    assert.equal(ownedDisposed, 0, "shared Shiba geometry stays reusable");
+  else assert(ownedDisposed >= 4, "owned skin geometry is released");
   console.log(
     `PASS ${type}: species cycle, displacement gait, articulated poses, ground contact, reduced motion and disposal`,
   );

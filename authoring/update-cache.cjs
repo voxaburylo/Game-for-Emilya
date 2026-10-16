@@ -15,10 +15,23 @@ function files(dir) {
 const swPath = path.join(root, "sw.js"),
   original = fs.readFileSync(swPath, "utf8"),
   current = require(swPath).FILES,
-  dynamic = [...files("models/park"), ...files("models/ui")],
+  dynamic = [
+    ...files("models/park"),
+    ...files("models/ui"),
+    ...files("models/thumbs"),
+    ...files("models/party-fruit"),
+    ...files("models/licenses"),
+  ],
   assets = [
     ...current.filter(
-      (name) => !name.startsWith("models/park/") && !name.startsWith("models/ui/"),
+      (name) =>
+        ![
+          "models/park/",
+          "models/ui/",
+          "models/thumbs/",
+          "models/party-fruit/",
+          "models/licenses/",
+        ].some((prefix) => name.startsWith(prefix)),
     ),
     ...dynamic,
   ],

@@ -16,6 +16,26 @@
           new T.BufferAttribute(new Float32Array(buffer, a.offset, a.count), 3),
         );
       }
+      if (part.skinIndex)
+        geometry.setAttribute(
+          "skinIndex",
+          new T.Uint16BufferAttribute(
+            new Uint16Array(buffer, part.skinIndex.offset, part.skinIndex.count),
+            4,
+          ),
+        );
+      if (part.skinWeight)
+        geometry.setAttribute(
+          "skinWeight",
+          new T.Float32BufferAttribute(
+            new Float32Array(
+              buffer,
+              part.skinWeight.offset,
+              part.skinWeight.count,
+            ),
+            4,
+          ),
+        );
       geometry.setIndex(
         new T.BufferAttribute(
           new Uint32Array(buffer, part.index.offset, part.index.count),
@@ -58,8 +78,11 @@
     const pivots = library.pivots[model];
     for (const [key, position] of Object.entries(pivots)) {
       if (key === "root") continue;
-      const node = new T.Group();
-      const parent = library.parents[key] || "root";
+      const node = model === "shiba" ? new T.Bone() : new T.Group();
+      const parent =
+        model === "shiba" && key !== "body"
+          ? "body"
+          : library.parents[key] || "root";
       node.name = key;
       node.position
         .fromArray(position)
@@ -98,11 +121,25 @@
         else material.userData.characterShared = true;
         cache.set(key, material);
       }
-      const mesh = new T.Mesh(part.geometry, cache.get(key));
+      const skinned = model === "shiba" && !!part.skinIndex;
+      const mesh = skinned
+        ? new T.SkinnedMesh(part.geometry, cache.get(key))
+        : new T.Mesh(part.geometry, cache.get(key));
       mesh.name = part.variant + " · " + part.material;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       nodes[part.node].add(mesh);
+      if (skinned) {
+        group.updateMatrixWorld(true);
+        mesh.bind(
+          new T.Skeleton(
+            ["body", "head", "tail", "legL", "legR", "backL", "backR"].map(
+              (name) => nodes[name],
+            ),
+          ),
+        );
+        mesh.frustumCulled = false;
+      }
     }
     let torso;
     if (model === "girl") {
@@ -115,6 +152,8 @@
       group.add(torso);
       group.updateMatrixWorld(true);
       upper.forEach((o) => torso.attach(o));
+    } else if (model === "shiba") {
+      torso = nodes.body;
     } else if (["dog", "cat", "rabbit", "fox"].includes(model)) {
       const legs = [nodes.legL, nodes.legR, nodes.backL, nodes.backR];
       const upper = group.children.filter((o) => !legs.includes(o));
@@ -129,6 +168,18 @@
     if (["dog", "cat", "rabbit", "fox"].includes(model))
       for (const leg of [nodes.legL, nodes.legR, nodes.backL, nodes.backR])
         rig.push(root.PetRig.create(leg, group, model));
+    if (model === "shiba")
+      for (const leg of [nodes.legL, nodes.legR, nodes.backL, nodes.backR]) {
+        const knee = new T.Object3D(),
+          ankle = new T.Object3D();
+        rig.push({
+          hip: leg,
+          knee,
+          ankle,
+          rest: leg.position.clone(),
+          foot: new T.Vector3(leg.position.x, 0.18, leg.position.z),
+        });
+      }
     group.userData = {
       characterModel: model,
       torso,

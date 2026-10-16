@@ -51,7 +51,19 @@
       Math.min(rect.width * 0.48, rect.height * 0.39)
     );
   }
-  const colors = ["#ef6583", "#efae38", "#46b6b5", "#8c79d8"];
+  const colors = ["#ef6583", "#efae38", "#46b6b5", "#8c79d8"],
+    fruitAssets = [
+      "apple",
+      "orange",
+      "banana",
+      "strawberry",
+      "pear",
+      "pineapple",
+      "mango",
+      "pomegranate",
+      "lemon",
+      "peach",
+    ];
   // Normalised flight path: fruits rise and fall; balloons only rise.
   // Each missed target loops, so slow hands do not lose their reward.
   function flight(mode, age, slot, width, height, size, calm = false) {
@@ -83,13 +95,8 @@
     };
   }
   function fruit(id, split = false) {
-    const bodies = [
-      '<path d="M59 31C27 7 5 41 18 75Q30 106 58 91Q87 107 103 72C115 38 87 11 59 31Z" fill="#ef5967"/><path d="M58 29Q53 9 66 6" stroke="#6b593b" stroke-width="5" fill="none"/><path d="M63 23Q72 3 91 14Q83 33 63 23" fill="#55a76b"/>',
-      '<circle cx="60" cy="60" r="43" fill="#f4a32f"/><path d="M55 18Q70-2 87 13Q79 27 55 18" fill="#438f56"/><path d="M25 56Q27 34 45 29" stroke="#ffe5a4" stroke-width="6" stroke-linecap="round" fill="none"/>',
-      '<circle cx="60" cy="59" r="45" fill="#438965"/><path d="M33 23Q12 60 34 97M60 15Q44 61 60 104M84 22Q72 57 87 95" stroke="#9fca70" stroke-width="9" fill="none"/>',
-      '<path d="M60 28C20 4 5 44 22 72L60 104L99 71C118 39 87 3 60 28Z" fill="#e85c57"/><path d="M35 22L51 25L60 9L68 25L89 20L75 37L62 32L46 39Z" fill="#559955"/><g fill="#ffe7a1"><ellipse cx="36" cy="51" rx="3" ry="5"/><ellipse cx="65" cy="49" rx="3" ry="5"/><ellipse cx="84" cy="57" rx="3" ry="5"/><ellipse cx="51" cy="71" rx="3" ry="5"/><ellipse cx="68" cy="83" rx="3" ry="5"/></g>',
-    ];
-    return `<svg viewBox="0 0 120 120" aria-hidden="true">${bodies[id % 4]}${id % 4 !== 1 ? '<path d="M30 44Q32 34 42 32" stroke="#fff" opacity=".5" stroke-width="6" stroke-linecap="round" fill="none"/>' : ""}${split ? '<path d="M15 75L105 35" stroke="#fff0b4" stroke-width="8"/>' : ""}</svg>`;
+    const name = fruitAssets[id % fruitAssets.length];
+    return `<img src="models/party-fruit/${name}.png" alt="" aria-hidden="true"${split ? ' class="fruit-split"' : ""}>`;
   }
   function balloon(id) {
     const c = colors[id % 4],
@@ -182,7 +189,7 @@
       burst.className = "party-burst";
       burst.style.left = r.left + r.width / 2 - f.left + "px";
       burst.style.top = r.top + r.height * 0.43 - f.top + "px";
-      burst.innerHTML = `${isFruit ? `<span class="fruit-half half-left">${fruit(Number(button.dataset.balloon), true)}</span><span class="fruit-half half-right">${fruit(Number(button.dataset.balloon), true)}</span>` : "<b>★</b>"}${Array.from({ length: 8 }, (_, i) => `<i style="--dx:${Math.cos((i * Math.PI) / 4) * 65}px;--dy:${Math.sin((i * Math.PI) / 4) * 65}px;--color:${colors[i % 4]}"></i>`).join("")}`;
+      burst.innerHTML = `${isFruit ? `<span class="fruit-half half-left">${fruit(Number(button.dataset.balloon), true)}</span><span class="fruit-half half-right">${fruit(Number(button.dataset.balloon), true)}</span><em class="fruit-splash"></em>` : "<b>★</b>"}${Array.from({ length: 8 }, (_, i) => `<i style="--dx:${Math.cos((i * Math.PI) / 4) * 65}px;--dy:${Math.sin((i * Math.PI) / 4) * 65}px;--color:${colors[i % 4]}"></i>`).join("")}`;
       sparks.append(burst);
       later(() => burst.remove(), 650);
     }
@@ -304,6 +311,7 @@
     flight,
     balloon,
     fruit,
+    fruitAssets,
     mount,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;

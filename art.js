@@ -52,7 +52,9 @@
     );
   }
   function thumb(kind, index = 0, color = "#be7186") {
-    if (kind === "pet" && index >= 4)
+    if (kind === "pet" && TownState.PETS[index] === "shiba")
+      return '<img class="model-thumb" src="models/thumbs/shiba-0.png" alt="" draggable="false">';
+    if (kind === "pet" && CompanionAssets.types.includes(TownState.PETS[index]))
       return CompanionAssets.thumb(TownState.PETS[index]);
     if (["dress", "shoes", "hair"].includes(kind) || kind === "pet") {
       const file =

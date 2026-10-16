@@ -35,14 +35,32 @@ for (const mesh of pack.meshes) {
   for (const v of pos) assert(Number.isFinite(v));
   for (const v of normals) assert(Number.isFinite(v));
   for (const id of ids) assert(id < n, "mesh index outside vertex range");
-  for (const key of ["position", "normal", "color", "index"])
+  for (const key of [
+    "position",
+    "normal",
+    "color",
+    "skinIndex",
+    "skinWeight",
+    "index",
+  ])
     if (mesh[key])
-      assert(mesh[key].offset + mesh[key].count * 4 <= bytes.byteLength);
+      assert(
+        mesh[key].offset + mesh[key].count * (key === "skinIndex" ? 2 : 4) <=
+          bytes.byteLength,
+      );
+  if (mesh.model === "shiba") {
+    assert.equal(mesh.skinIndex.count, (mesh.position.count / 3) * 4);
+    assert.equal(mesh.skinWeight.count, (mesh.position.count / 3) * 4);
+  }
   packTriangles += ids.length / 3;
 }
 const girl = assets.girl({ dress: 0, shoes: 0, hair: 0, color: 0 }),
   dog = assets.dog();
-for (const model of [girl, dog, ...["cat", "rabbit", "fox"].map(assets.pet)]) {
+for (const model of [
+  girl,
+  dog,
+  ...["cat", "rabbit", "fox", "shiba"].map(assets.pet),
+]) {
   let triangles = 0,
     draws = 0;
   model.traverse((o) => {
@@ -57,7 +75,10 @@ for (const model of [girl, dog, ...["cat", "rabbit", "fox"].map(assets.pet)]) {
     `${model.userData.characterModel}: ${triangles} triangles, ${draws} material batches`,
   );
   const before = new THREE.Box3().setFromObject(model);
-  assert(before.min.y > -0.05 && before.max.y < 3.8);
+  assert(
+    before.min.y > -0.05 && before.max.y < 3.8,
+    `${model.userData.characterModel} bounds ${before.min.y}..${before.max.y}`,
+  );
   const head = model.userData.head;
   assert(model.userData.eyes.every((e) => e.parent === head));
   assets.animate(model, 0.09 - (model === dog ? 1.8 : 0), false);
@@ -126,11 +147,14 @@ for (const file of [
   "character-assets.js",
   "models/characters.json",
   "models/characters.bin",
+  "models/licenses/shiba.txt",
+  "models/thumbs/shiba-0.png",
   "surface-art.js",
   "vendor/reflector.js",
   "vendor/water.js",
 ])
   assert(files.includes(file));
+assert.match(fs.readFileSync("models/licenses/shiba.txt", "utf8"), /CC BY 4\.0/);
 for (const model of [assets.tree(true), assets.cottage("#dfcbb2", "#ac7568")]) {
   const box = new THREE.Box3().setFromObject(model);
   assert(box.min.y > -0.3 && box.max.y < 6);

@@ -81,6 +81,7 @@
       dog: "Песик",
       rabbit: "Кролик",
       fox: "Лисичка",
+      shiba: "Шіба",
       turtle: "Черепашка",
       chicken: "Курочка",
       zombie: "Зомбі-садівник",
@@ -846,7 +847,7 @@
         )
         .join(
           "",
-        )}<h3 style="margin-top:18px">Літери</h3><div class="alphabet letter-status">${L.ORDER.map((l) => `<span class="${L.status(state, "L:" + l)}">${l}</span>`).join("")}</div><p class="note">Світла — ще не зустрічалась; жовта — знайомиться; зелена — впізнає на слух; темно-зелена — впізнає в різні дні (вивчено). Зіставлення й складання за зразком лише знайомлять із літерою, а вивченою її робить тільки впізнавання на слух. Це ігровий прогрес, а не оцінка навички читання.</p><div class="parent-actions">${btn("replace", "undo", "Перевірити знання знову", "secondary")}${btn("export", "save", "Експорт", "secondary")}<label class="secondary">Імпорт<input id="import-save" type="file" accept="application/json,.json"></label>${btn("reset-ask", "undo", "Почати заново", "secondary danger")}</div><details><summary>Результати за вправами</summary><div class="score-row"><b>Вправа</b><b>Сама</b><b>З допом.</b></div>${entries.map(([k, v]) => `<div class="score-row"><span>${escapeHTML((modes[k.split(":")[0]]?.[0] || k.split(":")[0]) + ": " + k.split(":").slice(1).join(":"))}</span><span>${v.solo}</span><span>${v.hinted}</span></div>`).join("") || '<p class="note">Ще немає завершених завдань.</p>'}</details><p class="note" id="offline-state" style="margin-top:18px">${offlineReady ? "Офлайн-пакет готовий: гра та всі записи доступні без мережі." : "Офлайн-пакет готується. Для встановлення потрібен localhost або HTTPS."}</p><p class="credits" style="margin-top:20px">Літери, склади й підказки — синтезований жіночий голос «Тетяна» (Apache 2.0). Слова — живий жіночий голос Галі Раптової, Shtooka (CC BY 2.0 France). Запасні записи літер — Tabrus (CC BY-SA 4.0). Усі записи дозволяють комерційне використання з указанням авторів. <a href="audio/voice/CREDITS.txt" target="_blank" rel="noopener">Голос учительки</a> · <a href="audio/speech/CREDITS.txt" target="_blank" rel="noopener">Слова</a> · <a href="audio/CREDITS.txt" target="_blank" rel="noopener">Літери Tabrus</a>.</p>`,
+        )}<h3 style="margin-top:18px">Літери</h3><div class="alphabet letter-status">${L.ORDER.map((l) => `<span class="${L.status(state, "L:" + l)}">${l}</span>`).join("")}</div><p class="note">Світла — ще не зустрічалась; жовта — знайомиться; зелена — впізнає на слух; темно-зелена — впізнає в різні дні (вивчено). Зіставлення й складання за зразком лише знайомлять із літерою, а вивченою її робить тільки впізнавання на слух. Це ігровий прогрес, а не оцінка навички читання.</p><div class="parent-actions">${btn("replace", "undo", "Перевірити знання знову", "secondary")}${btn("export", "save", "Експорт", "secondary")}<label class="secondary">Імпорт<input id="import-save" type="file" accept="application/json,.json"></label>${btn("reset-ask", "undo", "Почати заново", "secondary danger")}</div><details><summary>Результати за вправами</summary><div class="score-row"><b>Вправа</b><b>Сама</b><b>З допом.</b></div>${entries.map(([k, v]) => `<div class="score-row"><span>${escapeHTML((modes[k.split(":")[0]]?.[0] || k.split(":")[0]) + ": " + k.split(":").slice(1).join(":"))}</span><span>${v.solo}</span><span>${v.hinted}</span></div>`).join("") || '<p class="note">Ще немає завершених завдань.</p>'}</details><p class="note" id="offline-state" style="margin-top:18px">${offlineReady ? "Офлайн-пакет готовий: гра та всі записи доступні без мережі." : "Офлайн-пакет готується. Для встановлення потрібен localhost або HTTPS."}</p><p class="credits" style="margin-top:20px">Літери, склади й підказки — синтезований жіночий голос «Тетяна» (Apache 2.0). Слова — живий жіночий голос Галі Раптової, Shtooka (CC BY 2.0 France). Запасні записи літер — Tabrus (CC BY-SA 4.0). Усі записи дозволяють комерційне використання з указанням авторів. <a href="audio/voice/CREDITS.txt" target="_blank" rel="noopener">Голос учительки</a> · <a href="audio/speech/CREDITS.txt" target="_blank" rel="noopener">Слова</a> · <a href="audio/CREDITS.txt" target="_blank" rel="noopener">Літери Tabrus</a>.<br>3D-моделі Shiba та фруктів — CC BY 4.0, дозволені для комерційного використання з атрибуцією: <a href="models/licenses/shiba.txt" target="_blank" rel="noopener">Shiba</a> · <a href="models/party-fruit/CREDITS.txt" target="_blank" rel="noopener">фрукти</a>.</p>`,
     );
   }
   function escapeHTML(t) {
@@ -1390,7 +1391,7 @@
       .then((reg) => {
         const check = async () => {
           if (reg.active?.state === "activated") {
-            const cache = await caches.open("emilia-living-v5-11-living-catalog");
+            const cache = await caches.open("emilia-living-v5-12-external-art");
             offlineReady = (
               await Promise.all(
                 [

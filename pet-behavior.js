@@ -11,6 +11,15 @@
       ["lie", 6],
       ["stretch", 2.5],
     ],
+    shiba: [
+      ["look", 2.6],
+      ["sniff", 3.4],
+      ["sit", 4.5],
+      ["shake", 1.4],
+      ["look", 2],
+      ["lie", 5.5],
+      ["stretch", 2.3],
+    ],
     cat: [
       ["look", 2],
       ["groom", 6],
@@ -88,6 +97,7 @@
       });
     const d = pet.userData,
       type = d.characterModel,
+      canine = type === "dog" || type === "shiba",
       b = d.behavior || init(pet),
       moving = distance > 0.0005;
     b.distance += distance;
@@ -123,10 +133,9 @@
     head.r[2] = reduced ? 0 : Math.sin(time * 0.9) * 0.035;
     tail.r[2] = reduced
       ? 0
-      : Math.sin(time * (type === "dog" ? 5 : 1.7)) *
-        (type === "dog" ? 0.16 : 0.1);
+      : Math.sin(time * (canine ? 5 : 1.7)) * (canine ? 0.16 : 0.1);
     if (type === "cat") tail.r[1] = reduced ? 0 : Math.sin(time * 2.4) * 0.18;
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < d.ears.length; i++) {
       poses["ear" + i].r[2] = reduced
         ? 0
         : Math.sin(time * (type === "rabbit" ? 2.7 : 1.8) + i * 2) *
@@ -145,7 +154,7 @@
       }
     }
     function lie() {
-      body.p[1] = (type === "dog" ? -0.29 : -0.24) + breath;
+      body.p[1] = (canine ? -0.29 : -0.24) + breath;
       body.r[0] = 0.03;
       head.r[0] = 0.22;
       head.r[1] *= 0.4;
@@ -174,10 +183,10 @@
         ? 0
         : Math.abs(Math.sin(a)) * (type === "rabbit" ? 0.11 : 0.018);
       body.r[2] = reduced ? 0 : Math.sin(a) * 0.018;
-      for (let i = 0; i < 2; i++)
+      for (let i = 0; i < d.ears.length; i++)
         poses["ear" + i].r[0] = reduced
           ? 0
-          : Math.sin(a + i * 0.4) * (type === "dog" ? 0.22 : 0.09);
+          : Math.sin(a + i * 0.4) * (canine ? 0.22 : 0.09);
     } else if (state === "sit") sit();
     else if (state === "lie") lie();
     else if (state === "groom") {
@@ -196,8 +205,8 @@
     } else if (state === "stamp") {
       sit();
       head.r[1] = -0.18;
-      poses.ear0.r[2] = -0.18;
-      poses.ear1.r[2] = 0.1;
+      if (poses.ear0) poses.ear0.r[2] = -0.18;
+      if (poses.ear1) poses.ear1.r[2] = 0.1;
     } else if (state === "sniff" || state === "feed") {
       body.r[0] = 0.13;
       body.p[1] = -0.07;
@@ -213,8 +222,8 @@
       body.r[2] = shake * 0.08;
       head.r[2] = shake * 0.19;
       head.r[1] = shake * 0.13;
-      poses.ear0.r[2] = shake * 0.3;
-      poses.ear1.r[2] = shake * 0.3;
+      if (poses.ear0) poses.ear0.r[2] = shake * 0.3;
+      if (poses.ear1) poses.ear1.r[2] = shake * 0.3;
     } else if (state === "stretch") {
       body.r[0] = 0.2;
       body.p[1] = -0.13;
