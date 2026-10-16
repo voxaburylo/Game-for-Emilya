@@ -418,7 +418,8 @@ p {
   justify-content: center;
   gap: 5px;
 }
-.choice svg {
+.choice svg,
+.choice .model-thumb {
   width: 70px;
   height: 70px;
 }
@@ -1266,7 +1267,8 @@ a {
     padding: 3px;
     border-radius: 14px;
   }
-  .side-panel .choice svg {
+  .side-panel .choice svg,
+  .side-panel .choice .model-thumb {
     width: 48px;
     height: 48px;
   }
@@ -1443,7 +1445,8 @@ a {
   .side-panel .choice {
     min-height: 76px;
   }
-  .side-panel .choice svg {
+  .side-panel .choice svg,
+  .side-panel .choice .model-thumb {
     height: 53px;
   }
   .camera-tools {
@@ -1544,7 +1547,8 @@ a {
   .wardrobe-panel .choice {
     min-height: 90px;
   }
-  .wardrobe-panel .choice svg {
+  .wardrobe-panel .choice svg,
+  .wardrobe-panel .choice .model-thumb {
     width: 60px;
     height: 60px;
   }
@@ -1605,7 +1609,8 @@ a {
   .side-panel .choice {
     min-height: 105px;
   }
-  .side-panel .choice svg {
+  .side-panel .choice svg,
+  .side-panel .choice .model-thumb {
     width: 76px;
     height: 76px;
   }
@@ -1648,4 +1653,9 @@ a {
 .lesson-mark .ico {
   width: 30px;
   height: 30px;
+}
+
+.model-thumb {
+  object-fit: contain;
+  pointer-events: none;
 }

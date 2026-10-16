@@ -6,6 +6,7 @@ const tests = [
   "test-living.cjs",
   "test-learning.cjs",
   "test-world.cjs",
+  "test-characters.cjs",
   "test-navigation.cjs",
   "test-offline.cjs",
   "test-assets.cjs",
@@ -19,4 +20,4 @@ for (const test of tests) {
     windowsHide: true,
   });
 }
-console.log("\nALL TEN TEST SUITES PASSED");
+console.log("\nALL " + tests.length + " TEST SUITES PASSED");

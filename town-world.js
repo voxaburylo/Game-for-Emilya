@@ -43,7 +43,12 @@
       container.append(this.renderer.domElement);
       this.camera = new T.OrthographicCamera(-20, 20, 13, -13, 0.1, 180);
       this.focus = new T.Vector3();
-      this.scene.add(new T.HemisphereLight("#fff6e7", "#809b82", 2));
+      this.skyLight = new T.HemisphereLight("#fff6e7", "#aaa28f", 2);
+      this.scene.add(this.skyLight);
+      this.portraitLight = new T.DirectionalLight("#fff5ec", 1.4);
+      this.portraitLight.position.set(2, 4, 8);
+      this.portraitLight.visible = false;
+      this.scene.add(this.portraitLight);
       this.sun = new T.DirectionalLight("#fff0d7", 2.6);
       this.sun.position.set(-15, 28, 18);
       this.sun.castShadow = true;
@@ -113,6 +118,7 @@
         this.scene.remove(this.hero);
       }
       this.hero = A.avatar(look);
+      this.heroSole = new T.Box3().setFromObject(this.hero).min.y;
       this.hero.position.copy(pos);
       this.hero.rotation.y = rot;
       this.scene.add(this.hero);
@@ -134,6 +140,7 @@
         this.scene.remove(this.pet);
       }
       this.pet = A.pet(type);
+      this.petSole = new T.Box3().setFromObject(this.pet).min.y;
       this.pet.position.copy(pos);
       this.pet.userData.action = { type: "pet" };
       this.scene.add(this.pet);
@@ -736,6 +743,8 @@
       }
       this.riding = null;
       this.view = view;
+      this.portraitLight.visible = ["wardrobe", "pets"].includes(view);
+      this.skyLight.groundColor.set(view === "street" ? "#aaa28f" : "#d3c1b6");
       this.outside.visible = view === "street";
       this.room.visible = view !== "street";
       this.hero.visible = view !== "pets";
@@ -1193,6 +1202,14 @@
         }
       }
       if (this.hero) {
+        CharacterAssets.animate(this.hero, this.time, moving, this.reduced);
+        if (this.reflection)
+          CharacterAssets.animate(
+            this.reflection,
+            this.time,
+            moving,
+            this.reduced,
+          );
         this.hero.position.y = this.sitting
           ? (this.sitY ?? 0.45)
           : (this.view === "street" &&
@@ -1218,6 +1235,7 @@
               : 0;
         });
         if (this.view === "wardrobe") {
+          this.hero.position.y = 0.13 - this.heroSole;
           this.hero.rotation.y = this.yaw;
           if (this.reflection) this.reflection.rotation.y = -this.yaw;
         }
@@ -1259,9 +1277,17 @@
           this.petPath?.length > 0 &&
           !this.paused &&
           ["street", "room"].includes(this.view);
+        CharacterAssets.animate(this.pet, this.time, petMoving, this.reduced);
         this.pet.rotation.z = petMoving
           ? Math.sin(this.time * (this.state.pet === "rabbit" ? 13 : 9)) * 0.045
           : 0;
+        if (this.pet.userData.characterModel === "dog") {
+          this.pet.userData.legs.forEach((leg, i) => {
+            leg.rotation.x = petMoving
+              ? Math.sin(this.time * 12 + [0, Math.PI, Math.PI, 0][i]) * 0.32
+              : 0;
+          });
+        }
         const active = this.petUntil > this.time;
         this.pet.userData.tail.rotation.z =
           Math.sin(this.time * (active ? 14 : 4)) * (active ? 0.5 : 0.1);
@@ -1277,6 +1303,8 @@
                   Math.sin(this.time * (this.state.pet === "rabbit" ? 9 : 12)),
                 ) * (this.state.pet === "rabbit" ? 0.18 : 0.035)
               : 0;
+        if (this.view === "pets")
+          this.pet.position.y += 0.27 - this.petSole * 2;
         if (this.ballProp)
           this.ballProp.position.set(
             Math.sin(this.time * 2) * 1.3,

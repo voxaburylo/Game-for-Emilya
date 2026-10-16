@@ -50,6 +50,13 @@
     );
   }
   function thumb(kind, index = 0, color = "#be7186") {
+    if (
+      ["dress", "shoes", "hair"].includes(kind) ||
+      (kind === "pet" && index === 1)
+    ) {
+      const file = kind === "pet" ? "dog-0" : kind + "-" + index;
+      return `<img class="model-thumb" src="models/thumbs/${file}.png" alt="" draggable="false">`;
+    }
     if (kind === "pet") {
       const ears =
         index === 2
@@ -65,45 +72,7 @@
         '<ellipse cx="39" cy="44" rx="25" ry="23"/></g><ellipse cx="39" cy="53" rx="12" ry="9" fill="#fff4dc"/><g fill="#3d4543"><circle cx="29" cy="42" r="3"/><circle cx="49" cy="42" r="3"/><path d="m35 50 4 5 4-5z"/></g></svg>'
       );
     }
-    const dress = [
-      "M28 13h24l4 18-9 5 15 33H18l15-33-9-5z",
-      "M26 14h8v17h12V14h8v55H26z",
-      "M28 13h24l5 20-10 4 10 13h-4l9 19H18l9-19h-4l10-13-10-4z",
-      "M25 15h30v29l-3 25H42l-2-22-2 22H28l-3-25z",
-      "M30 14h20v22l17 30c-18 7-36 7-54 0l17-30z",
-      "M23 16l12-5h10l12 5 7 16-12 4-2-11v22l10 21H20l10-21V25l-2 11-12-4z",
-    ];
-    if (kind === "dress")
-      return (
-        '<svg viewBox="0 0 80 80" aria-hidden="true"><path d="' +
-        dress[index] +
-        '" fill="' +
-        color +
-        '" stroke="#765b62" stroke-width="2"/><path d="M31 37h18M35 15q5 9 10 0" fill="none" stroke="#fff4dc" stroke-width="4"/></svg>'
-      );
-    if (kind === "shoes")
-      return (
-        '<svg viewBox="0 0 80 80" aria-hidden="true"><path d="M15 ' +
-        (index === 1 ? "17" : "32") +
-        "h18v23l18 4v12H11V" +
-        (index === 1 ? "17" : "32") +
-        'z" fill="' +
-        color +
-        '" stroke="#695b52" stroke-width="2"/><path d="M11 66h40M18 45h15" stroke="#fff4dc" stroke-width="5"/></svg>'
-      );
-    return (
-      '<svg viewBox="0 0 80 80" aria-hidden="true"><ellipse cx="40" cy="43" rx="21" ry="25" fill="#e9bd98"/><path d="M17 50V30c0-33 46-33 46 0v' +
-      (index === 2 ? "42" : "20") +
-      'l-10-8V27c-5 1-10-8-13-11-4 9-12 12-17 11v15z" fill="#765246"/>' +
-      ([1, 3].includes(index)
-        ? '<circle cx="15" cy="' +
-          (index === 1 ? 21 : 55) +
-          '" r="11" fill="#765246"/><circle cx="65" cy="' +
-          (index === 1 ? 21 : 55) +
-          '" r="11" fill="#765246"/>'
-        : "") +
-      '<circle cx="32" cy="44" r="2.5" fill="#344c46"/><circle cx="48" cy="44" r="2.5" fill="#344c46"/></svg>'
-    );
+    return "";
   }
   const mats = new Map(),
     geos = {
@@ -174,154 +143,10 @@
     return m;
   }
   function avatar(look) {
-    const g = new T.Group(),
-      skin = "#e9bd98",
-      hair = "#705043",
-      color = TownState.COLORS[look.color],
-      ivory = "#fff2d8";
-    const legs = [],
-      arms = [];
-    [-1, 1].forEach((side) => {
-      const leg = group(g, side * 0.23, 0.82, 0);
-      cyl(leg, look.dress === 3 ? "#758e9b" : skin, 0, -0.3, 0, 0.13, 0.62);
-      const shoeColor =
-        look.shoes === 2 ? ivory : look.shoes === 3 ? "#8b684c" : color;
-      box(
-        leg,
-        shoeColor,
-        0,
-        look.shoes === 1 ? -0.54 : -0.68,
-        0.12,
-        0.36,
-        look.shoes === 1 ? 0.55 : 0.26,
-        0.59,
-      );
-      if (look.shoes === 0) box(leg, ivory, 0, -0.77, 0.12, 0.38, 0.09, 0.61);
-      if (look.shoes === 2) box(leg, color, 0, -0.54, 0.03, 0.36, 0.07, 0.15);
-      if (look.shoes === 3) {
-        box(leg, ivory, 0, -0.56, 0.18, 0.37, 0.08, 0.12);
-        box(leg, ivory, 0, -0.56, -0.05, 0.37, 0.08, 0.1);
-      }
-      legs.push(leg);
-    });
-    const body = group(g, 0, 1.48, 0);
-    ball(body, color, 0, 0, 0, 0.43, 0.52, 0.28);
-    cyl(g, skin, 0, 2.02, 0, 0.15, 0.22);
-    if (look.dress !== 3) {
-      const skirt = new T.Mesh(
-        new T.CylinderGeometry(0.37, look.dress === 4 ? 0.8 : 0.63, 0.72, 24),
-        mat(color),
-      );
-      skirt.position.set(0, 1.01, 0);
-      skirt.castShadow = true;
-      g.add(skirt);
-      if ([2, 4].includes(look.dress)) {
-        const hem = new T.Mesh(
-          new T.CylinderGeometry(0.58, 0.72, 0.2, 24),
-          mat(look.dress === 4 ? "#eed0cf" : ivory),
-        );
-        hem.position.set(0, 0.76, 0);
-        g.add(hem);
-      }
-    } else {
-      box(g, "#768f9e", 0, 0.97, 0, 0.7, 0.38, 0.48);
-      box(g, "#768f9e", 0, 1.4, 0.24, 0.54, 0.68, 0.13);
-      [-0.25, 0.25].forEach((x) =>
-        box(g, "#768f9e", x, 1.78, 0.23, 0.1, 0.48, 0.1),
-      );
-    }
-    if (look.dress === 1) {
-      box(g, ivory, 0, 1.5, 0.25, 0.52, 0.5, 0.08);
-      [-0.29, 0.29].forEach((x) => box(g, ivory, x, 1.8, 0.22, 0.1, 0.4, 0.1));
-      box(g, color, 0, 1.38, 0.31, 0.25, 0.18, 0.04);
-    }
-    if (look.dress === 5)
-      for (let i = 0; i < 4; i++)
-        box(g, ivory, 0, 1.35 + i * 0.15, 0.27, 0.7, 0.055, 0.025);
-    if (look.dress === 0) {
-      ball(g, ivory, -0.16, 1.88, 0.21, 0.19, 0.09, 0.1);
-      ball(g, ivory, 0.16, 1.88, 0.21, 0.19, 0.09, 0.1);
-      for (let i = 0; i < 3; i++)
-        ball(g, "#caab69", 0, 1.7 - i * 0.18, 0.28, 0.035);
-    }
-    if (look.dress === 4) {
-      ball(g, ivory, -0.16, 1.35, 0.3, 0.17, 0.09, 0.07);
-      ball(g, ivory, 0.16, 1.35, 0.3, 0.17, 0.09, 0.07);
-      ball(g, color, 0, 1.35, 0.35, 0.07);
-    }
-    [-1, 1].forEach((side) => {
-      const arm = group(g, side * 0.46, 1.8, 0);
-      ball(arm, color, side * 0.05, -0.1, 0, 0.19, 0.23, 0.2);
-      cyl(arm, skin, side * 0.04, -0.4, 0, 0.105, 0.45);
-      ball(arm, skin, side * 0.04, -0.65, 0, 0.12);
-      arms.push(arm);
-    });
-    const head = group(g, 0, 2.52, 0);
-    ball(head, skin, 0, 0, 0, 0.53, 0.59, 0.49);
-    [-1, 1].forEach((s) =>
-      ball(head, skin, s * 0.52, -0.02, 0, 0.12, 0.17, 0.11),
-    );
-    const cap = new T.Mesh(
-      new T.SphereGeometry(0.56, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.52),
-      mat(hair),
-    );
-    cap.position.y = 0.08;
-    head.add(cap);
-    ball(head, hair, 0, 0.13, -0.25, 0.53, 0.48, 0.3);
-    ball(head, hair, -0.34, 0.24, 0.28, 0.26, 0.23, 0.18);
-    if (look.hair === 0) {
-      [-0.46, 0.46].forEach((x) =>
-        ball(head, hair, x, -0.05, -0.08, 0.16, 0.45, 0.36),
-      );
-    }
-    if (look.hair === 1) {
-      [-0.49, 0.49].forEach((x) => {
-        ball(head, hair, x, 0.47, -0.05, 0.25);
-        ball(head, color, x, 0.35, 0.09, 0.17, 0.06, 0.11);
-      });
-    }
-    if (look.hair === 2) {
-      ball(head, hair, 0, -0.38, -0.36, 0.5, 0.73, 0.17);
-      [-0.48, 0.48].forEach((x) =>
-        ball(head, hair, x, -0.3, -0.04, 0.13, 0.6, 0.2),
-      );
-    }
-    if (look.hair === 3) {
-      [-0.48, 0.48].forEach((x) => {
-        for (let i = 0; i < 4; i++)
-          ball(
-            head,
-            hair,
-            x + (i % 2 ? 0.035 : -0.035),
-            -0.18 - i * 0.18,
-            0.02,
-            0.14,
-          );
-        ball(head, color, x, -0.8, 0.05, 0.16, 0.055, 0.12);
-      });
-    }
-    if (look.hair === 4) {
-      ball(head, color, 0, 0.16, -0.53, 0.18, 0.12, 0.1);
-      ball(head, hair, 0, -0.15, -0.65, 0.21, 0.48, 0.2);
-    }
-    [-1, 1].forEach((s) => {
-      ball(head, "#fff8ef", s * 0.18, 0.015, 0.454, 0.085, 0.1, 0.04);
-      ball(head, "#34443e", s * 0.18, 0.006, 0.487, 0.045, 0.065, 0.018);
-      ball(head, "#ffffff", s * 0.17, 0.029, 0.5, 0.015);
-      ball(head, "#d99289", s * 0.32, -0.13, 0.425, 0.085, 0.045, 0.018);
-    });
-    ball(head, skin, 0, -0.1, 0.49, 0.08, 0.07, 0.06);
-    const smile = new T.Mesh(
-      new T.TorusGeometry(0.09, 0.012, 6, 14, Math.PI),
-      mat("#9c675b"),
-    );
-    smile.rotation.z = Math.PI;
-    smile.position.set(0, -0.21, 0.455);
-    head.add(smile);
-    g.userData = { legs, arms, head };
-    return g;
+    return CharacterAssets.girl(look);
   }
   function pet(type) {
+    if (type === "dog") return CharacterAssets.dog();
     const g = new T.Group(),
       fur = {
         cat: "#c6a078",
@@ -510,13 +335,18 @@
     const sharedG = new Set(Object.values(geos)),
       sharedM = new Set(mats.values());
     g.traverse((o) => {
-      if (o.geometry && !sharedG.has(o.geometry)) o.geometry.dispose();
+      if (
+        o.geometry &&
+        !o.geometry.userData.characterShared &&
+        !sharedG.has(o.geometry)
+      )
+        o.geometry.dispose();
       for (const m of o.material
         ? Array.isArray(o.material)
           ? o.material
           : [o.material]
         : []) {
-        if (!sharedM.has(m)) {
+        if (!m.userData.characterShared && !sharedM.has(m)) {
           if (m.map) m.map.dispose();
           m.dispose();
         }

@@ -1,2 +1,49 @@
-const assert=require('assert/strict'),http=require('http');const {handler}=require('./server.cjs');
-(async()=>{const s=http.createServer(handler);await new Promise(r=>s.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+s.address().port;try{let r=await fetch(base+'/');assert.equal(r.status,200);assert((await r.text()).includes('navigation.js'));r=await fetch(base+'/audio/410.mp3');assert.equal(r.status,200);assert.equal(r.headers.get('content-type'),'audio/mpeg');assert((await r.arrayBuffer()).byteLength>1000);r=await fetch(base+'/audio/410.mp3',{headers:{Range:'bytes=0-99'}});assert.equal(r.status,206);assert.equal((await r.arrayBuffer()).byteLength,100);r=await fetch(base+'/audio/410.mp3',{headers:{Range:'bytes=9999999-'}});assert.equal(r.status,416);r=await fetch(base+'/tools/upgrade-app.cjs');assert.equal(r.status,403);r=await fetch(base+'/%00');assert.equal(r.status,400);r=await fetch(base+'/absent.mp3');assert.equal(r.status,404);r=await fetch(base+'/',{method:'POST'});assert.equal(r.status,405);console.log('PASS: HTML, audio MIME, byte ranges, missing files, path checks and method validation.')}finally{s.close()}})().catch(e=>{console.error(e);process.exitCode=1});
+const assert = require("assert/strict"),
+  http = require("http");
+const { handler } = require("./server.cjs");
+(async () => {
+  const s = http.createServer(handler);
+  await new Promise((r) => s.listen(0, "127.0.0.1", r));
+  const base = "http://127.0.0.1:" + s.address().port;
+  try {
+    let r = await fetch(base + "/");
+    assert.equal(r.status, 200);
+    assert((await r.text()).includes("navigation.js"));
+    r = await fetch(base + "/models/characters.bin");
+    assert.equal(r.status, 200);
+    assert.equal(r.headers.get("content-type"), "application/octet-stream");
+    assert((await r.arrayBuffer()).byteLength > 1000000);
+    r = await fetch(base + "/models/thumbs/dog-0.png");
+    assert.equal(r.headers.get("content-type"), "image/png");
+    assert.equal(r.status, 200);
+    r = await fetch(base + "/audio/410.mp3");
+    assert.equal(r.status, 200);
+    assert.equal(r.headers.get("content-type"), "audio/mpeg");
+    assert((await r.arrayBuffer()).byteLength > 1000);
+    r = await fetch(base + "/audio/410.mp3", {
+      headers: { Range: "bytes=0-99" },
+    });
+    assert.equal(r.status, 206);
+    assert.equal((await r.arrayBuffer()).byteLength, 100);
+    r = await fetch(base + "/audio/410.mp3", {
+      headers: { Range: "bytes=9999999-" },
+    });
+    assert.equal(r.status, 416);
+    r = await fetch(base + "/tools/upgrade-app.cjs");
+    assert.equal(r.status, 403);
+    r = await fetch(base + "/%00");
+    assert.equal(r.status, 400);
+    r = await fetch(base + "/absent.mp3");
+    assert.equal(r.status, 404);
+    r = await fetch(base + "/", { method: "POST" });
+    assert.equal(r.status, 405);
+    console.log(
+      "PASS: HTML, audio MIME, byte ranges, missing files, path checks and method validation.",
+    );
+  } finally {
+    s.close();
+  }
+})().catch((e) => {
+  console.error(e);
+  process.exitCode = 1;
+});
