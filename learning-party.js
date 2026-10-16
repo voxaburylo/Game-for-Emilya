@@ -2,7 +2,9 @@
 (function (root) {
   "use strict";
   const TOTAL = 12,
-    PER_GEM = 4;
+    PER_GEM = 4,
+    DURATIONS = { fruit: 4, balloon: 4.2 },
+    STAGGER = 0.28;
   const chooseMode = (random = Math.random) =>
     random() < 0.5 ? "balloon" : "fruit";
   function create() {
@@ -67,12 +69,12 @@
   // Normalised flight path: fruits rise and fall; balloons only rise.
   // Each missed target loops, so slow hands do not lose their reward.
   function flight(mode, age, slot, width, height, size, calm = false) {
-    const duration = (mode === "fruit" ? 5.8 : 7.2) * (calm ? 1.5 : 1);
+    const duration = DURATIONS[mode] * (calm ? 1.35 : 1);
     const lanes = width < 420 ? 2 : 4;
     const local =
-      age - (slot % lanes) * 0.55 - Math.floor(slot / lanes) * (duration + 0.6);
+      age - (slot % lanes) * STAGGER - Math.floor(slot / lanes) * 0.4;
     if (local < 0) return { x: 0, y: height + size, angle: 0 };
-    const phase = local % (lanes === 2 ? 2 * (duration + 0.6) : duration);
+    const phase = local % (duration + 0.25);
     if (phase > duration) return { x: 0, y: height + size, angle: 0 };
     const t = phase / duration;
     const x = (((slot % lanes) + 0.5) * width) / lanes - size / 2;
@@ -121,9 +123,8 @@
       }, delay);
       timers.add(timer);
     };
-    host.innerHTML = `<section class="party ${reduced ? "party-calm" : ""}" aria-labelledby="party-title"><header class="party-head"><div><span class="party-eyebrow">ЗАНЯТТЯ ЗАВЕРШЕНО</span><h2 id="party-title">Свято відкриттів!</h2><p>Лускай кульки — збирай кристали</p></div><div class="party-base">${icon("gem")}<b>+3</b><small>за заняття</small></div></header><div class="party-meter" aria-label="Бонусні кристали">${[0, 1, 2].map((i) => `<div class="party-gem" data-gem="${i}">${icon("gem")}<span>${[0, 1, 2, 3].map((j) => `<i data-pip="${i * 4 + j}"></i>`).join("")}</span></div>`).join("")}</div><div class="party-field" role="group" aria-label="Кульки. Торкайся або проводь пальцем."><div class="party-cloud cloud-one"></div><div class="party-cloud cloud-two"></div><div class="party-balloons"></div><div class="party-demo" aria-hidden="true">${icon("hand")}<span>Торкнись!</span></div><div class="party-sparks" aria-hidden="true"></div></div><footer class="party-footer"><span class="party-count" role="status" aria-live="polite">0 / 12</span><button type="button" class="secondary party-finish">${icon("check")}Готово</button></footer></section>`;
+    host.innerHTML = `<section class="party ${reduced ? "party-calm" : ""}" aria-labelledby="party-title"><div class="party-confetti" aria-hidden="true">${Array.from({ length: 22 }, (_, i) => `<i style="--x:${(i * 47) % 100}%;--delay:${(i % 7) * 0.055}s;--spin:${i % 2 ? 1 : -1}"></i>`).join("")}</div><header class="party-head"><div><span class="party-eyebrow">ЗАНЯТТЯ ЗАВЕРШЕНО</span><h2 id="party-title">Ти молодець!</h2><p>Лускай кульки — збирай кристали</p></div><div class="party-base">${icon("gem")}<b>+3</b><small>за заняття</small></div></header><div class="party-meter" aria-label="Бонусні кристали">${[0, 1, 2].map((i) => `<div class="party-gem" data-gem="${i}">${icon("gem")}<span>${[0, 1, 2, 3].map((j) => `<i data-pip="${i * 4 + j}"></i>`).join("")}</span></div>`).join("")}</div><div class="party-field" role="group" aria-label="Кульки. Торкайся або проводь пальцем."><div class="party-balloons"></div><div class="party-demo" aria-hidden="true">${icon("hand")}<span>Торкнись!</span></div><div class="party-sparks" aria-hidden="true"></div></div><footer class="party-footer"><span class="party-count" role="status" aria-live="polite">0 / 12</span><button type="button" class="secondary party-finish">${icon("check")}Готово</button></footer></section>`;
     if (isFruit) {
-      host.querySelector("#party-title").textContent = "Фруктовий феєрверк!";
       host.querySelector(".party-head p").textContent =
         "Проведи пальцем через фрукти";
       host.querySelector(".party-demo span").textContent = "Проведи пальцем!";
@@ -227,7 +228,7 @@
               wave();
               if (keyboard) rack.querySelector("button")?.focus();
             },
-            reduced ? 150 : 480,
+            reduced ? 120 : 240,
           );
       } else if (keyboard) rack.querySelector("button:not(:disabled)")?.focus();
     }
@@ -303,6 +304,7 @@
   const api = {
     TOTAL,
     PER_GEM,
+    DURATIONS,
     create,
     chooseMode,
     pop,

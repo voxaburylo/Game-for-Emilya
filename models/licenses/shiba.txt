@@ -1,8 +1,0 @@
-Shiba
-Author: zixisun02 (Sketchfab username zixisun51)
-Source: https://sketchfab.com/3d-models/shiba-faef9fe5ace445e7b2989d1c1ece361c
-License: Creative Commons Attribution 4.0 International (CC BY 4.0)
-License text: https://creativecommons.org/licenses/by/4.0/
-
-The in-game model is an optimized, articulated derivative. Its texture is baked
-to vertex colours for offline tablet performance.

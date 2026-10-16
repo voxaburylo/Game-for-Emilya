@@ -218,6 +218,7 @@
       ears: [],
       baseHead: head.position.clone(),
       baseBody: body.position.clone(),
+      baseLegs: legs.map((leg) => leg.position.clone()),
     };
     return g;
   }
@@ -308,13 +309,20 @@
     }
     d.head.position.lerp(desired, blend);
     d.legs.forEach((l, i) => {
+      const legWave = Math.sin(gait + i * Math.PI),
+        lift =
+          moving && !reduced
+            ? Math.max(0, Math.cos(gait + i * Math.PI)) *
+              (type === "turtle" ? 0.025 : 0.065)
+            : 0;
       const angle =
         moving && !reduced
-          ? Math.sin(gait + i * Math.PI) * (type === "turtle" ? 0.18 : 0.3)
+          ? legWave * (type === "turtle" ? 0.24 : 0.4)
           : state === "dance" && !reduced
             ? Math.sin(time * 5 + i * Math.PI) * 0.26
             : 0;
       l.rotation.x += (angle - l.rotation.x) * blend;
+      l.position.y += (d.baseLegs[i].y + lift - l.position.y) * blend;
     });
     d.arms.forEach((a, i) => {
       const side = i ? 1 : -1;

@@ -115,15 +115,15 @@
     return out;
   }
   function nextNew(s) {
-    if (learning(s, "S:").length < 2) {
-      const v = newSyllables(s)[0];
-      if (v) return "S:" + v;
-    }
-    if (learning(s, "L:").length < 2) {
-      const l = ORDER.find((l) => box(s, "L:" + l) < 0);
-      if (l) return "L:" + l;
-    }
-    return null;
+    const letter = ORDER.find((l) => box(s, "L:" + l) < 0),
+      syllable = newSyllables(s)[0],
+      openedLetters = introduced(s, "L:").length;
+    // Every guided session opens something new. Once a child has enough
+    // letters to build a syllable, every third session alternates to reading.
+    if (syllable && openedLetters >= 4 && s.runs % 3 === 2)
+      return "S:" + syllable;
+    if (letter) return "L:" + letter;
+    return syllable ? "S:" + syllable : null;
   }
   function readyWords(s) {
     return S.WORDS.filter(
@@ -191,13 +191,15 @@
       letters = introduced(s, "L:").filter((l) => l !== "Ь"),
       words = readyWords(s).filter((w) => !used.has("W:" + w.text));
     let key = null;
-    if (fresh && (run.index === 1 || (!weak.length && !due.length))) key = fresh;
-    else if (run.index === 2 && !run.pairsDone && letters.length >= 3 && random() < 0.35) {
+    if (due.length && run.index === 0) key = due[0];
+    else if (fresh && (run.index === 1 || (!weak.length && !due.length)))
+      key = fresh;
+    else if (run.index === 2 && !run.pairsDone && letters.length >= 3) {
       const three = letters
         .sort((a, b) => box(s, "L:" + a) - box(s, "L:" + b))
         .slice(0, 3);
       return { mode: "pairs", target: three.join(""), options: shuffle([...three, ...three]) };
-    } else if (run.index === 3 && !run.wordsDone && words.length && random() < 0.5)
+    } else if (run.index === 3 && !run.wordsDone && words.length)
       key = "W:" + shuffle(words)[0].text;
     else if (due.length && (run.index % 2 === 0 || !weak.length)) key = due[0];
     else if (weak.length) key = weak[0];
@@ -251,11 +253,23 @@
     const b = box(s, key);
     return b < 0 ? "new" : b < KNOWN ? "learning" : b < MASTERED ? "known" : "mastered";
   }
+  function progress(s) {
+    const opened = introduced(s, "L:").filter((l) => ORDER.includes(l)),
+      known = opened.filter((l) => box(s, "L:" + l) >= KNOWN),
+      mastered = opened.filter((l) => box(s, "L:" + l) >= MASTERED);
+    return {
+      opened,
+      known,
+      mastered,
+      total: ORDER.length,
+      next: ORDER.find((l) => !opened.includes(l)) || "",
+    };
+  }
 
   const api = {
     INTERVAL, MASTERED, KNOWN, ORDER,
     day, keyOf, record, confuse, box, status,
-    activeLetters, familyReady, familyOpen, readyWords,
+    activeLetters, familyReady, familyOpen, readyWords, progress,
     letterOptions, syllableOptions, plan, placementTask, placementResult,
   };
   if (typeof module !== "undefined") module.exports = api;

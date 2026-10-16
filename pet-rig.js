@@ -74,29 +74,20 @@
       for (let i = 0; i < 4; i++) {
         const r = d.rig[i],
           phase = b.distance * 10 + (i % 2 ? Math.PI : 0),
-          neutral = type === "shiba" && i >= 2 ? 0.18 : 0;
+          neutral = 0;
         let target =
           state === "walk" && !reduced
-            ? neutral + Math.sin(phase) * (type === "shiba" ? 0.06 : 0.28)
+            ? neutral + Math.sin(phase) * 0.38
             : neutral;
-        if (type !== "shiba") {
-          if (state === "sit") target = i < 2 ? -.08 : .32;
-          if (state === "lie") target = i < 2 ? .42 : -.2;
-          if (state === "stretch" && i < 2) target = .35;
-        }
-        if (type === "shiba") {
-          // Counter the torso lift at the four paw bones. Vertices around the
-          // shoulders and hips stretch softly while the soles stay grounded.
-          const plantedOffset = i >= 2 ? 0.23 : 0.18;
-          r.hip.position.y +=
-            (r.rest.y - plantedOffset - r.hip.position.y) * blend;
-        }
+        if (state === "sit") target = i < 2 ? -.08 : .32;
+        if (state === "lie") target = i < 2 ? .42 : -.2;
+        if (state === "stretch" && i < 2) target = .35;
+        const lift =
+          state === "walk" && !reduced ? Math.max(0, Math.cos(phase)) * 0.055 : 0;
+        r.hip.position.y += (r.rest.y + lift - r.hip.position.y) * blend;
         r.hip.rotation.x += (target - r.hip.rotation.x) * blend;
-        // Shiba's downloaded sculpt already has anatomical bends. A second
-        // artificial knee bend left both hind legs permanently crouched, so
-        // its soft rig now swings from a straight neutral pose.
-        r.knee.rotation.x = type === "shiba" ? 0 : -r.hip.rotation.x * .35;
-        r.ankle.rotation.x = type === "shiba" ? -r.hip.rotation.x : -r.hip.rotation.x - r.knee.rotation.x;
+        r.knee.rotation.x = -r.hip.rotation.x * .35;
+        r.ankle.rotation.x = -r.hip.rotation.x - r.knee.rotation.x;
       }
       return;
     }
@@ -134,9 +125,9 @@
               ? [0, Math.PI, Math.PI * 0.5, Math.PI * 1.5]
               : [0, Math.PI, Math.PI, 0];
         const phase = b.distance * (type === "rabbit" ? 13 : 10) + offsets[i];
-        footTarget.z += Math.sin(phase) * (type === "rabbit" ? 0.15 : 0.18);
+        footTarget.z += Math.sin(phase) * (type === "rabbit" ? 0.2 : 0.23);
         footTarget.y +=
-          Math.max(0, Math.cos(phase)) * (type === "rabbit" ? 0.08 : 0.07);
+          Math.max(0, Math.cos(phase)) * (type === "rabbit" ? 0.11 : 0.1);
       }
       r.foot.lerp(footTarget, blend);
       const y = r.foot.y - leg.position.y,

@@ -35,6 +35,26 @@ for (const type of CompanionAssets.types) {
     PetBehavior.update(pet, { time: 31, dt: 1 / 60, distance: 0.1 }).state,
     "walk",
   );
+  const firstLeg = pet.userData.legs[0],
+    rotations = [],
+    heights = [];
+  for (let i = 0; i < 90; i++) {
+    PetBehavior.update(pet, {
+      time: 31 + i / 60,
+      dt: 1 / 60,
+      distance: 0.025,
+    });
+    rotations.push(firstLeg.rotation.x);
+    heights.push(firstLeg.position.y);
+  }
+  assert(
+    Math.max(...rotations) - Math.min(...rotations) > 0.12,
+    `${type} visibly swings its legs while walking`,
+  );
+  assert(
+    Math.max(...heights) - Math.min(...heights) > 0.012,
+    `${type} visibly lifts its feet while walking`,
+  );
   assert.notEqual(
     PetBehavior.update(pet, { time: 32, dt: 1 / 60 }).state,
     "walk",

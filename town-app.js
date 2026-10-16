@@ -36,14 +36,16 @@
     const raw = localStorage.getItem(KEY),
       legacy = localStorage.getItem(OLD);
     if (raw) {
-      let s = JSON.parse(raw);
-      if (s?.version === 4) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.version === 4) {
         // One-time upgrade to v5; the original stays as a backup.
         if (!localStorage.getItem(KEY + "-v4-backup"))
           localStorage.setItem(KEY + "-v4-backup", raw);
-        s = S.migrate(s);
       }
-      if (!S.valid(s)) throw Error("save");
+      // v5 also has safe migrations for retired assets. Always migrate a
+      // cloned value so the original localStorage entry remains recoverable.
+      const s = S.migrate(parsed);
+      if (!s || !S.valid(s)) throw Error("save");
       state = s;
     } else if (legacy) {
       const s = S.migrate(JSON.parse(legacy));
@@ -81,7 +83,6 @@
       dog: "Песик",
       rabbit: "Кролик",
       fox: "Лисичка",
-      shiba: "Шіба",
       "cube-beaver": "Бобер",
       "cube-bee": "Бджілка",
       "cube-bunny": "Кубічний зайчик",
@@ -304,6 +305,9 @@
     disposeParty = null;
     hud();
     let html = "";
+    const learningProgress = L.progress(state),
+      recentLetters = learningProgress.opened.slice(-7),
+      journey = `<div class="learning-journey" aria-label="Відкрито ${learningProgress.opened.length} з ${learningProgress.total} літер"><div class="journey-top"><b>Твоя абетка</b><span>${learningProgress.opened.length} / ${learningProgress.total}</span></div><div class="journey-track"><i style="width:${(learningProgress.opened.length / learningProgress.total) * 100}%"></i></div><div class="journey-letters">${recentLetters.map((l) => `<span>${l}</span>`).join("")}${learningProgress.next ? `<span class="next-letter">?</span>` : ""}</div></div>`;
     if (route === "welcome")
       html = `<div class="cover"><section class="welcome"><div class="emblem">${icon("home")}</div><div class="eyebrow">МАЛЕНЬКІ ВІДКРИТТЯ ЩОДНЯ</div><h1>Острів Емілії</h1><p>Твій дім. Твої друзі. Твої перші слова.</p><div class="how"><span>${icon("hand")}Торкнись</span><span>${icon("ear")}Послухай</span><span>${icon("build")}Створи</span></div>${btn("start", "play", "Грати", "primary")}<button class="quiet" data-action="parents">Для батьків</button>${saveBlocked ? '<p class="note">Збереження потребує перевірки. Оригінал не змінено — відкрийте меню батьків.</p>' : ""}</section></div>`;
     document.body.classList.toggle("in-room", route === "room");
@@ -431,7 +435,7 @@
     if (route === "learn")
       html = modal(
         "Маленькі відкриття",
-        `<button class="play-big" data-action="lesson" data-value="auto" aria-label="Грати">${icon("play")}<span>Грати</span></button><div class="eyebrow all-games">Усі ігри</div><div class="menu-grid">${Object.entries(
+        `${journey}<button class="play-big" data-action="lesson" data-value="auto" aria-label="Грати">${icon("play")}<span>Грати</span></button><div class="eyebrow all-games">Усі ігри</div><div class="menu-grid">${Object.entries(
           modes,
         )
           .map(
@@ -445,9 +449,10 @@
     if (route === "lesson") html = lessonHTML();
     if (route === "reward") {
       if (!run.party.closed)
-        html = '<div class="cover" id="learning-party"></div>';
+        // Keep the final solved letter/syllable visible under the celebration.
+        html = `${lessonHTML()}<div id="learning-party" aria-label="Свято після заняття"></div>`;
       else
-        html = `<div class="cover"><section class="modal reward"><div class="big-gem">${icon("check")}</div><h2>У тебе вийшло!</h2><div class="reward-discoveries" aria-label="Сьогодні грали з">${[
+        html = `<div class="cover"><section class="modal reward"><div class="big-gem">${icon("check")}</div><h2>У тебе вийшло!</h2>${run.newItems?.length ? `<div class="new-discovery"><small>НОВЕ ВІДКРИТТЯ</small><div>${run.newItems.map((t) => `<span>${t}</span>`).join("")}</div></div>` : ""}<div class="reward-discoveries" aria-label="Сьогодні грали з">${[
           ...new Set(run.discoveries || []),
         ]
           .slice(0, 5)
@@ -535,12 +540,23 @@
       previous: null,
       used: [],
       discoveries: [],
+      newItems: [],
     };
     if (mode === "auto") {
       run.total = 5;
       // The very first guided game finds out which letters the child already knows.
-      if (!state.placed && !state.allLevels)
+      if (
+        !state.placed &&
+        !state.allLevels &&
+        (state.runs === 0 || state.seen.recheck)
+      )
         run.place = { k: 0, misses: 0, streak: 0 };
+      else if (!state.placed) {
+        // Saves created before the placement flag was introduced may already
+        // contain real learning history. Do not restart them at the alphabet.
+        state.placed = true;
+        save();
+      }
     }
     nextTask();
   }
@@ -549,8 +565,18 @@
     const pool = S.FAMILIES[family],
       letters = L.activeLetters(state);
     if (["letters", "hear"].includes(mode)) {
-      const target = Core.choose(letters, state.letterScores, run.previous);
-      return { mode, target, options: L.letterOptions(state, target) };
+      const unused = letters.filter((l) => !run.used.includes("L:" + l)),
+        target = Core.choose(
+          unused.length ? unused : letters,
+          state.letterScores,
+          run.previous,
+        );
+      return {
+        mode,
+        target,
+        key: "L:" + target,
+        options: L.letterOptions(state, target),
+      };
     }
     if (mode === "pairs") {
       const p = Core.shuffle(letters).slice(0, 3);
@@ -564,20 +590,28 @@
       return {
         mode,
         target: w.text,
+        key: "W:" + w.text,
         word: w,
         options: Core.shuffle(w.parts.map((text, id) => ({ text, id }))),
       };
     }
-    const target = Core.choose(pool, state.syllableScores, run.previous);
+    const unused = pool.filter((v) => !run.used.includes("S:" + v)),
+      target = Core.choose(
+        unused.length ? unused : pool,
+        state.syllableScores,
+        run.previous,
+      );
     if (mode === "blend" || mode === "discover")
       return {
         mode,
         target,
+        key: "S:" + target,
         options: Core.shuffle([...target].map((text, id) => ({ text, id }))),
       };
     return {
       mode,
       target,
+      key: "S:" + target,
       options: Core.shuffle([
         target,
         ...Core.shuffle(pool.filter((x) => x !== target)).slice(
@@ -601,6 +635,7 @@
       target: t.target,
       options: t.options,
       placement: !!t.placement,
+      isNew: !!t.isNew,
       hinted: false,
       done: false,
       heard: false,
@@ -625,7 +660,10 @@
     if (!S.reward(state, run)) return;
     run.party = LearningParty.create();
     run.partyMode = LearningParty.chooseMode();
-    if (run.place) state.placed = true;
+    if (run.place) {
+      state.placed = true;
+      delete state.seen.recheck;
+    }
     save();
     audio.stop();
     route = "reward";
@@ -655,7 +693,8 @@
   }
   function lessonHTML() {
     const m = task.mode,
-      hearing = ["hear", "hear-syllable"].includes(m);
+      hearing = ["hear", "hear-syllable"].includes(m),
+      finalAnswer = !task.placement && run.index + 1 >= run.total;
     let board = "",
       answers = "";
     if (hearing) board = btn("play-task", "sound", "Послухати", "primary");
@@ -676,7 +715,7 @@
           return `<button class="answer ${correct ? "correct" : ""} ${text.length > 1 ? "long" : ""} ${task.selected.includes(i) ? "selected" : ""} ${task.matched.includes(i) ? "matched" : ""} ${task.hintIndex === i ? "hint" : ""}" data-action="answer" data-value="${i}" ${task.done || used || (hearing && !task.heard) ? "disabled" : ""}>${text}</button>`;
         })
         .join("");
-    return `<div class="cover"><section class="lesson-shell"><div class="lesson-head">${btn("back", "back", "Назад")}<div><b>${modes[m][0]}</b><div class="dots">${run.place ? "" : Array.from({ length: run.total }, (_, i) => `<i class="${i < run.index ? "done" : i === run.index ? "current" : ""}"></i>`).join("")}</div></div><div class="spacer"></div>${btn("play-task", "sound", "Послухати ще раз")}${task.placement ? "" : btn("help", "hand", "Підказка")}</div><h3 class="lesson-title">${task.done && !task.placement ? "Чудово!" : hearing ? "Послухай і знайди" : m === "pairs" ? "Знайди дві однакові" : m === "blend" ? "З’єднай літери" : m === "words" ? "Збери слово зі складів" : m === "discover" ? "Торкнись і послухай" : "Знайди таку саму"}</h3><div class="lesson-board">${board}</div><div class="answers">${answers}</div><div class="audio-status" id="audio-status"></div><div class="lesson-feedback">${task.feedback || ""}</div>${(task.done && !task.placement) || m === "discover" ? btn("next", "check", "Далі", "primary lesson-next", m === "discover" && !task.heard ? "disabled" : "") : ""}</section></div>`;
+    return `<div class="cover"><section class="lesson-shell"><div class="lesson-head">${btn("back", "back", "Назад")}<div><b>${modes[m][0]}</b><div class="dots">${run.place ? "" : Array.from({ length: run.total }, (_, i) => `<i class="${i < run.index ? "done" : i === run.index ? "current" : ""}"></i>`).join("")}</div></div><div class="spacer"></div><div class="lesson-total"><b>${L.progress(state).opened.length}</b><small>літер</small></div>${btn("play-task", "sound", "Послухати ще раз")}${task.placement ? "" : btn("help", "hand", "Підказка")}</div><h3 class="lesson-title">${task.isNew && !task.done ? "Нова літера!" : task.done && !task.placement ? "Чудово!" : hearing ? "Послухай і знайди" : m === "pairs" ? "Знайди дві однакові" : m === "blend" ? "З’єднай літери" : m === "words" ? "Збери слово зі складів" : m === "discover" ? "Торкнись і послухай" : "Знайди таку саму"}</h3><div class="lesson-board">${board}</div><div class="answers">${answers}</div><div class="audio-status" id="audio-status"></div><div class="lesson-feedback">${task.feedback || ""}</div>${((task.done && !task.placement && !finalAnswer) || m === "discover") ? btn("next", "check", "Далі", "primary lesson-next", m === "discover" && !task.heard ? "disabled" : "") : ""}</section></div>`;
   }
   // intro: optional spoken prompt (voice-pack phrase key) said before the target.
   async function playTask(intro) {
@@ -711,6 +750,8 @@
   }
   function complete() {
     task.done = true;
+    if (task.isNew && !run.newItems.includes(task.target))
+      run.newItems.push(task.target);
     run.discoveries.push(
       ...(task.mode === "pairs" ? [...task.target] : [task.target]),
     );
@@ -722,6 +763,11 @@
     render();
     const t = task,
       praise = "praise-" + (1 + Math.floor(Math.random() * 4));
+    if (run.index + 1 >= run.total)
+      setTimeout(
+        () => task === t && route === "lesson" && finishRun(),
+        850,
+      );
     setTimeout(async () => {
       if (task !== t || route !== "lesson") return;
       await audio.play("phrase", praise);
@@ -870,7 +916,7 @@
         )
         .join(
           "",
-        )}<h3 style="margin-top:18px">Літери</h3><div class="alphabet letter-status">${L.ORDER.map((l) => `<span class="${L.status(state, "L:" + l)}">${l}</span>`).join("")}</div><p class="note">Світла — ще не зустрічалась; жовта — знайомиться; зелена — впізнає на слух; темно-зелена — впізнає в різні дні (вивчено). Зіставлення й складання за зразком лише знайомлять із літерою, а вивченою її робить тільки впізнавання на слух. Це ігровий прогрес, а не оцінка навички читання.</p><div class="parent-actions">${btn("replace", "undo", "Перевірити знання знову", "secondary")}${btn("export", "save", "Експорт", "secondary")}<label class="secondary">Імпорт<input id="import-save" type="file" accept="application/json,.json"></label>${btn("reset-ask", "undo", "Почати заново", "secondary danger")}</div><details><summary>Результати за вправами</summary><div class="score-row"><b>Вправа</b><b>Сама</b><b>З допом.</b></div>${entries.map(([k, v]) => `<div class="score-row"><span>${escapeHTML((modes[k.split(":")[0]]?.[0] || k.split(":")[0]) + ": " + k.split(":").slice(1).join(":"))}</span><span>${v.solo}</span><span>${v.hinted}</span></div>`).join("") || '<p class="note">Ще немає завершених завдань.</p>'}</details><p class="note" id="offline-state" style="margin-top:18px">${offlineReady ? "Офлайн-пакет готовий: гра та всі записи доступні без мережі." : "Офлайн-пакет готується. Для встановлення потрібен localhost або HTTPS."}</p><p class="credits" style="margin-top:20px">Літери, склади й підказки — синтезований жіночий голос «Тетяна» (Apache 2.0). Слова — живий жіночий голос Галі Раптової, Shtooka (CC BY 2.0 France). Запасні записи літер — Tabrus (CC BY-SA 4.0). Усі записи дозволяють комерційне використання з указанням авторів. <a href="audio/voice/CREDITS.txt" target="_blank" rel="noopener">Голос учительки</a> · <a href="audio/speech/CREDITS.txt" target="_blank" rel="noopener">Слова</a> · <a href="audio/CREDITS.txt" target="_blank" rel="noopener">Літери Tabrus</a>.<br>3D-моделі Shiba та фруктів — CC BY 4.0, дозволені для комерційного використання з атрибуцією: <a href="models/licenses/shiba.txt" target="_blank" rel="noopener">Shiba</a> · <a href="models/party-fruit/CREDITS.txt" target="_blank" rel="noopener">фрукти</a>.</p>`,
+        )}<h3 style="margin-top:18px">Літери</h3><div class="alphabet letter-status">${L.ORDER.map((l) => `<span class="${L.status(state, "L:" + l)}">${l}</span>`).join("")}</div><p class="note">Світла — ще не зустрічалась; жовта — знайомиться; зелена — впізнає на слух; темно-зелена — впізнає в різні дні (вивчено). Зіставлення й складання за зразком лише знайомлять із літерою, а вивченою її робить тільки впізнавання на слух. Це ігровий прогрес, а не оцінка навички читання.</p><div class="parent-actions">${btn("replace", "undo", "Перевірити знання знову", "secondary")}${btn("export", "save", "Експорт", "secondary")}<label class="secondary">Імпорт<input id="import-save" type="file" accept="application/json,.json"></label>${btn("reset-ask", "undo", "Почати заново", "secondary danger")}</div><details><summary>Результати за вправами</summary><div class="score-row"><b>Вправа</b><b>Сама</b><b>З допом.</b></div>${entries.map(([k, v]) => `<div class="score-row"><span>${escapeHTML((modes[k.split(":")[0]]?.[0] || k.split(":")[0]) + ": " + k.split(":").slice(1).join(":"))}</span><span>${v.solo}</span><span>${v.hinted}</span></div>`).join("") || '<p class="note">Ще немає завершених завдань.</p>'}</details><p class="note" id="offline-state" style="margin-top:18px">${offlineReady ? "Офлайн-пакет готовий: гра та всі записи доступні без мережі." : "Офлайн-пакет готується. Для встановлення потрібен localhost або HTTPS."}</p><p class="credits" style="margin-top:20px">Літери, склади й підказки — синтезований жіночий голос «Тетяна» (Apache 2.0). Слова — живий жіночий голос Галі Раптової, Shtooka (CC BY 2.0 France). Запасні записи літер — Tabrus (CC BY-SA 4.0). Усі записи дозволяють комерційне використання з указанням авторів. <a href="audio/voice/CREDITS.txt" target="_blank" rel="noopener">Голос учительки</a> · <a href="audio/speech/CREDITS.txt" target="_blank" rel="noopener">Слова</a> · <a href="audio/CREDITS.txt" target="_blank" rel="noopener">Літери Tabrus</a>.<br>3D-моделі фруктів — CC BY 4.0, дозволені для комерційного використання з атрибуцією: <a href="models/party-fruit/CREDITS.txt" target="_blank" rel="noopener">автори моделей</a>.</p>`,
     );
   }
   function escapeHTML(t) {
@@ -1342,6 +1388,7 @@
       );
     if (act === "replace") {
       state.placed = false;
+      state.seen.recheck = true;
       save();
       toast("Наступна гра «Грати» почнеться з короткої перевірки.");
       return;
@@ -1414,7 +1461,9 @@
       .then((reg) => {
         const check = async () => {
           if (reg.active?.state === "activated") {
-            const cache = await caches.open("emilia-living-v5-16-stable-pets");
+            const cache = await caches.open(
+              "emilia-living-v5-20-learning-journey",
+            );
             offlineReady = (
               await Promise.all(
                 [

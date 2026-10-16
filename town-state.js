@@ -153,7 +153,6 @@
       "dog",
       "rabbit",
       "fox",
-      "shiba",
       "cube-beaver",
       "cube-bee",
       "cube-bunny",
@@ -188,7 +187,6 @@
     dog: 0,
     rabbit: 0,
     fox: 0,
-    shiba: 28,
     "cube-beaver": 14,
     "cube-bee": 10,
     "cube-bunny": 12,
@@ -273,6 +271,21 @@
     };
   }
   function migrate(old) {
+    // Shiba was removed because its downloaded mesh was sculpted in a seated
+    // pose and could not produce a convincing walk. Preserve the rest of an
+    // existing v5 save and select the free cat instead.
+    if (
+      old &&
+      old.version === 5 &&
+      (old.pet === "shiba" || old.ownedPets?.includes("shiba"))
+    ) {
+      const cleaned = JSON.parse(JSON.stringify(old));
+      if (cleaned.pet === "shiba") cleaned.pet = "cat";
+      cleaned.ownedPets = (cleaned.ownedPets || []).filter(
+        (pet) => pet !== "shiba",
+      );
+      if (valid(cleaned)) return cleaned;
+    }
     if (valid(old)) return JSON.parse(JSON.stringify(old));
     if (old && old.version === 4 && validBody(old)) {
       // v4 -> v5: keep everything; old scores came mostly from visual matching,

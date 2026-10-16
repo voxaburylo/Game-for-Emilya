@@ -58,7 +58,7 @@ for (const width of [260, 360, 600, 760])
       falling = false,
       visible = false,
       old;
-    for (let age = 0; age < 5.7; age += 0.05) {
+    for (let age = 0; age < P.DURATIONS[mode] - 0.1; age += 0.05) {
       const p = P.flight(mode, age, 0, width, 390, 100);
       assert(p.x >= 0 && p.x + 100 <= width);
       assert(Number.isFinite(p.y) && Number.isFinite(p.angle));
@@ -80,6 +80,7 @@ for (const width of [260, 360, 600, 760])
       assert(appearances > 10, "missed target must return");
     }
   }
+assert(P.DURATIONS.balloon <= 4.2, "balloons cross the screen quickly");
 // A quick swipe cannot skip a fruit just because pointer events were sparse.
 const rect = { left: 100, top: 100, width: 100, height: 100 };
 assert(P.intersects({ x: 20, y: 143 }, { x: 300, y: 143 }, rect));
@@ -90,6 +91,15 @@ for (const file of ["learning-party.js", "learning-party.css"]) {
   assert(FILES.includes(file));
   assert(fs.readFileSync("index.html", "utf8").includes(file));
 }
+const appSource = fs.readFileSync("town-app.js", "utf8"),
+  partyCSS = fs.readFileSync("learning-party.css", "utf8"),
+  partySource = fs.readFileSync("learning-party.js", "utf8");
+assert(
+  appSource.includes("${lessonHTML()}<div id=\"learning-party\""),
+  "the solved task stays visible behind the celebration",
+);
+assert(partyCSS.includes("#learning-party") && partyCSS.includes("background: transparent"));
+assert(partySource.includes("party-confetti") && partySource.includes("Ти молодець!"));
 assert.equal(P.fruitAssets.length, 10);
 for (const name of P.fruitAssets) {
   const file = `models/party-fruit/${name}.png`;

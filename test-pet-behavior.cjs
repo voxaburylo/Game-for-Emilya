@@ -26,7 +26,6 @@ for (const type of [
   "cat",
   "rabbit",
   "fox",
-  "shiba",
   "cube-elephant",
   "cube-bee",
   "cube-tiger",
@@ -47,6 +46,29 @@ for (const type of [
     assert(states.has(state), `${type}: missing ${state}`);
   step("", 0.1);
   assert.equal(pet.userData.behavior.name, "walk");
+  const gait = [];
+  for (let i = 0; i < 24; i++) {
+    step("", 0.035);
+    gait.push(pet.userData.rig[0].hip.rotation.x);
+  }
+  assert(
+    Math.max(...gait) - Math.min(...gait) > 0.08,
+    `${type}: walking visibly swings the legs`,
+  );
+  if (type.startsWith("cube-")) {
+    const meshes = [];
+    pet.traverse((node) => {
+      if (node.isSkinnedMesh) meshes.push(node);
+    });
+    assert(meshes.length, `${type}: visible mesh is attached to the leg rig`);
+    assert(
+      meshes.some((mesh) => {
+        const indices = mesh.geometry.attributes.skinIndex.array;
+        return indices.some((bone) => bone >= 3);
+      }),
+      `${type}: downloaded leg vertices are weighted to moving bones`,
+    );
+  }
   const phase = pet.userData.behavior.distance;
   step();
   assert.notEqual(pet.userData.behavior.name, "walk");

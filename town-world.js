@@ -1684,7 +1684,6 @@
         this.pet.position.y =
           floor -
           sole +
-          (this.pet.userData.characterModel === "shiba" ? 0.08 : 0) +
           this.petGroundBounce +
           (this.pet.userData.hoverPet
             ? 0.42 + (this.reduced ? 0 : Math.sin(this.time * 3.1) * 0.08)

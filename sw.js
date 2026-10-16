@@ -1,5 +1,5 @@
 "use strict";
-const CACHE = "emilia-living-v5-16-stable-pets";
+const CACHE = "emilia-living-v5-20-learning-journey";
 const ASSETS = [
   "park.css",
   "park-catalog.js",
@@ -299,7 +299,6 @@ const ASSETS = [
   "models/thumbs/hair-3.png",
   "models/thumbs/hair-4.png",
   "models/thumbs/rabbit-0.png",
-  "models/thumbs/shiba-0.png",
   "models/thumbs/shoes-0.png",
   "models/thumbs/shoes-1.png",
   "models/thumbs/shoes-2.png",
@@ -315,8 +314,7 @@ const ASSETS = [
   "models/party-fruit/pineapple.png",
   "models/party-fruit/pomegranate.png",
   "models/party-fruit/strawberry.png",
-  "models/licenses/kenney-cube-pets.txt",
-  "models/licenses/shiba.txt"
+  "models/licenses/kenney-cube-pets.txt"
 ];
 async function rangeResponse(request, cached) {
   const range = request.headers.get("range");

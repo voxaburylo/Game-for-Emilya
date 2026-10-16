@@ -1,9 +1,9 @@
 /* Full-screen reward play; the lesson and island retain their own layouts. */
-#learning-party.cover {
+#learning-party {
   position: fixed;
   inset: 0;
   padding: 0;
-  backdrop-filter: none;
+  background: transparent;
   z-index: 100;
   overflow: hidden;
 }
@@ -14,12 +14,18 @@
   color: #254e65;
 }
 .party-head {
-  max-width: calc(100% - 290px);
+  max-width: min(360px, calc(100% - 290px));
   position: absolute;
   top: max(22px, env(safe-area-inset-top));
-  left: max(24px, env(safe-area-inset-left));
-  z-index: 3;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
   pointer-events: none;
+  padding: 8px 24px;
+  border-radius: 22px;
+  background: #fff9ebf2;
+  box-shadow: 0 8px 25px #334c4740;
+  text-align: center;
 }
 .party h2 {
   font-size: clamp(23px, 3vw, 34px);
@@ -27,8 +33,7 @@
   text-shadow: 0 1px #ffffff80;
 }
 .party-head p {
-  margin: 6px 0;
-  font-size: 15px;
+  display: none;
 }
 .party-eyebrow {
   font-size: 11px;
@@ -41,7 +46,7 @@
   display: none;
 }
 .party-fruit .party-head {
-  color: #fff7e7;
+  color: #254e65;
 }
 .party-fruit h2 {
   text-shadow: none;
@@ -97,22 +102,15 @@
   inset: 0;
   overflow: hidden;
   isolation: isolate;
-  background: linear-gradient(#b9e6ef, #eaf7e9);
+  background: transparent;
   touch-action: none;
   user-select: none;
 }
 .party-field::after {
-  content: "";
-  position: absolute;
-  width: 130%;
-  height: 100px;
-  bottom: -55px;
-  left: -15%;
-  border-radius: 50%;
-  background: #8fc8a5;
-  z-index: -1;
+  display: none;
 }
 .party-cloud {
+  display: none;
   position: absolute;
   width: 160px;
   height: 32px;
@@ -252,7 +250,7 @@
   min-width: 130px;
 }
 .party-fruit .party-field {
-  background: radial-gradient(ellipse at 50% 90%, #406b7e, #19364d);
+  background: transparent;
 }
 .party-fruit .party-cloud {
   opacity: 0.12;
@@ -261,7 +259,7 @@
   background: #608286;
 }
 .party-fruit .party-demo {
-  color: #fff;
+  color: #254e65;
   animation-name: party-swipe;
 }
 .party-fruit .party-demo .ico {
@@ -278,6 +276,31 @@
   box-shadow: 0 0 12px #fff;
   transform-origin: left center;
   pointer-events: none;
+}
+.party-confetti {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 4;
+  pointer-events: none;
+}
+.party-confetti i {
+  position: absolute;
+  left: var(--x);
+  top: -25px;
+  width: 11px;
+  height: 24px;
+  border-radius: 4px;
+  background: #ef6583;
+  animation: confettiDrop 1.25s cubic-bezier(.2,.65,.35,1) var(--delay) both;
+}
+.party-confetti i:nth-child(4n + 2) { background: #efae38; }
+.party-confetti i:nth-child(4n + 3) { background: #46b6b5; }
+.party-confetti i:nth-child(4n) { background: #8c79d8; }
+@keyframes confettiDrop {
+  0% { opacity: 0; transform: translateY(-30px) rotate(0); }
+  12% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(72vh) rotate(calc(var(--spin) * 620deg)); }
 }
 .fruit-half {
   position: absolute;
@@ -423,7 +446,9 @@
   .party-head {
     left: 16px;
     top: 16px;
-    max-width: 57%;
+    max-width: 48%;
+    transform: none;
+    padding: 7px 12px;
   }
   .party h2 {
     font-size: 23px;

@@ -93,15 +93,16 @@
       throw Error("Character assets must be loaded before creating the world");
     const T = root.THREE,
       group = new T.Group(),
-      staticPet = model === "shiba" || model.startsWith("cube-"),
+      staticPet = model.startsWith("cube-"),
+      skinnedModel = model.startsWith("cube-"),
       nodes = { root: group };
     group.name = model + " · Blender model";
     const pivots = library.pivots[model];
     for (const [key, position] of Object.entries(pivots)) {
       if (key === "root") continue;
-      const node = model === "shiba" ? new T.Bone() : new T.Group();
+      const node = skinnedModel ? new T.Bone() : new T.Group();
       const parent =
-        model === "shiba" && key !== "body"
+        skinnedModel && key !== "body"
           ? "body"
           : library.parents[key] || "root";
       node.name = key;
@@ -122,21 +123,30 @@
     for (const part of library.meshes) {
       if (part.model !== model || !variants.has(part.variant)) continue;
       const definition = library.materials[part.material],
-        painted = !!part.color;
+        painted = !!part.color,
+        cubePaint = painted && model.startsWith("cube-");
       const key = part.material + ":" + painted;
       const override = look.materials?.[part.material];
       const cache =
         definition.tint || override ? instanceMaterials : sharedMaterials;
       if (!cache.has(key)) {
         const material = new T.MeshStandardMaterial({
-          color: painted ? 0xffffff : new T.Color().setRGB(...definition.color),
-          roughness: definition.roughness,
+          // Vertex colors from the CC0 cube pack are lit by a bright outdoor
+          // rig. A warm multiplier keeps them solid instead of chalky at the
+          // normal play-camera distance while preserving white face details.
+          color: painted
+            ? cubePaint
+              ? new T.Color("#beb7ad")
+              : 0xffffff
+            : new T.Color().setRGB(...definition.color),
+          roughness: cubePaint ? 0.62 : definition.roughness,
           metalness: definition.metalness,
           vertexColors: painted,
           transparent: false,
           opacity: 1,
           depthWrite: true,
         });
+        if (cubePaint) material.userData.cubeColorCompensation = true;
         if (definition.tint)
           material.color.set(
             root.TownState.COLORS[look.color] || root.TownState.COLORS[0],
@@ -145,14 +155,14 @@
         else material.userData.characterShared = true;
         cache.set(key, material);
       }
-      const skinned = model === "shiba" && !!part.skinIndex;
+      const skinned = !!part.skinIndex;
       const mesh = skinned
         ? new T.SkinnedMesh(part.geometry, cache.get(key))
         : new T.Mesh(part.geometry, cache.get(key));
       mesh.name = part.variant + " · " + part.material;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
-      nodes[part.node].add(mesh);
+      nodes[skinned ? "root" : part.node].add(mesh);
       if (skinned) {
         group.updateMatrixWorld(true);
         mesh.bind(
@@ -207,7 +217,7 @@
     group.userData = {
       characterModel: model,
       staticPet,
-      headingOffset: model === "shiba" ? Math.PI : 0,
+      headingOffset: 0,
       hoverPet: ["cube-bee", "cube-fish", "cube-parrot"].includes(model),
       torso,
       rig,

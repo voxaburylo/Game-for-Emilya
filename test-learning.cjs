@@ -44,9 +44,9 @@ test("matching, pairs and copying never count as knowing", () => {
   assert.equal(L.box(s, "L:К"), 0, "a hinted first meeting stays new");
 });
 
-test("new letters arrive only when fewer than two are still being learned", () => {
+test("each guided session opens a new item while earlier letters stay in practice", () => {
   const s = S.fresh(),
-    run = { index: 1, used: [] };
+    run = { index: 0, used: [] };
   let t = L.plan(s, run, D);
   assert.equal(t.key, "L:А");
   assert(t.isNew);
@@ -54,11 +54,19 @@ test("new letters arrive only when fewer than two are still being learned", () =
   L.record(s, "letters", "А", true, D);
   L.record(s, "letters", "О", true, D);
   t = L.plan(s, { index: 1, used: [] }, D);
-  assert(!t.isNew, "two letters still being learned");
-  L.record(s, "hear", "А", true, D);
-  t = L.plan(s, { index: 1, used: [] }, D);
   assert.equal(t.key, "L:У");
   assert(t.isNew);
+  t = L.plan(s, { index: 1, used: [], newDone: true }, D);
+  assert(!t.isNew, "only one new item opens in a session");
+  for (const l of ["А", "О", "У", "М"]) {
+    L.record(s, "hear", l, true, D);
+    L.record(s, "hear", l, true, D);
+  }
+  s.runs = 2;
+  t = L.plan(s, { index: 1, used: [] }, D);
+  assert.equal(t.key, "S:МА", "reading alternates with new letters");
+  assert.equal(t.mode, "blend");
+  assert.equal(L.progress(s).opened.length, 4);
 });
 
 test("planner: valid options, no repeats in a run, due reviews come back", () => {
@@ -120,6 +128,7 @@ test("syllable families open with known letters; words with heard syllables", ()
   }
   assert(L.familyReady(s, 0));
   assert(!L.familyOpen(s, 1));
+  s.runs = 2;
   const t = L.plan(s, { index: 1, used: [] }, D);
   assert.equal(t.key, "S:МА");
   assert.equal(t.mode, "blend");

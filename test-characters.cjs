@@ -57,18 +57,30 @@ for (const mesh of pack.meshes) {
         mesh[key].offset + mesh[key].count * (key === "skinIndex" ? 2 : 4) <=
           bytes.byteLength,
       );
-  if (mesh.model === "shiba") {
-    assert.equal(mesh.skinIndex.count, (mesh.position.count / 3) * 4);
-    assert.equal(mesh.skinWeight.count, (mesh.position.count / 3) * 4);
-  }
   packTriangles += ids.length / 3;
+}
+for (const mesh of cubePack.meshes) {
+  assert.equal(mesh.skinIndex.count, (mesh.position.count / 3) * 4);
+  assert.equal(mesh.skinWeight.count, (mesh.position.count / 3) * 4);
+  for (const key of [
+    "position",
+    "normal",
+    "color",
+    "skinIndex",
+    "skinWeight",
+    "index",
+  ])
+    assert(
+      mesh[key].offset + mesh[key].count * (key === "skinIndex" ? 2 : 4) <=
+        cubeBytes.byteLength,
+    );
 }
 const girl = assets.girl({ dress: 0, shoes: 0, hair: 0, color: 0 }),
   dog = assets.dog();
 for (const model of [
   girl,
   dog,
-  ...["cat", "rabbit", "fox", "shiba"].map(assets.pet),
+  ...["cat", "rabbit", "fox"].map(assets.pet),
   ...["cube-elephant", "cube-bee", "cube-tiger", "cube-parrot"].map(
     assets.pet,
   ),
@@ -161,16 +173,14 @@ for (const file of [
   "models/characters.bin",
   "models/cube-pets.json",
   "models/cube-pets.bin",
-  "models/licenses/shiba.txt",
   "models/licenses/kenney-cube-pets.txt",
-  "models/thumbs/shiba-0.png",
   "models/thumbs/cube-elephant.png",
   "surface-art.js",
   "vendor/reflector.js",
   "vendor/water.js",
 ])
   assert(files.includes(file));
-assert.match(fs.readFileSync("models/licenses/shiba.txt", "utf8"), /CC BY 4\.0/);
+assert(!pack.meshes.some((mesh) => mesh.model === "shiba"));
 assert.match(
   fs.readFileSync("models/licenses/kenney-cube-pets.txt", "utf8"),
   /CC0 1\.0/,
@@ -180,6 +190,32 @@ assert.equal(
   24,
   "every downloaded Kenney animal is in the runtime pack",
 );
+assert.equal(cubePack.colorGradeVersion, 2, "runtime cube colors are graded");
+for (const type of ["cube-dog", "cube-tiger"]) {
+  const pet = assets.pet(type);
+  let colored = false;
+  pet.traverse((o) => {
+    if (!o.isMesh) return;
+    assert.equal(o.material.transparent, false, `${type} stays opaque`);
+    assert.equal(o.material.opacity, 1, `${type} stays solid`);
+    assert.equal(
+      o.material.userData.cubeColorCompensation,
+      true,
+      `${type} compensates for bright outdoor lighting`,
+    );
+    assert.notEqual(o.material.color.getHex(), 0xffffff);
+    const color = o.geometry.attributes.color;
+    for (let i = 0; i < color.count; i++) {
+      const high = Math.max(color.getX(i), color.getY(i), color.getZ(i)),
+        low = Math.min(color.getX(i), color.getY(i), color.getZ(i));
+      if (high - low > 0.28) {
+        colored = true;
+        break;
+      }
+    }
+  });
+  assert(colored, `${type} retains saturated vertex colors in the 3D scene`);
+}
 for (const model of [assets.tree(true), assets.cottage("#dfcbb2", "#ac7568")]) {
   const box = new THREE.Box3().setFromObject(model);
   assert(box.min.y > -0.3 && box.max.y < 6);

@@ -44,6 +44,27 @@ test("legacy saves migrate without mutating or losing currency and objects", () 
   assert.equal(s.objects.length, 3);
   assert.equal(s.objects[0].paid, 3);
 });
+test("removed Shiba saves keep progress and fall back to the cat", () => {
+  const old = S.fresh();
+  old.gems = 47;
+  old.pet = "shiba";
+  old.ownedPets = ["shiba", "cube-cat"];
+  const restored = S.migrate(old);
+  assert(S.valid(restored));
+  assert.equal(restored.pet, "cat");
+  assert.deepEqual(restored.ownedPets, ["cube-cat"]);
+  assert.equal(restored.gems, 47);
+  assert.match(
+    fs.readFileSync("town-app.js", "utf8"),
+    /const s = S\.migrate\(parsed\)/,
+    "the app runs safe migrations for current v5 saves too",
+  );
+  assert.match(
+    fs.readFileSync("town-app.js", "utf8"),
+    /state\.runs === 0 \|\| state\.seen\.recheck/,
+    "established v5 saves do not restart the first-letter placement",
+  );
+});
 test("atomic building, blocked placement, movement and refund", () => {
   const s = S.fresh(),
     o = S.place(s, "house", 4, 0);
