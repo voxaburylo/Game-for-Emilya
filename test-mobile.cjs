@@ -51,7 +51,7 @@ for (const api of ["roundRect", "closest", "allSettled", "flatMap", "fromEntries
 const { FILES, CACHE } = require("./sw");
 for (const file of ["compatibility.js", "icon-192.png", "icon-512.png"])
   assert(FILES.includes(file), `offline ${file}`);
-assert.equal(CACHE, "emilia-living-v5-22-android-learning-menu");
+assert.equal(CACHE, "emilia-living-v5-23-clean-learning-menu");
 assert(app.includes(CACHE));
 
 const state = read("town-state.js");

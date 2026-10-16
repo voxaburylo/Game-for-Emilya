@@ -493,7 +493,7 @@
           `<div class="learn-home">${journey}<button class="play-big" data-action="lesson" data-value="auto" aria-label="Продовжити навчальну пригоду">${icon("play")}<span><b>Грати</b><small>Гра сама обере наступне завдання</small></span></button><div class="learn-sections">${learnSections
             .map(
               (entry) =>
-                `<button class="learn-section section-${entry.id}" data-action="learn-section" data-value="${entry.id}" aria-label="${entry.title}. ${entry.note}"><div class="section-visual">${entry.visual}</div><span><b>${entry.title}</b><small>${entry.note}</small></span></button>`,
+                `<button class="learn-section section-${entry.id}" data-action="learn-section" data-value="${entry.id}" aria-label="${entry.title}"><div class="section-visual">${entry.visual}</div><span><b>${entry.title}</b></span></button>`,
             )
             .join("")}</div></div>`,
         );
@@ -1567,7 +1567,7 @@
         const check = async () => {
           if (reg.active?.state === "activated") {
             const cache = await caches.open(
-              "emilia-living-v5-22-android-learning-menu",
+              "emilia-living-v5-23-clean-learning-menu",
             );
             offlineReady = (
               await Promise.all(

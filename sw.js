@@ -1,5 +1,5 @@
 "use strict";
-const CACHE = "emilia-living-v5-22-android-learning-menu";
+const CACHE = "emilia-living-v5-23-clean-learning-menu";
 const ASSETS = [
   "park.css",
   "park-catalog.js",
