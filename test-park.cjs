@@ -39,6 +39,21 @@ test("28 purchases fit their placement footprints and use valid indexed geometry
     assert(fs.statSync(d.thumb).size > 1000);
   }
 });
+test("classic shop uses real previews and does not sell the duplicate fountain", () => {
+  const visibleClassic = S.ITEMS.filter(
+    (item) => !item.hidden && (item.category || "classic") === "classic",
+  );
+  assert(!visibleClassic.some((item) => item.id === "fountain"));
+  for (const id of ["tree", "swing"]) {
+    const item = visibleClassic.find((entry) => entry.id === id);
+    assert(item?.thumb, id + " preview");
+    assert(fs.statSync(item.thumb).size > 1000, id + " preview file");
+  }
+  const old = S.fresh();
+  old.gems = 20;
+  assert(S.place(old, "fountain", 4, 0));
+  assert(S.valid(old));
+});
 test("model reuse survives preview disposal and interaction", () => {
   let disposed = 0;
   A.parts.forEach((p) =>

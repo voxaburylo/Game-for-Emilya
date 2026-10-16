@@ -9,9 +9,25 @@
   const ITEMS = [
     { id: "flowers", name: "Квітник", cost: 2, w: 1, h: 1 },
     { id: "bench", name: "Лавочка", cost: 3, w: 1, h: 1 },
-    { id: "tree", name: "Яблунька", cost: 4, w: 1, h: 1 },
-    { id: "swing", name: "Гойдалка", cost: 6, w: 2, h: 1 },
-    { id: "fountain", name: "Фонтан", cost: 8, w: 2, h: 2 },
+    {
+      id: "tree",
+      name: "Яблунька",
+      cost: 4,
+      w: 1,
+      h: 1,
+      thumb: "models/thumbs/build-tree.png",
+    },
+    {
+      id: "swing",
+      name: "Гойдалка",
+      cost: 6,
+      w: 2,
+      h: 1,
+      thumb: "models/thumbs/build-swing.png",
+    },
+    // Kept for old v5 saves, but hidden from the shop because the Park tab
+    // already offers three better fountains with real model previews.
+    { id: "fountain", name: "Фонтан", cost: 8, w: 2, h: 2, hidden: true },
     { id: "house", name: "Будиночок", cost: 10, w: 2, h: 2 },
     ...Park.items,
   ];

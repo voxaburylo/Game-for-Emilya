@@ -331,7 +331,7 @@
         bar(edit.id ? "Переставити" : "Майстерня") +
         `<section class="side-panel build-panel"><div class="row">${btn("roads", "road", "Доріжки")}${btn("land", "land", "Нова земля")}${btn("select", "move", "Переставити споруду")}<span class="wallet">${icon("gem")}${state.gems}</span></div><div class="park-tabs" role="group" aria-label="Види прикрас">${ParkCatalog.groups.map((c) => `<button class="${buildCategory === c.id ? "active" : ""}" data-action="build-category" data-value="${c.id}" aria-label="${c.name}">${icon(c.icon)}<span>${c.name}</span></button>`).join("")}</div><div class="choice-grid park-catalog">${S.ITEMS.filter(
           (i) =>
-            (i.category || "classic") === buildCategory ||
+            (!i.hidden && (i.category || "classic") === buildCategory) ||
             (i.id === edit.kind && edit.id),
         )
           .map(
@@ -1385,7 +1385,7 @@
       .then((reg) => {
         const check = async () => {
           if (reg.active?.state === "activated") {
-            const cache = await caches.open("emilia-living-v5-9-sky-city");
+            const cache = await caches.open("emilia-living-v5-10-catalog-cleanup");
             offlineReady = (
               await Promise.all(
                 [

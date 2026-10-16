@@ -1,5 +1,5 @@
 "use strict";
-const CACHE = "emilia-living-v5-9-sky-city";
+const CACHE = "emilia-living-v5-10-catalog-cleanup";
 const ASSETS = [
   "park.css",
   "park-catalog.js",
@@ -80,6 +80,8 @@ const ASSETS = [
   "models/thumbs/hair-2.png",
   "models/thumbs/hair-3.png",
   "models/thumbs/hair-4.png",
+  "models/thumbs/build-tree.png",
+  "models/thumbs/build-swing.png",
   "models/thumbs/dog-0.png",
   "models/thumbs/cat-0.png",
   "models/thumbs/rabbit-0.png",
