@@ -24,6 +24,30 @@
     gateAnswer = 0,
     toastTimer,
     offlineReady = false;
+  let viewportFrame = 0;
+  function syncViewportHeight() {
+    cancelAnimationFrame(viewportFrame);
+    viewportFrame = requestAnimationFrame(() => {
+      const viewport = window.visualViewport,
+        height = Math.round(viewport?.height || window.innerHeight);
+      if (height > 0)
+        document.documentElement.style.setProperty(
+          "--app-height",
+          height + "px",
+        );
+    });
+  }
+  syncViewportHeight();
+  window.addEventListener("resize", syncViewportHeight, { passive: true });
+  window.addEventListener("orientationchange", syncViewportHeight, {
+    passive: true,
+  });
+  window.visualViewport?.addEventListener("resize", syncViewportHeight, {
+    passive: true,
+  });
+  window.visualViewport?.addEventListener("scroll", syncViewportHeight, {
+    passive: true,
+  });
   function crystals(n) {
     const t = n % 100,
       u = n % 10;
@@ -625,7 +649,7 @@
       previous: null,
       // A continued game remembers recent material, so "Ще пограти" really
       // continues the learning path instead of replaying the same three cards.
-      used: [...new Set(carry)].slice(-600),
+      used: L.lessonHistory(state, mode, carry),
       discoveries: [],
       newItems: [],
     };
@@ -656,7 +680,7 @@
     if (mode === "train") return L.trainTask(state, run.used);
     if (["letters", "hear"].includes(mode)) {
       const pool = mode === "hear" ? audibleLetters : letters,
-        unused = pool.filter((l) => !run.used.includes("L:" + l)),
+        unused = L.freshPool(pool, run.used, "L:"),
         target = Core.choose(
           unused.length ? unused : pool,
           state.letterScores,
@@ -670,9 +694,7 @@
       };
     }
     if (mode === "pairs") {
-      const unused = letters.filter(
-          (letter) => !run.used.includes("L:" + letter),
-        ),
+      const unused = L.freshPool(letters, run.used, "L:"),
         p = [
           ...Core.shuffle(unused),
           ...Core.shuffle(letters.filter((letter) => !unused.includes(letter))),
@@ -687,10 +709,9 @@
     if (mode === "words") {
       let words = L.readyWords(state);
       if (!words.length) words = [S.WORDS[0]];
-      const fresh = words.filter(
-          (w) =>
-            w.text !== run.previous && !run.used.includes("W:" + w.text),
-        ),
+      const fresh = L
+          .freshPool(words, run.used, "W:", (word) => word.text)
+          .filter((word) => word.text !== run.previous),
         w = Core.shuffle(fresh.length ? fresh : words)[0];
       return {
         mode,
@@ -702,7 +723,7 @@
     }
     family = L.nextFamily(state, family, run.used);
     const pool = S.FAMILIES[family],
-      unused = pool.filter((v) => !run.used.includes("S:" + v)),
+      unused = L.freshPool(pool, run.used, "S:"),
       target = Core.choose(
         unused.length ? unused : pool,
         state.syllableScores,
@@ -758,7 +779,7 @@
     if (t.word) Object.assign(task, t.word, { target: t.word.text });
     if (t.key) run.used.push(t.key);
     if (t.keys) run.used.push(...t.keys);
-    run.used = [...new Set(run.used)].slice(-600);
+    run.used = L.rememberLesson(state, run.mode, run.used);
     if (t.isNew) run.newDone = true;
     if (mode === "pairs") run.pairsDone = true;
     if (mode === "sound-part") run.soundDone = true;
@@ -1688,7 +1709,7 @@
         const check = async () => {
           if (reg.active?.state === "activated") {
             const cache = await caches.open(
-              "emilia-living-v5-33-safari-grass-catalog",
+              "emilia-living-v5-34-learning-viewport",
             );
             offlineReady = (
               await Promise.all(

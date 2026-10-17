@@ -1,5 +1,5 @@
 "use strict";
-const CACHE = "emilia-living-v5-33-safari-grass-catalog";
+const CACHE = "emilia-living-v5-34-learning-viewport";
 const ASSETS = [
   "park.css",
   "park-catalog.js",

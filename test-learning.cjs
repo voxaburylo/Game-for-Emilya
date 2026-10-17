@@ -172,6 +172,26 @@ test("continued games prefer new letters and advance to another syllable family"
   assert(pair.keys.every((key) => !repeated.has(key)));
 });
 
+test("lesson history survives menus and prevents an immediate three-card loop", () => {
+  const s = S.fresh(),
+    first = S.FAMILIES[0].slice(0, 3).map((part) => "S:" + part);
+  assert.deepEqual(L.lessonHistory(s, "blend"), []);
+  L.rememberLesson(s, "blend", first);
+  assert(S.valid(JSON.parse(JSON.stringify(s))), "history remains a valid v5 save");
+  assert.deepEqual(L.lessonHistory(s, "blend"), first);
+  assert(
+    L.freshPool(S.FAMILIES[0], L.lessonHistory(s, "blend"), "S:").every(
+      (part) => !first.includes("S:" + part),
+    ),
+    "the next session does not offer the same three syllables",
+  );
+  const longHistory = S.FAMILIES.flat()
+    .slice(0, 130)
+    .map((part) => "S:" + part);
+  assert.equal(L.rememberLesson(s, "blend", longHistory).length, 120);
+  assert.equal(L.lessonHistory(s, "blend")[0], longHistory[10]);
+});
+
 test("complete syllable library is varied and has no duplicate trains", () => {
   assert.equal(S.FAMILIES.length, 22);
   assert.equal(S.FAMILIES.flat().length, 220);

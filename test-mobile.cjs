@@ -28,6 +28,9 @@ assert(css.includes("env(safe-area-inset-bottom"));
 assert(css.includes("@media (max-width: 430px)"));
 assert(css.includes(".learn-sections"));
 assert(css.includes("touch-action: manipulation"));
+assert(css.includes("--app-height: 100dvh"));
+assert(css.includes("@media (max-height: 620px)"));
+assert(css.includes("max-height: calc(var(--app-height"));
 
 const app = read("town-app.js");
 for (const section of ["letters", "syllables", "listen", "words"])
@@ -36,6 +39,9 @@ for (const mode of [
   "letters", "pairs", "discover", "blend", "train",
   "hear", "hear-syllable", "sound-part", "words",
 ]) assert(app.includes(`"${mode}"`), `learning mode ${mode}`);
+assert(app.includes("window.visualViewport"), "visible mobile viewport controls the game height");
+assert(app.includes("L.lessonHistory(state, mode, carry)"));
+assert(app.includes("L.rememberLesson(state, run.mode, run.used)"));
 
 const world = read("town-world.js");
 assert(world.includes("window.EmiliaCompatibility || {}"));
@@ -59,7 +65,7 @@ for (const file of [
   "models/thumbs/house-tower.svg",
 ])
   assert(FILES.includes(file), `offline ${file}`);
-assert.equal(CACHE, "emilia-living-v5-33-safari-grass-catalog");
+assert.equal(CACHE, "emilia-living-v5-34-learning-viewport");
 assert(app.includes(CACHE));
 assert(app.includes('objectButton("demolish"'), "workshop has a dedicated demolition tool");
 assert(!app.includes('btn("object-remove"'), "normal play has no delete toolbar");

@@ -18,7 +18,8 @@
       ["Г", "Ґ"], ["Г", "Т"], ["О", "С"], ["З", "Е"], ["Ц", "Щ"], ["М", "Н"],
       ["Ж", "Х"], ["Ю", "Я"], ["Р", "Ф"], ["Л", "П"], ["К", "Ж"], ["Ч", "У"],
     ],
-    PLACEMENT_MAX = 15;
+    PLACEMENT_MAX = 15,
+    HISTORY_LIMIT = 120;
 
   function day(now = Date.now()) {
     return Math.floor(
@@ -36,6 +37,52 @@
   }
   const box = (s, key) => (s.items[key] ? s.items[key].box : -1);
   const shuffle = C.shuffle;
+
+  // Keep enough recent material to continue between sessions without making
+  // old exercises disappear forever. This lives inside the existing v5
+  // `seen` field, so the save schema and its learning fields stay unchanged.
+  function lessonHistory(s, mode, carry = []) {
+    const saved = s.seen?.lessonHistory?.[mode],
+      keys = [
+        ...(Array.isArray(saved) ? saved : []),
+        ...(Array.isArray(carry) ? carry : []),
+      ].filter(
+        (key) =>
+          typeof key === "string" &&
+          /^(?:[LS]:[А-ЯҐЄІЇЬ]{1,8}|W:[А-ЯҐЄІЇЬ’']{1,16}|T:[А-ЯҐЄІЇЬ-]{3,32})$/.test(
+            key,
+          ),
+      );
+    const newest = [];
+    for (const key of keys) {
+      const old = newest.indexOf(key);
+      if (old >= 0) newest.splice(old, 1);
+      newest.push(key);
+    }
+    return newest.slice(-HISTORY_LIMIT);
+  }
+  function rememberLesson(s, mode, used) {
+    if (!s.seen.lessonHistory || typeof s.seen.lessonHistory !== "object")
+      s.seen.lessonHistory = {};
+    const history = lessonHistory(s, mode, used);
+    s.seen.lessonHistory[mode] = history;
+    return history;
+  }
+  function freshPool(pool, used, prefix, value = (entry) => entry) {
+    const untouched = pool.filter(
+      (entry) => !used.includes(prefix + value(entry)),
+    );
+    if (untouched.length) return untouched;
+    // Once a small pool is completed, cool down its most recent third. The
+    // child gets a new order instead of immediately seeing the same trio.
+    const recent = new Set(
+        used.slice(-Math.max(1, Math.ceil(pool.length / 3))),
+      ),
+      cooled = pool.filter(
+        (entry) => !recent.has(prefix + value(entry)),
+      );
+    return cooled.length ? cooled : pool;
+  }
 
   function promote(it, today) {
     // Mastery needs success on more than one day.
@@ -409,6 +456,7 @@
     activeLetters, familyReady, familyOpen, nextFamily, readyWords, wordOptions, readySyllables,
     readyTrains, progress, letterOptions, syllableOptions, soundPartTask,
     trainTask, plan, placementTask, placementResult,
+    lessonHistory, rememberLesson, freshPool,
   };
   if (typeof module !== "undefined") module.exports = api;
   root.Learning = api;
