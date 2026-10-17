@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#426f64" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="format-detection" content="telephone=no" />
+    <title>Острів Емілії — граємо й читаємо</title>
+    <link rel="icon" href="icon.svg" />
+    <link rel="apple-touch-icon" href="icon-192.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="town.css" />
+    <link rel="stylesheet" href="learning-party.css" />
+    <link rel="stylesheet" href="park.css" />
+  </head>
+  <body>
+    <div id="world" aria-label="Тривимірний острів"></div>
+    <div id="boot">
+      <div>
+        <h2>Готуємо твій острів…</h2>
+        <p>Ще мить</p>
+      </div>
+    </div>
+    <div id="wealth" class="wallet" aria-label="Кристали">
+      <img class="gem-object" src="models/ui/gem.png" alt="Кристали"><span id="gems">0</span>
+    </div>
+    <header id="hud">
+      <div class="brand">
+        <div class="brand-mark" data-icon="home"></div>
+        <div><b>Острів Емілії</b><small>МІСЦЕ ДЛЯ ВІДКРИТТІВ</small></div>
+      </div>
+      <div class="row hud-right">
+        <button
+          id="sound-button"
+          class="round"
+          data-action="sound"
+          aria-label="Увімкнути або вимкнути звук"
+        ></button
+        ><button
+          class="round"
+          data-action="parents"
+          aria-label="Для батьків"
+          data-icon="gear"
+        ></button>
+      </div>
+    </header>
+    <nav id="dock" aria-label="Місця острова">
+      <button data-action="home">
+        <span data-icon="home"></span><small>Мій дім</small></button
+      ><button data-action="wardrobe">
+        <span data-icon="dress"></span><small>Гардероб</small></button
+      ><button data-action="pets">
+        <span data-icon="paw"></span><small>Друзі</small></button
+      ><button data-action="build">
+        <span data-icon="build"></span><small>Майстерня</small></button
+      ><button data-action="learn">
+        <span data-icon="book"></span><small>Відкриття</small>
+      </button>
+    </nav>
+    <div id="controls">
+      <div id="joystick" role="group" aria-label="Рух персонажа">
+        <div id="stick"></div>
+      </div>
+      <div id="location" class="location-pill"></div>
+    </div>
+    <main id="ui"></main>
+    <div id="hint"></div>
+    <div id="toast" role="status" aria-live="polite"></div>
+    <audio id="voice" preload="none"></audio>
+    <script src="compatibility.js"></script>
+    <script src="three.min.js"></script>
+    <script src="core.js"></script>
+    <script src="navigation.js"></script>
+    <script src="park-catalog.js"></script>
+    <script src="garden-paths.js"></script>
+    <script src="learning-content.js"></script>
+    <script src="town-state.js"></script>
+    <script src="learning.js"></script>
+    <script src="learning-party.js"></script>
+    <script src="vendor/reflector.js"></script>
+    <script src="vendor/water.js"></script>
+    <script src="atmosphere.js"></script>
+    <script src="island-landscape.js"></script>
+    <script src="surface-art.js"></script>
+    <script src="pet-rig.js"></script>
+    <script src="character-assets.js"></script>
+    <script src="companion-assets.js"></script>
+    <script src="pet-behavior.js"></script>
+    <script src="art.js"></script>
+    <script src="park-assets.js"></script>
+    <script src="speech-manifest.js"></script>
+    <script src="voice-pack.js"></script>
+    <script src="human-audio.js"></script>
+    <script src="town-world.js"></script>
+    <script>
+      document
+        .querySelectorAll("[data-icon]")
+        .forEach((e) => (e.innerHTML = Art.icon(e.dataset.icon)));
+    </script>
+    <script src="town-app.js"></script>
+  </body>
+</html>

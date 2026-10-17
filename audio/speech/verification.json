@@ -1,0 +1,236 @@
+[
+  {
+    "file": "syllable-41b-406.mp3",
+    "duration": 0.764,
+    "peak": 17636,
+    "decoded": true
+  },
+  {
+    "file": "syllable-41b-410.mp3",
+    "duration": 0.77,
+    "peak": 22040,
+    "decoded": true
+  },
+  {
+    "file": "syllable-41b-418.mp3",
+    "duration": 0.718,
+    "peak": 16997,
+    "decoded": true
+  },
+  {
+    "file": "syllable-41b-41e.mp3",
+    "duration": 0.794,
+    "peak": 17175,
+    "decoded": true
+  },
+  {
+    "file": "syllable-41b-423.mp3",
+    "duration": 0.755,
+    "peak": 10841,
+    "decoded": true
+  },
+  {
+    "file": "syllable-41c-406.mp3",
+    "duration": 0.717,
+    "peak": 18373,
+    "decoded": true
+  },
+  {
+    "file": "syllable-41c-410.mp3",
+    "duration": 0.696,
+    "peak": 21548,
+    "decoded": true
+  },
+  {
+    "file": "syllable-41c-418.mp3",
+    "duration": 0.721,
+    "peak": 18266,
+    "decoded": true
+  },
+  {
+    "file": "syllable-41c-41e.mp3",
+    "duration": 0.714,
+    "peak": 15679,
+    "decoded": true
+  },
+  {
+    "file": "syllable-41c-423.mp3",
+    "duration": 0.68,
+    "peak": 13150,
+    "decoded": true
+  },
+  {
+    "file": "syllable-41d-406.mp3",
+    "duration": 0.746,
+    "peak": 14962,
+    "decoded": true
+  },
+  {
+    "file": "syllable-41d-410.mp3",
+    "duration": 0.731,
+    "peak": 24222,
+    "decoded": true
+  },
+  {
+    "file": "syllable-41d-418.mp3",
+    "duration": 0.765,
+    "peak": 16829,
+    "decoded": true
+  },
+  {
+    "file": "syllable-41d-41e.mp3",
+    "duration": 0.753,
+    "peak": 20491,
+    "decoded": true
+  },
+  {
+    "file": "syllable-41d-423.mp3",
+    "duration": 0.795,
+    "peak": 13952,
+    "decoded": true
+  },
+  {
+    "file": "syllable-420-406.mp3",
+    "duration": 0.633,
+    "peak": 29349,
+    "decoded": true
+  },
+  {
+    "file": "syllable-420-410.mp3",
+    "duration": 0.586,
+    "peak": 20036,
+    "decoded": true
+  },
+  {
+    "file": "syllable-420-418.mp3",
+    "duration": 0.645,
+    "peak": 12454,
+    "decoded": true
+  },
+  {
+    "file": "syllable-420-41e.mp3",
+    "duration": 0.702,
+    "peak": 18354,
+    "decoded": true
+  },
+  {
+    "file": "syllable-420-423.mp3",
+    "duration": 0.681,
+    "peak": 11371,
+    "decoded": true
+  },
+  {
+    "file": "syllable-421-406.mp3",
+    "duration": 0.777,
+    "peak": 13367,
+    "decoded": true
+  },
+  {
+    "file": "syllable-421-410.mp3",
+    "duration": 0.659,
+    "peak": 23286,
+    "decoded": true
+  },
+  {
+    "file": "syllable-421-418.mp3",
+    "duration": 0.795,
+    "peak": 12553,
+    "decoded": true
+  },
+  {
+    "file": "syllable-421-41e.mp3",
+    "duration": 0.553,
+    "peak": 15367,
+    "decoded": true
+  },
+  {
+    "file": "syllable-421-423.mp3",
+    "duration": 0.637,
+    "peak": 6867,
+    "decoded": true
+  },
+  {
+    "file": "syllable-422-406.mp3",
+    "duration": 0.629,
+    "peak": 11439,
+    "decoded": true
+  },
+  {
+    "file": "syllable-422-410.mp3",
+    "duration": 0.538,
+    "peak": 23893,
+    "decoded": true
+  },
+  {
+    "file": "syllable-422-418.mp3",
+    "duration": 0.545,
+    "peak": 13100,
+    "decoded": true
+  },
+  {
+    "file": "syllable-422-41e.mp3",
+    "duration": 0.545,
+    "peak": 16200,
+    "decoded": true
+  },
+  {
+    "file": "syllable-422-423.mp3",
+    "duration": 0.581,
+    "peak": 7699,
+    "decoded": true
+  },
+  {
+    "file": "ukr-167bc9ac.mp3",
+    "duration": 1.35,
+    "peak": 27746,
+    "decoded": true
+  },
+  {
+    "file": "ukr-17d1e593.mp3",
+    "duration": 1.25,
+    "peak": 29034,
+    "decoded": true
+  },
+  {
+    "file": "ukr-265a50e4.mp3",
+    "duration": 1.25,
+    "peak": 28579,
+    "decoded": true
+  },
+  {
+    "file": "ukr-635d0c8d.mp3",
+    "duration": 1.15,
+    "peak": 27692,
+    "decoded": true
+  },
+  {
+    "file": "ukr-84f1f56b.mp3",
+    "duration": 1.15,
+    "peak": 26761,
+    "decoded": true
+  },
+  {
+    "file": "ukr-85339f5c.mp3",
+    "duration": 1.15,
+    "peak": 28451,
+    "decoded": true
+  },
+  {
+    "file": "ukr-aad09ea0.mp3",
+    "duration": 1.2,
+    "peak": 28783,
+    "decoded": true
+  },
+  {
+    "file": "ukr-c1b3af6a.mp3",
+    "duration": 1.4,
+    "peak": 27144,
+    "decoded": true
+  },
+  {
+    "file": "ukr-f4dd20a7.mp3",
+    "duration": 1.25,
+    "peak": 31042,
+    "decoded": true
+  }
+]

@@ -1,0 +1,12 @@
+Cube Pets 2.0
+Creator: Kenney (https://www.kenney.nl)
+Source package: Kenney Cube Pets
+License: Creative Commons Zero (CC0 1.0)
+License URL: https://creativecommons.org/publicdomain/zero/1.0/
+
+The models may be used for personal, educational, and commercial purposes.
+Credit is not required by the license; it is included here to identify the source.
+
+Game integration converts the original GLB meshes and shared color map to a
+compact vertex-colored runtime pack. The supplied Kenney preview renders are
+used as the animal selection thumbnails.

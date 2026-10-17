@@ -1,0 +1,25 @@
+ГОТОВІ ЗАПИСИ ЛЮДСЬКОГО ГОЛОСУ / HUMAN SPEECH RECORDINGS
+
+Склади, назви літер та інструкції тепер у голосовому пакеті: ../voice/CREDITS.txt.
+Записи складів OpenLearn (CC BY-NC-SA) прибрано, щоб гру можна було
+використовувати комерційно.
+
+1. Слова: МАМА ТАТО РАМА НОРА РАНА ЛІТО САЛО МИЛО СИЛА.
+
+Female speaker: Galja Raptova / Галя Раптова.
+Copyright (c) 2008 Galja Raptova, Nicolas Vion.
+Shtooka Project, collection ukr-balm-galja.
+Source mirror:
+https://www.yojik.eu/audiocollections/detailled/ukr-balm-galja/
+Collection index explicitly records swac_speak_gender="F".
+License: Creative Commons Attribution 2.0 France / Paternité 2.0 France:
+https://creativecommons.org/licenses/by/2.0/fr/
+Original license statement preserved in SHTOOKA-README.txt.
+Files are downloaded MP3 recordings without modification; original filenames
+are preserved. Exact word/file mapping is in ../../speech-manifest.js.
+Original recording, credited authors, and license retained; no endorsement implied.
+
+2. The earlier 32 Tabrus letter-name recordings are unchanged.
+Their attribution and CC BY-SA 4.0 terms remain in ../CREDITS.txt.
+
+Verification: word files are unmodified originals from the collection.

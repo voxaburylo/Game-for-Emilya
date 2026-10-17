@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 190">
+  <defs>
+    <linearGradient id="stone" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#eee3cd"/><stop offset="1" stop-color="#bca888"/></linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#7095aa"/><stop offset="1" stop-color="#38576d"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="7" stdDeviation="7" flood-opacity=".25"/></filter>
+  </defs>
+  <g filter="url(#shadow)" stroke-linejoin="round">
+    <ellipse cx="118" cy="166" rx="83" ry="14" fill="#496b43" opacity=".32"/>
+    <path d="M43 78h112v80H43z" fill="url(#stone)" stroke="#725f4f" stroke-width="4"/>
+    <path d="M32 81 55 43h91l23 38z" fill="url(#blue)" stroke="#344f62" stroke-width="5"/>
+    <path d="M144 52q38-14 55 6v100h-55z" fill="#d1ba93" stroke="#725f4f" stroke-width="4"/>
+    <path d="m137 58 35-45 35 45z" fill="#b45f58" stroke="#71403e" stroke-width="5"/>
+    <g fill="#9bcbd1" stroke="#fff1ca" stroke-width="5">
+      <path d="M57 91h25v27H57z"/><path d="M105 91h25v27h-25z"/><path d="M159 72h24v31h-24z"/>
+    </g>
+    <path d="M93 119h29v39H93z" fill="#724e56" stroke="#52383e" stroke-width="4"/>
+    <circle cx="115" cy="140" r="3.5" fill="#efc66d"/>
+    <path d="M153 131q19-10 38 0" fill="none" stroke="#8f765a" stroke-width="4"/>
+    <path d="M160 116h23v16h-23z" fill="#9bcbd1" stroke="#fff1ca" stroke-width="4"/>
+  </g>
+</svg>

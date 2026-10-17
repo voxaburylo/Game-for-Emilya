@@ -1,0 +1,149 @@
+АУДІОЗАПИСИ ЛІТЕР / AUDIO ATTRIBUTION
+
+Автор оригінальних записів: Tabrus
+https://commons.wikimedia.org/wiki/User:Tabrus
+Колекція: Ukrainian pronunciation of letters by a young male uploaded by Tabrus.
+Дата оригінальних записів на сторінках джерел: 17 March 2023.
+Ліцензія всіх наведених оригіналів: Creative Commons Attribution-ShareAlike 4.0 International.
+https://creativecommons.org/licenses/by-sa/4.0/
+Повний текст: https://creativecommons.org/licenses/by-sa/4.0/legalcode
+
+Це завантажені наявні записи людини. Голос не генерувався й не клонувався.
+Зміни для гри: декодування Ogg/FLAC, обрізання тиші на початку та в кінці,
+обмежене вирівнювання гучності, конвертування у моно MP3 44.1 kHz / 96 kbps.
+Оброблені аудіофайли розповсюджуються за тією самою CC BY-SA 4.0.
+Автор не схвалював і не рекламує цю гру; такого схвалення не стверджується.
+Ліцензія аудіо не змінює ліцензії Three.js або незалежного коду гри.
+
+Є 32 записи: м'який знак Ь не має власного звуку і показаний без вигаданої
+фонеми. Назви літер не склеюються в штучні склади. Для навчання злиттю
+потрібно промовляти склад цілком.
+
+ПОФАЙЛОВІ ДЖЕРЕЛА
+А — audio/410.mp3
+https://commons.wikimedia.org/wiki/File:%D0%90%D0%B0_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/c/c6/%D0%90%D0%B0_%E2%80%93_ukrainian.ogg
+
+Б — audio/411.mp3
+https://commons.wikimedia.org/wiki/File:%D0%91%D0%B1_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/f/fb/%D0%91%D0%B1_%E2%80%93_ukrainian.ogg
+
+В — audio/412.mp3
+https://commons.wikimedia.org/wiki/File:%D0%92%D0%B2_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/b/b4/%D0%92%D0%B2_%E2%80%93_ukrainian.ogg
+
+Г — audio/413.mp3
+https://commons.wikimedia.org/wiki/File:%D0%93%D0%B3_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/d/dd/%D0%93%D0%B3_%E2%80%93_ukrainian.ogg
+
+Ґ — audio/490.mp3
+https://commons.wikimedia.org/wiki/File:%D2%90%D2%91_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/e/eb/%D2%90%D2%91_%E2%80%93_ukrainian.ogg
+
+Д — audio/414.mp3
+https://commons.wikimedia.org/wiki/File:%D0%94%D0%B4_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/3/3a/%D0%94%D0%B4_%E2%80%93_ukrainian.ogg
+
+Е — audio/415.mp3
+https://commons.wikimedia.org/wiki/File:%D0%95%D0%B5_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/4/42/%D0%95%D0%B5_%E2%80%93_ukrainian.ogg
+
+Є — audio/404.mp3
+https://commons.wikimedia.org/wiki/File:%D0%84%D1%94_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/7/78/%D0%84%D1%94_%E2%80%93_ukrainian.ogg
+
+И — audio/418.mp3
+https://commons.wikimedia.org/wiki/File:%D0%98%D0%B8_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/1/13/%D0%98%D0%B8_%E2%80%93_ukrainian.ogg
+
+Ж — audio/416.mp3
+https://commons.wikimedia.org/wiki/File:%D0%96%D0%B6_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/3/38/%D0%96%D0%B6_%E2%80%93_ukrainian.ogg
+
+З — audio/417.mp3
+https://commons.wikimedia.org/wiki/File:%D0%97%D0%B7_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/7/76/%D0%97%D0%B7_%E2%80%93_ukrainian.ogg
+
+Й — audio/419.mp3
+https://commons.wikimedia.org/wiki/File:%D0%99%D0%B9_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/7/71/%D0%99%D0%B9_%E2%80%93_ukrainian.ogg
+
+Ї — audio/407.mp3
+https://commons.wikimedia.org/wiki/File:%D0%87%D1%97_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/1/16/%D0%87%D1%97_%E2%80%93_ukrainian.ogg
+
+І — audio/406.mp3
+https://commons.wikimedia.org/wiki/File:%D0%86%D1%96_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/2/26/%D0%86%D1%96_%E2%80%93_ukrainian.ogg
+
+М — audio/41c.mp3
+https://commons.wikimedia.org/wiki/File:%D0%9C%D0%BC_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/2/25/%D0%9C%D0%BC_%E2%80%93_ukrainian.ogg
+
+К — audio/41a.mp3
+https://commons.wikimedia.org/wiki/File:%D0%9A%D0%BA_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/a/a4/%D0%9A%D0%BA_%E2%80%93_ukrainian.ogg
+
+Л — audio/41b.mp3
+https://commons.wikimedia.org/wiki/File:%D0%9B%D0%BB_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/c/cf/%D0%9B%D0%BB_%E2%80%93_ukrainian.ogg
+
+Н — audio/41d.mp3
+https://commons.wikimedia.org/wiki/File:%D0%9D%D0%BD_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/4/48/%D0%9D%D0%BD_%E2%80%93_ukrainian.ogg
+
+П — audio/41f.mp3
+https://commons.wikimedia.org/wiki/File:%D0%9F%D0%BF_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/2/2a/%D0%9F%D0%BF_%E2%80%93_ukrainian.ogg
+
+С — audio/421.mp3
+https://commons.wikimedia.org/wiki/File:%D0%A1%D1%81_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/a/a3/%D0%A1%D1%81_%E2%80%93_ukrainian.ogg
+
+Р — audio/420.mp3
+https://commons.wikimedia.org/wiki/File:%D0%A0%D1%80_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/4/49/%D0%A0%D1%80_%E2%80%93_ukrainian.ogg
+
+Т — audio/422.mp3
+https://commons.wikimedia.org/wiki/File:%D0%A2%D1%82_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/5/51/%D0%A2%D1%82_%E2%80%93_ukrainian.ogg
+
+У — audio/423.mp3
+https://commons.wikimedia.org/wiki/File:%D0%A3%D1%83_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/4/40/%D0%A3%D1%83_%E2%80%93_ukrainian.ogg
+
+О — audio/41e.mp3
+https://commons.wikimedia.org/wiki/File:%D0%9E%D0%BE_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/6/63/%D0%9E%D0%BE_%E2%80%93_ukrainian.ogg
+
+Ф — audio/424.mp3
+https://commons.wikimedia.org/wiki/File:%D0%A4%D1%84_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/c/c8/%D0%A4%D1%84_%E2%80%93_ukrainian.ogg
+
+Х — audio/425.mp3
+https://commons.wikimedia.org/wiki/File:%D0%A5%D1%85_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/d/d0/%D0%A5%D1%85_%E2%80%93_ukrainian.ogg
+
+Ц — audio/426.mp3
+https://commons.wikimedia.org/wiki/File:%D0%A6%D1%86_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/0/01/%D0%A6%D1%86_%E2%80%93_ukrainian.ogg
+
+Ч — audio/427.mp3
+https://commons.wikimedia.org/wiki/File:%D0%A7%D1%87_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/1/19/%D0%A7%D1%87_%E2%80%93_ukrainian.ogg
+
+Ш — audio/428.mp3
+https://commons.wikimedia.org/wiki/File:%D0%A8%D1%88_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/2/29/%D0%A8%D1%88_%E2%80%93_ukrainian.ogg
+
+Щ — audio/429.mp3
+https://commons.wikimedia.org/wiki/File:%D0%A9%D1%89_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/d/dd/%D0%A9%D1%89_%E2%80%93_ukrainian.ogg
+
+Ю — audio/42e.mp3
+https://commons.wikimedia.org/wiki/File:%D0%AE%D1%8E_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/d/d9/%D0%AE%D1%8E_%E2%80%93_ukrainian.ogg
+
+Я — audio/42f.mp3
+https://commons.wikimedia.org/wiki/File:%D0%AF%D1%8F_%E2%80%93_ukrainian.ogg
+https://upload.wikimedia.org/wikipedia/commons/a/a4/%D0%AF%D1%8F_%E2%80%93_ukrainian.ogg
